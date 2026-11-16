@@ -1,0 +1,306 @@
+using System.Diagnostics;
+using System.Drawing;
+using System.Runtime.Versioning;
+using System.Windows.Forms;
+
+namespace ChestCounter;
+
+[SupportedOSPlatform("windows")]
+public sealed class MainForm : Form
+{
+    private readonly Monitor monitor;
+    private readonly Store store;
+    private readonly Dictionary<string, Font> fonts = new();
+    private readonly Panel content = new() { Dock=DockStyle.Fill, Padding=new Padding(20), AutoScroll=true };
+    private readonly Label total=new(), current=new(), today=new(), average=new(), best=new(), treasures=new(), last=new(), team=new(), notice=new(), profileName=new(), reset=new(), performance=new(), status=new();
+    private readonly ComboBox profiles=new() { DropDownStyle=ComboBoxStyle.DropDownList, Width=210, FlatStyle=FlatStyle.Flat };
+    private readonly DailyChart chart=new() { Dock=DockStyle.Fill };
+    private readonly Button overlay=new();
+    private readonly Label historyEmpty=new() { Dock=DockStyle.Top, Height=40, TextAlign=ContentAlignment.MiddleLeft, ForeColor=Theme.Muted, Visible=false, Text="No matches yet. They appear here once a replay has been analysed." };
+    private readonly Card goalCard=new() { Dock=DockStyle.Top, Height=76, Radius=14, Padding=new Padding(16,10,16,12), Margin=new Padding(6,0,6,12), Visible=false };
+    private readonly Label goalText=new();
+    private readonly Panel goalTrack=new(), goalFill=new();
+    private readonly System.Windows.Forms.Timer anim=new() { Interval=33 };
+    private int animFrom, animTo;
+    private DateTime animStart;
+    private string animText="";
+    private bool pulse, perfLoading;
+    private Control? hero;
+    private ToggleSwitch? animToggle, bannerToggle;
+    private readonly PillButton[] livePills=new PillButton[4];
+    private static readonly int[] LiveSeconds={0,10,30,60};
+    private readonly System.Windows.Forms.Timer clock=new() { Interval=1000 };
+    private readonly Image banner, avatar;
+    private readonly Dictionary<string,Panel> pages = new();
+    private readonly List<Button> navigation = new();
+    private string active="Dashboard", profileSignature="", chartSignature="";
+    private bool selecting;
+    private MonitorState? state;
+    private MonitorState? pendingState;
+    private int queued;
+    private PersonalTools? tools;
+    private readonly DataGridView history=new() { Dock=DockStyle.Fill, ReadOnly=true, AllowUserToAddRows=false, AutoSizeColumnsMode=DataGridViewAutoSizeColumnsMode.Fill, RowHeadersVisible=false, BackgroundColor=Theme.Card, BorderStyle=BorderStyle.None, EnableHeadersVisualStyles=false };
+    private Font F(float size, FontStyle style=FontStyle.Regular)
+    {
+        var key=$"{size}:{style}";
+        if(!fonts.TryGetValue(key,out var f))fonts[key]=f=new Font("Segoe UI",size,style);
+        return f;
+    }
+    private Label TextLabel(string text,float size=10,Color? colour=null)
+        =>new() {Text=text,AutoSize=true,ForeColor=colour??Theme.Ink,Font=F(size),Margin=new Padding(0,0,0,9)};
+    private Button ActionButton(string text, Action click)
+    {
+        var b=new Button {Text=text,AutoSize=true,MinimumSize=new Size(120,38),FlatStyle=FlatStyle.Flat,BackColor=Theme.Panel,ForeColor=Theme.Ink,Font=F(10,FontStyle.Bold),Cursor=Cursors.Hand,Margin=new Padding(0,0,8,8),Padding=new Padding(10,4,10,4)};
+        b.FlatAppearance.BorderColor=Theme.CardEdge;b.FlatAppearance.MouseOverBackColor=Theme.PanelHover;b.Click+=(_,_)=>click();return b;
+    }
+    private Panel Page(string name)
+    {
+        var p=new Panel {Dock=DockStyle.Fill,BackColor=Theme.Bg,Visible=false,AutoScroll=true};pages[name]=p;content.Controls.Add(p);return p;
+    }
+    private Panel Metric(string caption,Label number,Color colour)
+    {
+        var p=new Card {Dock=DockStyle.Fill,Radius=14,Padding=new Padding(14),Margin=new Padding(6)};
+        number.Dock=DockStyle.Fill;number.ForeColor=colour;number.Font=F(27,FontStyle.Bold);number.Text="—";number.TextAlign=ContentAlignment.MiddleLeft;
+        var cap=TextLabel(caption.ToUpperInvariant(),9,Theme.Muted);cap.AutoSize=false;cap.Height=24;cap.Dock=DockStyle.Top;
+        number.Padding=new Padding(10,0,0,0);cap.Padding=new Padding(10,0,0,0);var accentBar=new Panel {Dock=DockStyle.Left,Width=4,BackColor=colour};p.Controls.Add(number);p.Controls.Add(cap);p.Controls.Add(accentBar);return p;
+    }
+    private void OpenTools()
+    {
+        try
+        {
+            if(tools==null||tools.IsDisposed){tools=new PersonalTools(store,monitor);tools.Show(this);}
+            else {if(tools.WindowState==FormWindowState.Minimized)tools.WindowState=FormWindowState.Normal;tools.Activate();}
+        }catch(Exception ex){MessageBox.Show(this,ex.Message,"Weekly tools error");}
+    }
+    public MainForm(Monitor monitor, Store store)
+    {
+        this.monitor=monitor;this.store=store;
+        banner=PersonalBrand.Banner();avatar=PersonalBrand.Avatar();
+        Text="2xFlaw's Chest Counter";Size=new Size(1160,850);MinimumSize=new Size(960,720);StartPosition=FormStartPosition.CenterScreen;
+        BackColor=Theme.Bg;ForeColor=Theme.Ink;Font=F(10);Icon=AppIcon.Load();AutoScaleMode=AutoScaleMode.Dpi;
+        var shell=new TableLayoutPanel {Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=Padding.Empty};shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,200));shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));Controls.Add(shell);
+        var side=new FlowLayoutPanel {Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,BackColor=Theme.Card,Padding=new Padding(17,25,12,16)};
+        shell.Controls.Add(side,0,0);shell.Controls.Add(content,1,0);
+        // Removed duplicate sidebar monogram; retain the 2xFlaw name.
+        side.Controls.Add(TextLabel("2xFlaw",22,Theme.Accent));side.Controls.Add(TextLabel("CHEST COUNTER",9,Theme.Muted));
+        foreach(var n in new[]{"Dashboard","Match history","Weekly chances","Weekly rewards","Overlay","Settings","Performance"})
+        {
+            var name=n;var b=ActionButton(n,()=>Navigate(name));b.Width=164;b.Height=44;b.AutoSize=false;navigation.Add(b);side.Controls.Add(b);
+        }
+        side.Controls.Add(TextLabel("F8  Weekly tools",9,Theme.Muted));
+        side.Controls.Add(TextLabel("Personal source build\nOriginal parser retained",8,Theme.Muted));
+        BuildDashboard();BuildHistory();BuildPerformance();
+        profiles.BackColor=Theme.Panel;profiles.ForeColor=Theme.Ink;profiles.Font=F(10);
+        profiles.SelectedIndexChanged+=(_,_)=> {if(!selecting&&profiles.SelectedItem is Profile p)monitor.SetProfile(p.Key);};
+        notice.ForeColor=Theme.AccentSoft;notice.Font=F(10);notice.AutoSize=true;notice.MaximumSize=new Size(800,0);
+        notice.Click+=(_,_)=>monitor.KeepOpen();
+        KeyPreview=true;KeyDown+=(_,e)=> {if(e.KeyCode==Keys.F8){OpenTools();e.Handled=true;}};
+        clock.Tick+=(_,_)=>Tick();clock.Start();anim.Tick+=(_,_)=>AnimateTick();
+        monitor.Changed+=OnChanged;
+        Shown+=(_,_)=> {if(monitor.AutoMode)WindowState=FormWindowState.Minimized;};
+        Navigate("Dashboard");
+    }
+    private void BuildDashboard()
+    {
+        var page=Page("Dashboard");
+        var body=new TableLayoutPanel {Dock=DockStyle.Top,AutoSize=true,ColumnCount=1,Padding=Padding.Empty};body.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));page.Controls.Add(body);
+        hero=new BrandHero(banner,avatar) {Dock=DockStyle.Top,Height=185,Margin=new Padding(0,0,0,14)};hero.Visible=monitor.Config.ShowBanner;body.Controls.Add(hero);
+        var heading=new FlowLayoutPanel {Dock=DockStyle.Top,AutoSize=true,WrapContents=true};heading.Controls.Add(TextLabel("Your dashboard",22));heading.Controls.Add(profiles);body.Controls.Add(heading);
+        status.AutoSize=true;status.Font=F(10,FontStyle.Bold);status.Margin=new Padding(0,0,0,6);body.Controls.Add(status);profileName.AutoSize=true;profileName.ForeColor=Theme.Muted;body.Controls.Add(profileName);
+        var metrics=new TableLayoutPanel {Dock=DockStyle.Top,Height=255,ColumnCount=3,RowCount=2,Margin=new Padding(0,12,0,12)};
+        for(int i=0;i<3;i++)metrics.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.333f));for(int i=0;i<2;i++)metrics.RowStyles.Add(new RowStyle(SizeType.Percent,50));
+        metrics.Controls.Add(Metric("Total personal / configured",total,Theme.Accent),0,0);metrics.Controls.Add(Metric("Current / previous match",current,Theme.Ink),1,0);metrics.Controls.Add(Metric("Today",today,Theme.AccentSoft),2,0);
+        metrics.Controls.Add(Metric("Average per match",average,Theme.Ink),0,1);metrics.Controls.Add(Metric("Best match",best,Theme.Rose),1,1);metrics.Controls.Add(Metric("Treasures",treasures,Theme.Accent),2,1);body.Controls.Add(metrics);BuildGoalCard();body.Controls.Add(goalCard);
+        var lastPanel=new FlowLayoutPanel {Dock=DockStyle.Top,AutoSize=true,BackColor=Theme.Card,Padding=new Padding(14),FlowDirection=FlowDirection.TopDown,WrapContents=false};
+        last.AutoSize=true;last.ForeColor=Theme.Ink;last.Font=F(11,FontStyle.Bold);team.AutoSize=true;team.ForeColor=Theme.Muted;team.MaximumSize=new Size(780,0);lastPanel.Controls.Add(last);lastPanel.Controls.Add(team);body.Controls.Add(lastPanel);
+        body.Controls.Add(TextLabel("LAST 7 DAYS",10,Theme.Muted));body.Controls.Add(new Panel {Dock=DockStyle.Top,Height=155,BackColor=Theme.Card,Controls={chart},Margin=new Padding(0,10,0,10)});
+        var actions=new FlowLayoutPanel {Dock=DockStyle.Top,AutoSize=true};
+        var overlayAction=ActionButton("Toggle game overlay",()=>monitor.ToggleOverlay());
+        overlayAction.Name="OverlayAction";actions.Controls.Add(overlayAction);actions.Controls.Add(ActionButton("Compact overlay (Ctrl+Shift+K)",()=>NativeOverlay.ToggleCompact()));
+        actions.Controls.Add(ActionButton("Weekly / import / manual",OpenTools));
+        actions.Controls.Add(ActionButton("Open classic report",()=> {try{Process.Start(new ProcessStartInfo(store.ReportPath){UseShellExecute=true});}catch(Exception ex){MessageBox.Show(this,ex.Message);}}));body.Controls.Add(actions);
+        reset.AutoSize=true;reset.ForeColor=Theme.Muted;body.Controls.Add(reset);body.Controls.Add(notice);
+        body.Controls.Add(TextLabel("Imports are integrated. Manual additions affect totals and daily charts, not match averages. Edit them in Weekly tools.",9,Theme.Muted));
+    }
+    private void BuildHistory()
+    {
+        var p=Page("Match history");var bar=new FlowLayoutPanel {Dock=DockStyle.Top,Height=60};bar.Controls.Add(TextLabel("Match history",22));bar.Controls.Add(ActionButton("Refresh",()=>_=LoadHistory()));
+        history.DefaultCellStyle.BackColor=Theme.Card;history.DefaultCellStyle.ForeColor=Theme.Ink;history.DefaultCellStyle.SelectionBackColor=Theme.PanelHover;history.DefaultCellStyle.SelectionForeColor=Theme.Ink;
+        history.ColumnHeadersDefaultCellStyle.BackColor=Theme.Panel;history.ColumnHeadersDefaultCellStyle.ForeColor=Theme.AccentSoft;history.GridColor=Theme.CardEdge;history.RowTemplate.Height=32;
+        historyEmpty.Font=F(10);p.Controls.Add(history);p.Controls.Add(historyEmpty);p.Controls.Add(bar);
+    }
+    private void BuildPerformance()
+    {
+        var p=Page("Performance");var col=new FlowLayoutPanel {Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,AutoScroll=true};p.Controls.Add(col);
+        col.Controls.Add(TextLabel("Performance & behaviour",22));
+        performance.AutoSize=true;performance.Font=F(15,FontStyle.Bold);performance.ForeColor=Theme.Accent;col.Controls.Add(performance);
+        var info=TextLabel("Native Windows interface, with no embedded browser engine.\n\n• The dashboard updates from the tracker; history is not reloaded on a timer.\n• Match history loads only when you open or refresh it.\n• The countdown pauses while this window is hidden or minimised.\n• Images and fonts are loaded once and reused.\n\nMemory use rises briefly while replays are analysed.",11,Theme.Muted);
+        info.MaximumSize=new Size(720,0);col.Controls.Add(info);BuildPerformanceOptions(col);
+    }
+    private void Navigate(string name)
+    {
+        if(name=="Weekly chances"){OpenTools();return;}
+        if(name=="Weekly rewards"){using var rw=new RewardsForm(monitor,store);rw.ShowDialog(this);return;}
+        if(name=="Overlay"){monitor.ToggleOverlay();return;}
+        if(name=="Settings"){using var f=new SettingsForm(monitor,store);f.ShowDialog(this);return;}
+        active=name;foreach(var p in pages){p.Value.Visible=p.Key==name;if(p.Key==name)p.Value.BringToFront();}
+        foreach(var b in navigation){var on=b.Text==name;b.BackColor=on?Theme.PanelHover:Theme.Panel;b.ForeColor=on?Theme.AccentSoft:Theme.Ink;b.FlatAppearance.BorderColor=on?Theme.Accent:Theme.CardEdge;}
+        if(name=="Match history")_=LoadHistory();Tick();
+    }
+    private async Task LoadHistory()
+    {
+        try
+        {
+            var c=monitor.Config;
+            var rows=await Task.Run(()=>Profiles.View(store.LoadData(),c).Matches.OrderByDescending(m=>m.MatchStartUtc??m.AnalyzedAtUtc).Take(500).Select(m=>new {
+                Date=(m.MatchStartUtc??m.AnalyzedAtUtc).ToLocalTime().ToString("dd MMM HH:mm"),
+                Mode=m.Playlist??"Unknown",Personal=m.OwnChests,SquadObserved=m.Teammates?.Sum(t=>t.ChestsSeen)??0,
+                Treasures=m.TreasureFinds.Count,Place=m.Placement,Eliminations=m.Eliminations
+            }).ToList());
+            if(!IsDisposed){history.DataSource=rows;historyEmpty.Visible=rows.Count==0;}
+        }catch(Exception ex){if(!IsDisposed)MessageBox.Show(this,ex.Message,"History error");}
+    }
+    private void OnChanged(MonitorState s)
+    {
+        pendingState=s;
+        if(IsDisposed||!IsHandleCreated||Interlocked.Exchange(ref queued,1)!=0)return;
+        try {BeginInvoke(new Action(()=> {Interlocked.Exchange(ref queued,0);if(!IsDisposed&&pendingState is {} latest)Render(latest);}));}
+        catch(InvalidOperationException){Interlocked.Exchange(ref queued,0);}
+    }
+    private static void Set(Label l,string text){if(l.Text!=text)l.Text=text;}
+    private void Render(MonitorState s)
+    {
+        state=s;UpdateStatus(s);UpdateGoal(s);SetTotal(s.View.Total);Set(current,s.View.Current??"—");Set(today,s.Stats.Today.ToString("N0"));
+        Set(average,s.Stats.Average.ToString("0.0"));Set(best,s.Stats.BestMatch.ToString("N0"));Set(treasures,s.Stats.Treasures.ToString("N0"));
+        Set(profileName,$"{s.Stats.HistoryMatches:N0} saved matches · {L.Culture.TextInfo.ToTitleCase(s.View.CurrentCaption)} · {(monitor.OverlayVisible?"Overlay on":"Overlay off")}");
+        Set(last,s.Stats.LastMatch is {} lm?$"Last completed match   {lm.Chests} chests · {lm.Treasures} treasures · {lm.Eliminations?.ToString()??"—"} eliminations":"Waiting for your first completed replay");
+        Set(team,s.Team is {} t?$"Observed squad ≥ {t.Total}   |   You {t.Mine}   |   "+string.Join("  ·  ",t.Mates.Select(m=>$"{m.Name} ≥ {m.Chests}")):"Squad data: enable teammate tracking in Settings. Counts are limited to replay visibility.");
+        Set(notice,s.Notice??(s.AutoCloseOffer?"Closing with Fortnite — click here to keep open.":""));
+        var sig=string.Join("|",s.Profiles.Select(p=>p.Key+":"+p.Name));
+        if(sig!=profileSignature){profileSignature=sig;selecting=true;profiles.DisplayMember="Name";profiles.DataSource=s.Profiles.ToList();selecting=false;}
+        selecting=true;foreach(var p in profiles.Items.Cast<Profile>())if(p.Key==s.CurrentKey){profiles.SelectedItem=p;break;}selecting=false;
+        var daysSignature=string.Join("|",s.Stats.LastDays.Select(d=>$"{d.Day.Ticks}:{d.Chests}"));
+        if(daysSignature!=chartSignature){chartSignature=daysSignature;chart.SetDays(s.Stats.LastDays);}
+    }
+    private void BuildGoalCard()
+    {
+        goalText.AutoSize=false;goalText.Dock=DockStyle.Top;goalText.Height=28;goalText.Font=F(10,FontStyle.Bold);goalText.ForeColor=Theme.Ink;goalText.BackColor=Theme.Card;
+        goalTrack.Dock=DockStyle.Bottom;goalTrack.Height=12;goalTrack.BackColor=Theme.Panel;
+        goalFill.Dock=DockStyle.Left;goalFill.Width=0;goalFill.BackColor=Theme.Accent;
+        goalTrack.Controls.Add(goalFill);goalCard.Controls.Add(goalTrack);goalCard.Controls.Add(goalText);
+    }
+    private void UpdateGoal(MonitorState s)
+    {
+        var goal=monitor.Config.ChestGoal;
+        if(goal<=0||!int.TryParse(s.View.Total,System.Globalization.NumberStyles.AllowThousands,L.Culture,out var done)){if(goalCard.Visible)goalCard.Visible=false;return;}
+        if(!goalCard.Visible)goalCard.Visible=true;
+        Set(goalText,done>=goal?$"Goal reached  {done:N0} / {goal:N0} chests":$"Chest goal   {done:N0} / {goal:N0}   ·   {goal-done:N0} to go");
+        var w=(int)(goalTrack.Width*Math.Min(1.0,(double)done/goal));
+        if(goalFill.Width!=w)goalFill.Width=w;
+    }
+    private void UpdateStatus(MonitorState s)
+    {
+        string text;Color colour;
+        if(!Directory.Exists(monitor.Config.DemosFolder)){text="● Replay folder not found — choose it in Settings";colour=Theme.Coral;}
+        else if(s.View.CurrentLive){text="● Match in progress — counting live";colour=Theme.Mint;}
+        else if(s.Stats.HistoryMatches==0){text="● Ready — play a match and it will appear here";colour=Theme.AccentSoft;}
+        else {text="● Ready — watching your replays";colour=Theme.Mint;}
+        Set(status,text);if(status.ForeColor!=colour)status.ForeColor=colour;
+    }
+    private void SetTotal(string text)
+    {
+        var culture=L.Culture;
+        if(!monitor.Config.Animations||!Visible||WindowState==FormWindowState.Minimized
+            ||!int.TryParse(total.Text,System.Globalization.NumberStyles.AllowThousands,culture,out var from)
+            ||!int.TryParse(text,System.Globalization.NumberStyles.AllowThousands,culture,out var to)||to<=from||to-from>5000)
+        {anim.Stop();Set(total,text);return;}
+        animFrom=from;animTo=to;animText=text;animStart=DateTime.UtcNow;anim.Start();
+    }
+    private void AnimateTick()
+    {
+        var t=Math.Min(1.0,(DateTime.UtcNow-animStart).TotalMilliseconds/450.0);
+        if(t>=1.0){anim.Stop();Set(total,animText);return;}
+        var eased=1-Math.Pow(1-t,3);
+        Set(total,((int)(animFrom+(animTo-animFrom)*eased)).ToString("N0",L.Culture));
+    }
+    private void SelectLive(int index,bool save)
+    {
+        for(var i=0;i<livePills.Length;i++)
+        {
+            var on=i==index;livePills[i].BackColor=on?Theme.Accent:Theme.Panel;livePills[i].HoverColor=on?Theme.AccentHover:Theme.PanelHover;livePills[i].ForeColor=on?Theme.AccentInk:Theme.Ink;livePills[i].Invalidate();
+        }
+        if(save)monitor.Change(c=>{c.LiveUpdate=index!=0;if(index!=0)c.LiveIntervalSeconds=LiveSeconds[index];});
+    }
+    private void ApplyPreset(int preset)
+    {
+        var animations=preset!=0;var live=preset==0?3:preset==1?2:1;
+        perfLoading=true;if(animToggle!=null)animToggle.Checked=animations;if(bannerToggle!=null)bannerToggle.Checked=animations;perfLoading=false;
+        monitor.Change(c=>{c.Animations=animations;c.ShowBanner=animations;c.LiveUpdate=true;c.LiveIntervalSeconds=LiveSeconds[live];});
+        if(hero!=null)hero.Visible=animations;
+        SelectLive(live,false);
+    }
+    private void BuildPerformanceOptions(FlowLayoutPanel col)
+    {
+        var cfg=monitor.Config;
+        col.Controls.Add(TextLabel("VISUAL & PERFORMANCE OPTIONS",9,Theme.Muted));
+        var card=new Card {Size=new Size(700,336),Radius=14,Margin=new Padding(0,0,0,12)};
+        Label Mk(string text,float size,FontStyle style,Color colour,int x,int y,int w,int h)
+        {
+            var l=new Label {Text=text,Font=F(size,style),ForeColor=colour,BackColor=Theme.Card,Location=new Point(x,y),Size=new Size(w,h),AutoEllipsis=true};
+            card.Controls.Add(l);return l;
+        }
+        Mk("Smooth animations",10,FontStyle.Bold,Theme.Ink,16,14,540,22);
+        Mk("Numbers count up and the live dot pulses. A short timer runs only while something is changing.",8.5f,FontStyle.Regular,Theme.Muted,16,36,620,20);
+        animToggle=new ToggleSwitch {Location=new Point(700-16-40,18),Checked=cfg.Animations};
+        animToggle.CheckedChanged+=(_,_)=>{if(!perfLoading)monitor.Change(c=>c.Animations=animToggle!.Checked);};
+        card.Controls.Add(animToggle);
+        Mk("Show banner",10,FontStyle.Bold,Theme.Ink,16,74,540,22);
+        Mk("Hide the dashboard banner to draw slightly less.",8.5f,FontStyle.Regular,Theme.Muted,16,96,620,20);
+        bannerToggle=new ToggleSwitch {Location=new Point(700-16-40,78),Checked=cfg.ShowBanner};
+        bannerToggle.CheckedChanged+=(_,_)=>{if(perfLoading)return;monitor.Change(c=>c.ShowBanner=bannerToggle!.Checked);if(hero!=null)hero.Visible=bannerToggle!.Checked;};
+        card.Controls.Add(bannerToggle);
+        Mk("Live match reading",10,FontStyle.Bold,Theme.Ink,16,134,540,22);
+        Mk("How often the replay in progress is re-read. Faster gives fresher numbers but uses more disk and CPU.",8.5f,FontStyle.Regular,Theme.Muted,16,156,660,20);
+        var liveLabels=new[]{"Off","Fast · 10 s","Normal · 30 s","Saver · 60 s"};
+        for(var i=0;i<livePills.Length;i++)
+        {
+            var index=i;
+            var pill=new PillButton {Text=liveLabels[i],Location=new Point(16+i*158,184),Size=new Size(150,32),Radius=10,Font=Theme.Text(8.5f,FontStyle.Bold)};
+            pill.Click+=(_,_)=>SelectLive(index,true);
+            card.Controls.Add(pill);livePills[i]=pill;
+        }
+        SelectLive(!cfg.LiveUpdate?0:cfg.LiveIntervalSeconds<=10?1:cfg.LiveIntervalSeconds<=30?2:3,false);
+        Mk("Quick presets",10,FontStyle.Bold,Theme.Ink,16,238,540,22);
+        Mk("Applies animations, banner and live reading speed in one click.",8.5f,FontStyle.Regular,Theme.Muted,16,260,620,20);
+        var presets=new[]{"Efficient","Balanced","Visual"};
+        for(var i=0;i<presets.Length;i++)
+        {
+            var preset=i;
+            var button=new PillButton {Text=presets[i],Location=new Point(16+i*158,288),Size=new Size(150,32),Radius=10,Font=Theme.Text(8.5f,FontStyle.Bold)};
+            button.Click+=(_,_)=>ApplyPreset(preset);
+            card.Controls.Add(button);
+        }
+        col.Controls.Add(card);
+    }
+    private void Tick()
+    {
+        if(!Visible||WindowState==FormWindowState.Minimized)return;
+        pulse=!pulse;if(monitor.Config.Animations&&state?.View.CurrentLive==true)status.ForeColor=pulse?Theme.Mint:Color.FromArgb(36,140,96);
+        if(active=="Dashboard")
+        {
+            var now=DateTime.UtcNow;var end=PersonalTools.Week(now).AddDays(7);var d=end-now;
+            Set(reset,$"Weekly reset: {end.ToLocalTime():ddd dd MMM HH:mm} local · {d.Days}d {d.Hours:00}h {d.Minutes:00}m {d.Seconds:00}s");
+        }
+        if(active=="Performance")
+        {
+            using var p=Process.GetCurrentProcess();Set(performance,$"Memory in use: {p.WorkingSet64/1048576.0:0.0} MB   |   .NET managed memory: {GC.GetTotalMemory(false)/1048576.0:0.0} MB");
+        }
+    }
+    protected override void OnHandleCreated(EventArgs e){base.OnHandleCreated(e);Theme.Chrome(Handle);if(pendingState is {} s)Render(s);}
+    protected override void Dispose(bool disposing)
+    {
+        if(disposing){clock.Stop();clock.Dispose();anim.Stop();anim.Dispose();monitor.Changed-=OnChanged;}
+        base.Dispose(disposing);
+        if(disposing){banner.Dispose();avatar.Dispose();foreach(var f in fonts.Values)f.Dispose();fonts.Clear();}
+    }
+}
