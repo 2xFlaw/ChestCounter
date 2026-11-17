@@ -9,7 +9,7 @@ public static class PersonalIntegration
     private static PersonalLedger cached=new();
     private static DateTime stamp=DateTime.MinValue;
     private static long bytes=-1;
-    public static void Bind(string path) {lock(Gate){if(folder!=path){folder=path;stamp=DateTime.MinValue;bytes=-1;cached=new();}}}
+    public static void Bind(string path) {lock(Gate){if(folder!=path){folder=path;stamp=DateTime.MinValue;bytes=-1;cached=new();}} OnlineSync.Start(path);}
     private static PersonalLedger Ledger()
     {
         lock(Gate)
