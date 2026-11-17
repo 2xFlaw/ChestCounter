@@ -26,7 +26,7 @@ export function countdown(ms) {
 }
 
 export function nav(active) {
-  const links = [['stats', '/', 'My stats'], ['luck', '/luck.html', '% Luck'], ['board', '/leaderboard.html', 'Leaderboard']];
+  const links = [['stats', '/', 'My stats'], ['luck', '/luck.html', '% Luck'], ['community', '/community.html', 'Community'], ['board', '/leaderboard.html', 'Leaderboard'], ['friends', '/friends.html', 'Friends']];
   document.body.insertAdjacentHTML('afterbegin', `<nav class='nav'><a class='brand' href='/'>Chest Counter</a>${links.map((l) => `<a class='${l[0] === active ? 'on' : ''}' href='${l[1]}'>${l[2]}</a>`).join('')}</nav>`);
 }
 

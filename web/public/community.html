@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<meta name='color-scheme' content='dark'>
+<title>Community - Chest Counter</title>
+<link rel='preconnect' href='https://fonts.googleapis.com'>
+<link href='https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='/theme.css'>
+</head>
+<body>
+<main>
+<header class='hero'><div class='in'>
+  <div><div class='lbl eyebrow'>2xFlaw's Chest Counter</div><h1>Community</h1><div class='chips'><span class='chip mute'>Only players who opted in</span></div></div>
+</div></header>
+
+<section><div class='sh'><h2>All players</h2><span class='meta' id='meta'></span></div><div class='kpis' id='kpis'></div></section>
+
+<section><div class='sh'><h2>Chest types</h2><span class='meta'>Share of all synced chests.</span></div>
+  <div class='card tw'><table><thead><tr><th>Type</th><th>Total</th><th>Share</th></tr></thead><tbody id='types'></tbody></table></div></section>
+</main>
+<script type='module'>
+import { $, esc, n0, api, nav } from '/app.js';
+nav('community');
+const c = await api('/api/community');
+$('#meta').textContent = `${n0(c.matches)} matches from ${n0(c.players)} players`;
+$('#kpis').innerHTML = [
+  ['Opened', c.opened, 'var(--mint)'], ['Destroyed', c.destroyed, 'var(--amber)'], ['Players', c.players, 'var(--acc)'], ['Avg / match', c.avgPerMatch.toFixed(1), 'var(--ink)'],
+].map((k) => `<div class='card kpi' style='--c:${k[2]}'><div class='lbl'>${k[0]}</div><div class='v num'>${typeof k[1] === 'number' ? n0(k[1]) : k[1]}</div></div>`).join('');
+const total = c.types.reduce((a, t) => a + t.total, 0) || 1;
+$('#types').innerHTML = c.types.length ? c.types.map((t) => `<tr><td>${esc(t.type)}</td><td>${n0(t.total)}</td><td><div class='bar' style='min-width:120px'><i style='width:${t.total / total * 100}%'></i></div> ${(t.total / total * 100).toFixed(1)}%</td></tr>`).join('') : `<tr><td colspan='3' class='muted'>No chest-type data yet.</td></tr>`;
+</script>
+</body>
+</html>
