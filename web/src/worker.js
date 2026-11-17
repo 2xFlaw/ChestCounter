@@ -9,7 +9,15 @@ const friendId = () => { const r = rnd(4).toUpperCase(); return r.slice(0, 4) + 
 const iso = (d) => d.toISOString();
 
 async function profileAuth(req, env) {
-  const m = (req.headers.get("cookie") || "").match(/cc_profile=([A-F0-9-]+)\.([a-f0-9]+)/);
+  const cookie = req.headers.get("cookie") || "";
+  const s = cookie.match(/cc_session=([a-f0-9]+)\.([a-f0-9]+)/);
+  if (s) {
+    try {
+      const row = await env.DB.prepare("SELECT profile_id FROM web_sessions WHERE id=? AND secret_hash=? AND expires_at > datetime('now')").bind(s[1], await sha(s[2])).first();
+      if (row) return row.profile_id;
+    } catch { /* table not created yet */ }
+  }
+  const m = cookie.match(/cc_profile=([A-F0-9-]+)\.([a-f0-9]+)/);
   if (!m) return null;
   const row = await env.DB.prepare("SELECT profile_id FROM profile_secrets WHERE profile_id=? AND secret_hash=?").bind(m[1], await sha(m[2])).first();
   return row ? m[1] : null;

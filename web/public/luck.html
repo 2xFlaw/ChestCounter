@@ -8,6 +8,19 @@
 <link rel='preconnect' href='https://fonts.googleapis.com'>
 <link href='https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap' rel='stylesheet'>
 <link rel='stylesheet' href='/theme.css'>
+<style>
+.proj{width:100%;height:auto;display:block;margin-top:18px}
+.proj .grid{stroke:#ffffff14;stroke-width:1}
+.proj .axis{fill:#b5a8c0;font:11px Inter,sans-serif}
+.proj .line{fill:none;stroke:var(--acc);stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:1;stroke-dashoffset:1;animation:draw 1.1s cubic-bezier(.2,.7,.3,1) forwards}
+.proj .line.hot{stroke:var(--amber);stroke-dasharray:6 6;stroke-dashoffset:0;animation:fade .8s ease both}
+.proj .dot{fill:#fff;stroke:var(--acc);stroke-width:3}
+.fill,.bar i{width:0;transition:width .9s cubic-bezier(.2,.7,.3,1)}
+.card.goal,#planner,#rows{animation:fade .6s ease both}
+@keyframes draw{to{stroke-dashoffset:0}}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.proj .line,.proj .line.hot,.card.goal,#planner,#rows{animation:none;stroke-dashoffset:0}.fill,.bar i{transition:none}}
+</style>
 </head>
 <body>
 <main>
@@ -17,10 +30,10 @@
 </div></header>
 
 <section><div class='sh'><h2>Your goal</h2><span class='meta'>Defaults to the prize you are closest to. Click a prize below to aim for it.</span></div><div class='card goal' id='goal'></div></section>
-<section><div class='sh'><h2>Planner</h2><span class='meta'>What more chests are worth for your goal.</span></div><div class='card' id='planner'></div></section>
+<section><div class='sh'><h2>Projection</h2><span class='meta' id='planMeta'>What more chests are worth for your goal.</span></div><div class='card' id='planner'></div></section>
 <section><div class='sh'><h2>Odds this week</h2><span class='meta' id='oddsMeta'></span></div><div class='card' id='rows' style='padding:8px'></div></section>
 <section><div class='sh'><h2>Treasure Hours</h2></div><div class='card tw'><table><thead><tr><th>When</th><th>Gold outfit</th><th>Pirate shop</th><th>Vehicle &amp; decal</th><th>Status</th></tr></thead><tbody id='hours'></tbody></table></div></section>
-<p class='note'>Chance of at least one drop = 1 - (1 - 1/odds)^chests, counted since the weekly reset. Odds are the per-chest rates used by the app. Treasure Hours with unconfirmed boosts count as normal odds. This is a probability, not a promise.</p>
+<p class='note'>Chance of at least one drop = 1 - (1 - 1/odds)^chests, counted since the weekly reset. Odds are the per-chest rates used by the app. Confirmed Treasure Hour boosts are included; unannounced boosts count as normal odds. This is a probability, not a promise.</p>
 </main>
 <script type='module'>
 import { $, esc, n0, pct, after, api, nav, startResetClock } from '/app.js';
@@ -33,46 +46,65 @@ let plan = Number(localStorage.getItem('cc.plan')) || 100;
 await api('/api/profile', { method: 'POST' });
 const L = await api('/api/luck');
 const now = Date.now();
-const W = L.windows.map((w) => ({ ...w, s: Date.parse(w.start_utc), e: Date.parse(w.end_utc) }));
-const live = W.find((w) => now >= w.s && now < w.e) || null;
-const next = W.find((w) => w.s > now) || null;
+const W = L.windows.map(w => ({ ...w, s: Date.parse(w.start_utc), e: Date.parse(w.end_utc) }));
+const live = W.find(w => now >= w.s && now < w.e) || null;
+const next = W.find(w => w.s > now) || null;
 const FIELD = { 'gold-outfit': 'gold', 'pirate-shop-access': 'shop', 'vehicle-decal': 'vehicle' };
 const boostOf = (w, k) => (!w || !w.confirmed || !FIELD[k]) ? 1 : (w[FIELD[k]] || 1);
 
-$('#chips').innerHTML = `<span class='chip'>Profile ${esc(L.profile)}</span><span class='chip mute'>${n0(L.chests)} chests this week</span>` + (live ? `<span class='chip amber'>Treasure Hour live</span>` : '');
+$('#chips').innerHTML = `<span class='chip'>Profile ${esc(L.profile)}</span><span class='chip mute'>${n0(L.chests)} chests this week</span>` + (live ? `<span class='chip amber'>Treasure Hour live</span>` : '') + (W.length ? '' : `<span class='chip mute'>No Treasure Hour schedule loaded</span>`);
+
+function chart(goal, b) {
+  const Wd = 720, H = 240, Lm = 56, R = 16, T = 16, B = 34, max = Math.max(...OPTIONS);
+  const boosted = b > 1;
+  const top = Math.max(after(goal.chance, goal.den, boosted ? b : 1, max), goal.chance * 1.001, 1e-9);
+  const x = n => Lm + (Wd - Lm - R) * n / max;
+  const y = v => T + (H - T - B) * (1 - v / top);
+  const path = bst => { let d = ''; for (let n = 0; n <= max; n += 4) d += (n ? 'L' : 'M') + x(n).toFixed(1) + ' ' + y(after(goal.chance, goal.den, bst, n)).toFixed(1); return d; };
+  const mark = after(goal.chance, goal.den, boosted ? b : 1, plan);
+  const ticks = [0, .5, 1].map(f => `<line class='grid' x1='${Lm}' x2='${Wd - R}' y1='${y(top * f).toFixed(1)}' y2='${y(top * f).toFixed(1)}'/><text class='axis' x='${Lm - 8}' y='${(y(top * f) + 4).toFixed(1)}' text-anchor='end'>${pct(top * f)}</text>`).join('');
+  const xs = [0, plan, max].filter((v, i, a) => a.indexOf(v) === i).map(n => `<text class='axis' x='${x(n).toFixed(1)}' y='${H - 10}' text-anchor='middle'>+${n0(n)}</text>`).join('');
+  return `<svg class='proj' viewBox='0 0 ${Wd} ${H}' role='img' aria-label='Projected chance as you open more chests'>${ticks}${xs}` +
+    (boosted ? `<path class='line hot' d='${path(1)}'/>` : '') + `<path class='line' pathLength='1' d='${path(boosted ? b : 1)}'/>` +
+    `<circle class='dot' cx='${x(plan).toFixed(1)}' cy='${y(mark).toFixed(1)}' r='6'/></svg>`;
+}
 
 function render() {
-  const prizes = L.prizes.map((p) => ({ ...p, boost: boostOf(live, p.key) }));
-  const cands = prizes.filter((p) => p.key !== 'gizmo').sort((a, b) => b.chance - a.chance);
-  const goal = cands.find((p) => p.key === pick) || cands[0];
-  const auto = !cands.find((p) => p.key === pick);
+  const projectionWindow = live || next;
+  const prizes = L.prizes.map(p => ({ ...p, boost: boostOf(live, p.key) }));
+  const cands = prizes.filter(p => p.key !== 'gizmo').sort((a, b) => b.chance - a.chance);
+  const goal = cands.find(p => p.key === pick) || cands[0];
+  const auto = !cands.find(p => p.key === pick);
   const boosted = goal.boost > 1;
-  const half = goal.chance >= 0.5 ? 0 : Math.log(0.5 / (1 - goal.chance)) / Math.log(1 - 1 / goal.den);
+  const half = goal.chance >= .5 ? 0 : Math.log(.5 / (1 - goal.chance)) / Math.log(1 - 1 / goal.den);
+  const fill = goal.chance > 0 ? Math.max(2, Math.min(100, goal.chance * 100)) : 0;
   const g = $('#goal');
   g.className = 'card goal' + (boosted ? ' boost' : '');
   g.innerHTML = `<div class='badge'>${esc(goal.name.replace('Weekly ', '')[0])}</div><div>` +
     `<span class='chip ${auto ? '' : 'amber'}'>${auto ? 'Next closest' : 'Your pick'}</span>${boosted ? ` <span class='chip amber'>Treasure Hour ${goal.boost}x</span>` : ''}` +
     `<h3 style='font-size:32px;margin:12px 0 2px'>${esc(goal.name)}</h3><div class='gpct num'>${pct(goal.chance)}</div><div class='muted'>cumulative chance this week</div>` +
     `<div class='muted' style='margin-top:8px'><b style='color:var(--ink)'>1 in ${n0(goal.den)}</b> per chest &middot; ${half <= 0 ? "<b style='color:var(--mint)'>Past the 50% mark</b>" : `about <b style='color:var(--ink)'>${n0(Math.ceil(half))}</b> more chests to reach 50%`}</div>` +
-    `<div class='track'><div class='fill' style='width:${Math.min(100, goal.chance * 100)}%'></div></div>` +
+    `<div class='track'><div class='fill' data-w='${fill}%'></div></div>` +
     (auto ? '' : `<div style='margin-top:12px'><button class='btn' id='auto' type='button'>Auto: next closest</button></div>`) + `</div>`;
   const a = $('#auto'); if (a) a.onclick = () => { pick = null; localStorage.removeItem('cc.pick'); render(); };
 
-  const win = live || next;
-  const b = boostOf(win, goal.key);
+  const b = boostOf(projectionWindow, goal.key);
   const nn = after(goal.chance, goal.den, 1, plan);
   const bb = after(goal.chance, goal.den, b, plan);
-  $('#planner').innerHTML = `<div class='lbl'>If you open this many chests</div><div class='chests'>${OPTIONS.map((n) => `<button class='btn ${n === plan ? 'on' : ''}' data-n='${n}' type='button'>${n}</button>`).join('')}</div>` +
+  $('#planMeta').textContent = live ? 'Projection for the live Treasure Hour window.' : next ? `Projection including the next Treasure Hour window, starting ${new Date(next.s).toLocaleString()}.` : W.length ? 'No upcoming Treasure Hour window. Projection at normal odds.' : 'No Treasure Hour schedule has been loaded on the website yet. Projection at normal odds.';
+  $('#planner').innerHTML = `<div class='lbl'>If you open this many chests</div><div class='chests'>${OPTIONS.map(n => `<button class='btn ${n === plan ? 'on' : ''}' data-n='${n}' type='button'>${n}</button>`).join('')}</div>` +
     `<div style='display:flex;flex-wrap:wrap;gap:40px'><div><div class='lbl'>Normal rate</div><div class='pv num'>${pct(nn)}</div><div class='muted'>+${pct(nn - goal.chance)}</div></div>` +
-    (b > 1 ? `<div><div class='lbl' style='color:var(--amber)'>Treasure Hour ${b}x</div><div class='pv hot num'>${pct(bb)}</div><div style='color:var(--amber)'>+${pct(bb - goal.chance)}</div></div>` : `<div class='muted' style='align-self:center'>No Treasure Hour boost for this prize${win && !win.confirmed ? ' (boosts not announced yet)' : ''}.</div>`) + `</div>`;
-  document.querySelectorAll('#planner [data-n]').forEach((el) => { el.onclick = () => { plan = Number(el.dataset.n); localStorage.setItem('cc.plan', plan); render(); }; });
+    (b > 1 ? `<div><div class='lbl' style='color:var(--amber)'>Treasure Hour ${b}x</div><div class='pv hot num'>${pct(bb)}</div><div style='color:var(--amber)'>+${pct(bb - goal.chance)}</div></div>` : `<div class='muted' style='align-self:center'>${next || live ? 'No confirmed boost for this prize in the current or next window.' : 'No Treasure Hour boost to apply.'}</div>`) + `</div>` + chart(goal, b);
+  document.querySelectorAll('#planner [data-n]').forEach(el => { el.onclick = () => { plan = Number(el.dataset.n); localStorage.setItem('cc.plan', plan); render(); }; });
 
   $('#oddsMeta').textContent = `${n0(L.chests)} chests since the last reset`;
-  $('#rows').innerHTML = prizes.map((p) => `<div class='prow ${p.key === goal.key ? 'sel' : ''}' data-k='${esc(p.key)}'><div><div class='nm'>${esc(p.name)}</div><div class='sb'>1 in ${n0(p.den)} per chest${p.boost > 1 ? ` &middot; <span style='color:var(--amber)'>${p.boost}x now</span>` : ''}</div></div><div class='bar'><i style='width:${Math.min(100, p.chance * 100)}%'></i></div><div class='pc num'>${pct(p.chance)}</div></div>`).join('');
-  document.querySelectorAll('#rows [data-k]').forEach((el) => { el.onclick = () => { if (el.dataset.k === 'gizmo') return; pick = el.dataset.k; localStorage.setItem('cc.pick', pick); render(); }; });
+  $('#rows').innerHTML = prizes.map(p => `<div class='prow ${p.key === goal.key ? 'sel' : ''}' data-k='${esc(p.key)}'><div><div class='nm'>${esc(p.name)}</div><div class='sb'>1 in ${n0(p.den)} per chest${p.boost > 1 ? ` &middot; <span style='color:var(--amber)'>${p.boost}x now</span>` : ''}</div></div><div class='bar'><i data-w='${Math.max(p.chance > 0 ? 2 : 0, Math.min(100, p.chance * 100))}%'></i></div><div class='pc num'>${pct(p.chance)}</div></div>`).join('');
+  document.querySelectorAll('#rows [data-k]').forEach(el => { el.onclick = () => { if (el.dataset.k === 'gizmo') return; pick = el.dataset.k; localStorage.setItem('cc.pick', pick); render(); }; });
 
-  const fmt = (ms) => new Date(ms).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-  $('#hours').innerHTML = W.length ? W.map((w) => `<tr><td>${esc(fmt(w.s))} - ${esc(new Date(w.e).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))}</td><td>${w.confirmed ? w.gold + 'x' : '?'}</td><td>${w.confirmed ? w.shop + 'x' : '?'}</td><td>${w.confirmed ? w.vehicle + 'x' : '?'}</td><td>${now >= w.s && now < w.e ? 'Live' : now >= w.e ? 'Ended' : 'Upcoming'}</td></tr>`).join('') : `<tr><td colspan='5' class='muted'>No Treasure Hour data loaded yet.</td></tr>`;
+  const fmt = ms => new Date(ms).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  $('#hours').innerHTML = W.length ? W.map(w => `<tr><td>${esc(fmt(w.s))} - ${esc(new Date(w.e).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))}</td><td>${w.confirmed ? w.gold + 'x' : '?'}</td><td>${w.confirmed ? w.shop + 'x' : '?'}</td><td>${w.confirmed ? w.vehicle + 'x' : '?'}</td><td>${now >= w.s && now < w.e ? 'Live' : now >= w.e ? 'Ended' : 'Upcoming'}</td></tr>`).join('') : `<tr><td colspan='5' class='muted'>No Treasure Hour schedule has been loaded on the website yet, so every prize shows normal odds.</td></tr>`;
+
+  requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('[data-w]').forEach(el => { el.style.width = el.dataset.w; })));
 }
 render();
 </script>

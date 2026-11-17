@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -121,6 +122,32 @@ public static class OnlineSync
         s.Synced.Clear();
     });
 
+    private static string ErrorOf(JsonElement json, HttpResponseMessage resp) =>
+        json.ValueKind == JsonValueKind.Object && json.TryGetProperty("error", out var e) ? e.GetString() ?? $"HTTP {(int)resp.StatusCode}" : $"HTTP {(int)resp.StatusCode}";
+
+    private static void SaveToken(string? token, bool includeHistory)
+    {
+        Update(x =>
+        {
+            x.Token = token;
+            x.Enabled = true;
+            x.SinceUtc = includeHistory ? null : DateTime.UtcNow;
+            x.Synced.Clear();
+            x.LastError = null;
+        });
+        EnsureThread();
+        wake = true;
+    }
+
+    private static void OpenBrowser(string url, string apiBase)
+    {
+        if (!url.StartsWith(apiBase + "/", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Refusing to open an unexpected address.");
+        }
+        Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
+    }
+
     /// <summary>Exchanges the one-time code from the website for a token. Returns an error message, or null on success.</summary>
     public static async Task<string?> LinkAsync(string code, bool includeHistory)
     {
@@ -131,24 +158,100 @@ public static class OnlineSync
             var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
             if (!resp.IsSuccessStatusCode)
             {
-                return json.TryGetProperty("error", out var e) ? e.GetString() : $"HTTP {(int)resp.StatusCode}";
+                return ErrorOf(json, resp);
             }
-            var token = json.GetProperty("token").GetString();
-            Update(x =>
-            {
-                x.Token = token;
-                x.Enabled = true;
-                x.SinceUtc = includeHistory ? null : DateTime.UtcNow;
-                x.Synced.Clear();
-                x.LastError = null;
-            });
-            EnsureThread();
-            wake = true;
+            SaveToken(json.GetProperty("token").GetString(), includeHistory);
             return null;
         }
         catch (Exception ex)
         {
             ErrorLog.Write("Online link", ex);
+            return ex.Message;
+        }
+    }
+
+    /// <summary>
+    /// Opens the website so the player can approve this PC with one click, then picks up the device token automatically.
+    /// The private secret never leaves this PC; only the public code is put in the browser address.
+    /// </summary>
+    public static async Task<string?> StartLinkAsync(bool includeHistory)
+    {
+        try
+        {
+            var baseUrl = Load().ApiBase.TrimEnd('/');
+            using var startResp = await Http.PostAsync(baseUrl + "/api/pc/pair/start", null);
+            var start = await startResp.Content.ReadFromJsonAsync<JsonElement>();
+            if (!startResp.IsSuccessStatusCode)
+            {
+                return ErrorOf(start, startResp);
+            }
+            var code = start.GetProperty("code").GetString()!;
+            var secret = start.GetProperty("secret").GetString()!;
+            OpenBrowser(baseUrl + "/link.html?code=" + Uri.EscapeDataString(code), baseUrl);
+
+            var deadline = DateTime.UtcNow.AddMinutes(10);
+            while (DateTime.UtcNow < deadline)
+            {
+                await Task.Delay(2000);
+                using var pollResp = await Http.PostAsJsonAsync(baseUrl + "/api/pc/pair/poll", new { code, secret }, Camel);
+                var poll = await pollResp.Content.ReadFromJsonAsync<JsonElement>();
+                if (!pollResp.IsSuccessStatusCode)
+                {
+                    return ErrorOf(poll, pollResp);
+                }
+                var status = poll.TryGetProperty("status", out var st) ? st.GetString() : null;
+                if (status == "linked")
+                {
+                    SaveToken(poll.GetProperty("token").GetString(), includeHistory);
+                    return null;
+                }
+                if (status == "expired")
+                {
+                    return L.T("La solicitud caducó. Inténtalo de nuevo.", "The link request expired. Try again.");
+                }
+            }
+            return L.T("Tiempo agotado. Inténtalo de nuevo.", "Linking timed out. Try again.");
+        }
+        catch (Exception ex)
+        {
+            ErrorLog.Write("Online auto link", ex);
+            return ex.Message;
+        }
+    }
+
+    /// <summary>
+    /// Opens the website already signed in as this PC's profile. The server checks this PC's device token and returns a
+    /// one-time address that works for two minutes; the device token itself is never put in the address.
+    /// </summary>
+    public static async Task<string?> OpenWebAsync(string path)
+    {
+        try
+        {
+            var s = Load();
+            if (string.IsNullOrEmpty(s.Token))
+            {
+                return L.T("Este PC no está vinculado todavía.", "This PC is not linked yet.");
+            }
+            var baseUrl = s.ApiBase.TrimEnd('/');
+            using var req = new HttpRequestMessage(HttpMethod.Post, baseUrl + "/api/pc/web-session")
+            {
+                Content = JsonContent.Create(new { next = path }, options: Camel),
+            };
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", s.Token);
+            using var resp = await Http.SendAsync(req);
+            var json = await resp.Content.ReadFromJsonAsync<JsonElement>();
+            if (!resp.IsSuccessStatusCode)
+            {
+                return resp.StatusCode == HttpStatusCode.Unauthorized
+                    ? L.T("Este PC fue desvinculado en la web. Vincúlalo de nuevo.", "This PC was unlinked on the website. Link it again.")
+                    : ErrorOf(json, resp);
+            }
+            OpenBrowser(json.GetProperty("url").GetString()!, baseUrl);
+            return null;
+        }
+        catch (Exception ex)
+        {
+            ErrorLog.Write("Online open web", ex);
             return ex.Message;
         }
     }
