@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<meta name='color-scheme' content='dark'>
+<title>Leaderboard - Chest Counter</title>
+<link rel='preconnect' href='https://fonts.googleapis.com'>
+<link href='https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='/theme.css'>
+</head>
+<body>
+<main>
+<header class='hero'><div class='in'>
+  <div><div class='lbl eyebrow'>2xFlaw's Chest Counter</div><h1>Leaderboard</h1><div class='chips'><span class='chip mute'>Opt-in only</span></div></div>
+  <div class='resetbox'><div class='lbl'>Who appears here</div><div class='muted' style='max-width:300px'>Players with a username, a linked PC and private mode switched off.</div></div>
+</div></header>
+
+<section id='recordSec'></section>
+
+<section>
+  <div class='sh'><h2>Ranks</h2><div class='tabs' id='tabs'></div></div>
+  <div class='card tw'><table><thead id='thead'></thead><tbody id='body'></tbody></table></div>
+  <p class='note' id='note'></p>
+</section>
+</main>
+<script type='module'>
+import { $, esc, n0, api, nav } from '/app.js';
+nav('board');
+const TABS = [['global', 'Global'], ['opened', 'Opened'], ['broken', 'Destroyed'], ['matches', 'Matches'], ['season', 'Season medals']];
+let tab = 'global';
+
+const rankCell = (i) => i < 3 ? `<span class='medal ${['gold', 'silver', 'bronze'][i]}'>#${i + 1}</span>` : `<span class='medal'>#${i + 1}</span>`;
+
+async function draw() {
+  $('#tabs').innerHTML = TABS.map((t) => `<button class='btn ${t[0] === tab ? 'on' : ''}' data-t='${t[0]}' type='button'>${t[1]}</button>`).join('');
+  document.querySelectorAll('#tabs [data-t]').forEach((el) => { el.onclick = () => { tab = el.dataset.t; draw(); }; });
+  if (tab === 'season') {
+    const r = await api('/api/leaderboard/season');
+    $('#recordSec').innerHTML = '';
+    $('#thead').innerHTML = `<tr><th>#</th><th>Player</th><th>Chests this season</th><th>Medal</th></tr>`;
+    $('#body').innerHTML = r.players.length ? r.players.map((p, i) => `<tr><td>${rankCell(i)}</td><td>${esc(p.username)}</td><td><b>${n0(p.total)}</b></td><td>${p.medal ? `<span class='medal ${p.medal}'>${p.medal}</span>` : ''}</td></tr>`).join('') : `<tr><td colspan='4' class='muted'>No season is running yet.</td></tr>`;
+    $('#note').textContent = r.season ? `Season: ${r.season.name}` : '';
+    return;
+  }
+  const r = await api('/api/leaderboard?sort=' + tab);
+  $('#recordSec').innerHTML = r.record ? `<div class='card record'><div><div class='lbl' style='color:var(--amber)'>World record</div><h2 style='font-size:30px;margin-top:6px'>Most chests in one game</h2><div class='muted'>${esc(r.record.username)} &middot; ${esc(r.record.mode || '')}</div></div><div class='v num'>${n0(r.record.total)}</div></div>` : '';
+  $('#thead').innerHTML = `<tr><th>#</th><th>Player</th><th>Global</th><th>Opened</th><th>Destroyed</th><th>Matches</th></tr>`;
+  $('#body').innerHTML = r.players.length ? r.players.map((p, i) => `<tr><td>${rankCell(i)}</td><td>${esc(p.username)}</td><td><b>${n0(p.global)}</b></td><td>${n0(p.opened)}</td><td>${n0(p.destroyed)}</td><td>${n0(p.matches)}</td></tr>`).join('') : `<tr><td colspan='6' class='muted'>No players yet. Be the first: link a PC and set a username on My stats.</td></tr>`;
+  $('#note').textContent = `${r.players.length} players`;
+}
+draw().catch((e) => { $('#note').textContent = e.message; });
+</script>
+</body>
+</html>

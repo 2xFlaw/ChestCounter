@@ -18,9 +18,10 @@ export function boostFor(w, key) {
   return w[f] || 1;
 }
 
-// Weekly reset: Sunday 15:00 UTC (as shown on chesttracker.xyz). TODO: verify against WeeklyReset.cs.
+// Weekly reset: every Sunday 14:00 GMT/UTC, same as the app (WeeklyReset.cs).
+export const RESET_HOUR_UTC = 14;
 export function weekStart(now = new Date()) {
-  const s = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 15));
+  const s = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), RESET_HOUR_UTC));
   s.setUTCDate(s.getUTCDate() - s.getUTCDay());
   if (s > now) s.setUTCDate(s.getUTCDate() - 7);
   return s;

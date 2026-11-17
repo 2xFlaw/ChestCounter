@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<meta name='color-scheme' content='dark'>
+<title>% Luck - Chest Counter</title>
+<link rel='preconnect' href='https://fonts.googleapis.com'>
+<link href='https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='/theme.css'>
+</head>
+<body>
+<main>
+<header class='hero'><div class='in'>
+  <div><div class='lbl eyebrow'>2xFlaw's Chest Counter</div><h1>% Luck</h1><div class='chips' id='chips'></div></div>
+  <div class='resetbox'><div class='lbl'>Weekly reset in</div><div class='big num' id='resetCd'>--</div><div class='muted' style='font-size:12.5px'>Every Sunday at 14:00 GMT</div></div>
+</div></header>
+
+<section><div class='sh'><h2>Your goal</h2><span class='meta'>Defaults to the prize you are closest to. Click a prize below to aim for it.</span></div><div class='card goal' id='goal'></div></section>
+<section><div class='sh'><h2>Planner</h2><span class='meta'>What more chests are worth for your goal.</span></div><div class='card' id='planner'></div></section>
+<section><div class='sh'><h2>Odds this week</h2><span class='meta' id='oddsMeta'></span></div><div class='card' id='rows' style='padding:8px'></div></section>
+<section><div class='sh'><h2>Treasure Hours</h2></div><div class='card tw'><table><thead><tr><th>When</th><th>Gold outfit</th><th>Pirate shop</th><th>Vehicle &amp; decal</th><th>Status</th></tr></thead><tbody id='hours'></tbody></table></div></section>
+<p class='note'>Chance of at least one drop = 1 - (1 - 1/odds)^chests, counted since the weekly reset. Odds are the per-chest rates used by the app. Treasure Hours with unconfirmed boosts count as normal odds. This is a probability, not a promise.</p>
+</main>
+<script type='module'>
+import { $, esc, n0, pct, after, api, nav, startResetClock } from '/app.js';
+nav('luck');
+startResetClock($('#resetCd'));
+const OPTIONS = [25, 50, 100, 200, 400];
+let pick = localStorage.getItem('cc.pick') || null;
+let plan = Number(localStorage.getItem('cc.plan')) || 100;
+
+await api('/api/profile', { method: 'POST' });
+const L = await api('/api/luck');
+const now = Date.now();
+const W = L.windows.map((w) => ({ ...w, s: Date.parse(w.start_utc), e: Date.parse(w.end_utc) }));
+const live = W.find((w) => now >= w.s && now < w.e) || null;
+const next = W.find((w) => w.s > now) || null;
+const FIELD = { 'gold-outfit': 'gold', 'pirate-shop-access': 'shop', 'vehicle-decal': 'vehicle' };
+const boostOf = (w, k) => (!w || !w.confirmed || !FIELD[k]) ? 1 : (w[FIELD[k]] || 1);
+
+$('#chips').innerHTML = `<span class='chip'>Profile ${esc(L.profile)}</span><span class='chip mute'>${n0(L.chests)} chests this week</span>` + (live ? `<span class='chip amber'>Treasure Hour live</span>` : '');
+
+function render() {
+  const prizes = L.prizes.map((p) => ({ ...p, boost: boostOf(live, p.key) }));
+  const cands = prizes.filter((p) => p.key !== 'gizmo').sort((a, b) => b.chance - a.chance);
+  const goal = cands.find((p) => p.key === pick) || cands[0];
+  const auto = !cands.find((p) => p.key === pick);
+  const boosted = goal.boost > 1;
+  const half = goal.chance >= 0.5 ? 0 : Math.log(0.5 / (1 - goal.chance)) / Math.log(1 - 1 / goal.den);
+  const g = $('#goal');
+  g.className = 'card goal' + (boosted ? ' boost' : '');
+  g.innerHTML = `<div class='badge'>${esc(goal.name.replace('Weekly ', '')[0])}</div><div>` +
+    `<span class='chip ${auto ? '' : 'amber'}'>${auto ? 'Next closest' : 'Your pick'}</span>${boosted ? ` <span class='chip amber'>Treasure Hour ${goal.boost}x</span>` : ''}` +
+    `<h3 style='font-size:32px;margin:12px 0 2px'>${esc(goal.name)}</h3><div class='gpct num'>${pct(goal.chance)}</div><div class='muted'>cumulative chance this week</div>` +
+    `<div class='muted' style='margin-top:8px'><b style='color:var(--ink)'>1 in ${n0(goal.den)}</b> per chest &middot; ${half <= 0 ? "<b style='color:var(--mint)'>Past the 50% mark</b>" : `about <b style='color:var(--ink)'>${n0(Math.ceil(half))}</b> more chests to reach 50%`}</div>` +
+    `<div class='track'><div class='fill' style='width:${Math.min(100, goal.chance * 100)}%'></div></div>` +
+    (auto ? '' : `<div style='margin-top:12px'><button class='btn' id='auto' type='button'>Auto: next closest</button></div>`) + `</div>`;
+  const a = $('#auto'); if (a) a.onclick = () => { pick = null; localStorage.removeItem('cc.pick'); render(); };
+
+  const win = live || next;
+  const b = boostOf(win, goal.key);
+  const nn = after(goal.chance, goal.den, 1, plan);
+  const bb = after(goal.chance, goal.den, b, plan);
+  $('#planner').innerHTML = `<div class='lbl'>If you open this many chests</div><div class='chests'>${OPTIONS.map((n) => `<button class='btn ${n === plan ? 'on' : ''}' data-n='${n}' type='button'>${n}</button>`).join('')}</div>` +
+    `<div style='display:flex;flex-wrap:wrap;gap:40px'><div><div class='lbl'>Normal rate</div><div class='pv num'>${pct(nn)}</div><div class='muted'>+${pct(nn - goal.chance)}</div></div>` +
+    (b > 1 ? `<div><div class='lbl' style='color:var(--amber)'>Treasure Hour ${b}x</div><div class='pv hot num'>${pct(bb)}</div><div style='color:var(--amber)'>+${pct(bb - goal.chance)}</div></div>` : `<div class='muted' style='align-self:center'>No Treasure Hour boost for this prize${win && !win.confirmed ? ' (boosts not announced yet)' : ''}.</div>`) + `</div>`;
+  document.querySelectorAll('#planner [data-n]').forEach((el) => { el.onclick = () => { plan = Number(el.dataset.n); localStorage.setItem('cc.plan', plan); render(); }; });
+
+  $('#oddsMeta').textContent = `${n0(L.chests)} chests since the last reset`;
+  $('#rows').innerHTML = prizes.map((p) => `<div class='prow ${p.key === goal.key ? 'sel' : ''}' data-k='${esc(p.key)}'><div><div class='nm'>${esc(p.name)}</div><div class='sb'>1 in ${n0(p.den)} per chest${p.boost > 1 ? ` &middot; <span style='color:var(--amber)'>${p.boost}x now</span>` : ''}</div></div><div class='bar'><i style='width:${Math.min(100, p.chance * 100)}%'></i></div><div class='pc num'>${pct(p.chance)}</div></div>`).join('');
+  document.querySelectorAll('#rows [data-k]').forEach((el) => { el.onclick = () => { if (el.dataset.k === 'gizmo') return; pick = el.dataset.k; localStorage.setItem('cc.pick', pick); render(); }; });
+
+  const fmt = (ms) => new Date(ms).toLocaleString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  $('#hours').innerHTML = W.length ? W.map((w) => `<tr><td>${esc(fmt(w.s))} - ${esc(new Date(w.e).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))}</td><td>${w.confirmed ? w.gold + 'x' : '?'}</td><td>${w.confirmed ? w.shop + 'x' : '?'}</td><td>${w.confirmed ? w.vehicle + 'x' : '?'}</td><td>${now >= w.s && now < w.e ? 'Live' : now >= w.e ? 'Ended' : 'Upcoming'}</td></tr>`).join('') : `<tr><td colspan='5' class='muted'>No Treasure Hour data loaded yet.</td></tr>`;
+}
+render();
+</script>
+</body>
+</html>
