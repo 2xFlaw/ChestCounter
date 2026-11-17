@@ -3,16 +3,18 @@ using System.Windows.Forms;
 
 namespace ChestCounter;
 
-/// <summary>Small dialog: link this PC with the code from the website, and turn the upload on or off.</summary>
+/// <summary>Small dialog: link this PC with the code from the website, set a username, and turn the upload on or off.</summary>
 [SupportedOSPlatform("windows")]
 internal sealed class OnlineForm : Form
 {
     private readonly TextBox _code = new() { Width = 200, CharacterCasing = CharacterCasing.Upper, MaxLength = 12 };
+    private readonly TextBox _user = new() { Width = 200, MaxLength = 20 };
     private readonly CheckBox _history = new() { AutoSize = true, Text = L.T("Subir también mi historial de partidas", "Also upload my existing match history") };
     private readonly CheckBox _sync = new() { AutoSize = true, Text = L.T("Subir cada partida al terminar", "Upload each finished match") };
     private readonly Label _status = new() { AutoSize = false, Width = 440, Height = 54 };
     private readonly Button _link = new() { AutoSize = true, Text = L.T("Vincular este PC", "Link this PC") };
     private readonly Button _unlink = new() { AutoSize = true, Text = L.T("Desvincular este PC", "Unlink this PC") };
+    private readonly Button _saveUser = new() { AutoSize = true, Text = L.T("Guardar nombre", "Save username") };
     private bool _loading;
 
     public static void ShowFor(IWin32Window? owner)
@@ -28,10 +30,11 @@ internal sealed class OnlineForm : Form
         FormBorderStyle = FormBorderStyle.FixedDialog;
         MaximizeBox = false;
         MinimizeBox = false;
+        ShowInTaskbar = false;
         BackColor = Theme.Bg;
         ForeColor = Theme.Ink;
         Font = Theme.Text(9f);
-        ClientSize = new Size(480, 360);
+        ClientSize = new Size(480, 470);
 
         var panel = new FlowLayoutPanel { Dock = DockStyle.Fill, FlowDirection = FlowDirection.TopDown, WrapContents = false, Padding = new Padding(18) };
         var intro = new Label
@@ -48,6 +51,9 @@ internal sealed class OnlineForm : Form
         panel.Controls.Add(_link);
         panel.Controls.Add(_sync);
         panel.Controls.Add(_unlink);
+        panel.Controls.Add(new Label { AutoSize = true, Margin = new Padding(3, 14, 3, 3), Text = L.T("Nombre público (clasificación)", "Public username (leaderboard)"), ForeColor = Theme.Muted });
+        panel.Controls.Add(_user);
+        panel.Controls.Add(_saveUser);
         panel.Controls.Add(_status);
         Controls.Add(panel);
 
@@ -78,6 +84,14 @@ internal sealed class OnlineForm : Form
                 Refresh2();
             }
         };
+        _saveUser.Click += async (_, _) =>
+        {
+            _saveUser.Enabled = false;
+            var error = await OnlineUsername.SetAsync(_user.Text);
+            _saveUser.Enabled = true;
+            _status.ForeColor = error != null ? Theme.Amber : Theme.Muted;
+            _status.Text = error ?? L.T("Nombre guardado.", "Username saved.");
+        };
         Refresh2();
     }
 
@@ -92,6 +106,8 @@ internal sealed class OnlineForm : Form
         _code.Enabled = !linked;
         _history.Enabled = !linked;
         _link.Enabled = !linked;
+        _user.Enabled = linked;
+        _saveUser.Enabled = linked;
         _status.ForeColor = s.LastError != null ? Theme.Amber : Theme.Muted;
         _status.Text = s.LastError
             ?? (!linked ? L.T("Este PC no está vinculado. No se sube nada.", "This PC is not linked. Nothing is uploaded.")

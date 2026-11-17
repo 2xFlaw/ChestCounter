@@ -12,6 +12,13 @@ async function profileAuth(req, env) {
   return row ? m[1] : null;
 }
 
+async function pcAuth(req, env) {
+  const m = (req.headers.get('authorization') || '').match(/^Bearer ([a-f0-9]+)\.([a-f0-9]+)$/);
+  if (!m) return null;
+  const row = await env.DB.prepare('SELECT profile_id FROM linked_pcs WHERE id=? AND token_hash=?').bind(m[1], await sha(m[2])).first();
+  return row ? row.profile_id : null;
+}
+
 async function weekEvents(env, profileId, start, end) {
   const rows = (await env.DB.prepare('SELECT started_at, opened, chest_times_json FROM matches WHERE profile_id=? AND started_at < ? AND started_at >= ?').bind(profileId, end.toISOString(), new Date(start - 3600e3).toISOString()).all()).results;
   const ev = [];
@@ -29,6 +36,21 @@ async function weekEvents(env, profileId, start, end) {
 // Routes added on top of worker.js. Returns null when the route is not handled here.
 export async function handleExtra(req, env, url) {
   const route = req.method + ' ' + url.pathname;
+
+  // Username set from the app (PC token). Same rules as the website: 3-20 chars, once every 7 days.
+  if (route === 'PUT /api/pc/username') {
+    const pid = await pcAuth(req, env);
+    if (!pid) return J({ error: 'Unauthorized' }, 401);
+    let b = {};
+    try { b = await req.json(); } catch { /* ignore */ }
+    const u = String(b.username || '').trim();
+    if (!/^[A-Za-z0-9_. -]{3,20}$/.test(u)) return J({ error: '3-20 characters: letters, numbers, space, . _ -' }, 400);
+    const p = await env.DB.prepare('SELECT username_changed_at FROM profiles WHERE id=?').bind(pid).first();
+    if (p && p.username_changed_at && Date.now() - new Date(p.username_changed_at + 'Z').getTime() < 7 * 864e5) return J({ error: 'Username can be changed once every 7 days' }, 429);
+    try { await env.DB.prepare("UPDATE profiles SET username=?, username_changed_at=datetime('now') WHERE id=?").bind(u, pid).run(); }
+    catch { return J({ error: 'Username already taken' }, 409); }
+    return J({ username: u });
+  }
 
   // Private link for the OBS browser source. The secret is shown once; only its hash is stored.
   if (route === 'POST /api/obs/link') {
