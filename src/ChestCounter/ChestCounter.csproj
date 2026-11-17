@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <AssemblyName>ChestCounter</AssemblyName>
+    <RootNamespace>ChestCounter</RootNamespace>
+    <Version>2.3.0</Version>
+    <Product>2xFlaw's Chest Counter</Product>
+    <InvariantGlobalization>false</InvariantGlobalization>
+    <PublishTrimmed>false</PublishTrimmed>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>false</ConcurrentGarbageCollection>
+    <TieredPGO>true</TieredPGO>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\social-*.png" LogicalName="ChestCounter.Assets.%(Filename).png" />
+    <EmbeddedResource Include="Assets\fonts\*.ttf" LogicalName="ChestCounter.Assets.fonts.%(Filename).ttf" />
+    <EmbeddedResource Include="Assets\rewards\*.png" LogicalName="ChestCounter.Assets.rewards.%(Filename).png" />
+    <EmbeddedResource Include="Assets\2xflaw-banner.jpg" LogicalName="ChestCounter.Assets.2xflaw-banner.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\lib\FortniteReplayReader\FortniteReplayReader.csproj" />
+  </ItemGroup>
+</Project>

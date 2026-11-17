@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>OBS luck</title>
+<link rel='stylesheet' href='/theme.css'>
+<style>
+body{background:transparent;padding:10px;font-family:'Inter','Segoe UI',sans-serif}
+.box{width:400px;background:rgba(25,15,30,.88);border:1px solid var(--line2);border-radius:18px;padding:16px}
+.row{display:grid;grid-template-columns:1fr 70px;gap:10px;align-items:center;margin-top:10px}
+.row .nm{font-weight:800;font-size:13px}
+.row .pc{font:400 20px var(--display);text-align:right}
+.t{font:400 22px var(--display);text-transform:uppercase;color:var(--acc)}
+</style>
+</head>
+<body>
+<div class='box' id='box'><div class='t'>% Luck</div><div class='muted'>Loading...</div></div>
+<script type='module'>
+import { esc, n0, pct, api } from '/app.js';
+const k = new URLSearchParams(location.search).get('k') || '';
+async function tick() {
+  try {
+    const r = await api('/api/obs/luck?k=' + encodeURIComponent(k));
+    document.getElementById('box').innerHTML = `<div class='t'>% Luck</div><div class='muted' style='font-size:12px'>${n0(r.chests)} chests this week</div>` +
+      r.prizes.map((p) => `<div><div class='row'><div class='nm'>${esc(p.name)}</div><div class='pc num'>${pct(p.chance)}</div></div><div class='bar' style='margin-top:4px'><i style='width:${Math.min(100, p.chance * 100)}%'></i></div></div>`).join('') +
+      (r.nextHour ? `<div class='muted' style='margin-top:12px;font-size:12px'>Next Treasure Hour: ${esc(new Date(r.nextHour.start_utc).toLocaleString('en-GB', { weekday: 'short', hour: '2-digit', minute: '2-digit' }))}</div>` : '');
+  } catch (e) {
+    document.getElementById('box').innerHTML = `<div class='t'>% Luck</div><div class='muted'>${esc(e.message)}</div>`;
+  }
+}
+tick();
+setInterval(tick, 5000);
+</script>
+</body>
+</html>

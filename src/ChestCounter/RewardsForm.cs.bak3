@@ -1,0 +1,233 @@
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Drawing;
+using System.Drawing.Drawing2D;
+using System.Runtime.Versioning;
+using System.Windows.Forms;
+
+namespace ChestCounter;
+
+/// <summary>Round tick mark that the player clicks to say "I own this".</summary>
+[SupportedOSPlatform("windows")]
+public sealed class TickBadge : Control
+{
+    private bool _on;
+
+    public TickBadge()
+    {
+        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+        Size = new Size(30, 30);
+        Cursor = Cursors.Hand;
+    }
+
+    public event EventHandler? Toggled;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool On
+    {
+        get => _on;
+        set
+        {
+            if (_on != value)
+            {
+                _on = value;
+                Invalidate();
+            }
+        }
+    }
+
+    protected override void OnClick(EventArgs e)
+    {
+        _on = !_on;
+        Invalidate();
+        Toggled?.Invoke(this, EventArgs.Empty);
+        base.OnClick(e);
+    }
+
+    protected override void OnPaint(PaintEventArgs e)
+    {
+        var g = e.Graphics;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        g.Clear(Parent?.BackColor ?? Theme.Card);
+        var r = new RectangleF(1.5f, 1.5f, Width - 3, Height - 3);
+        if (_on)
+        {
+            using var fill = new SolidBrush(Theme.Mint);
+            g.FillEllipse(fill, r);
+            using var pen = new Pen(Color.FromArgb(10, 40, 25), 2.6f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+            g.DrawLines(pen, new[]
+            {
+                new PointF(Width * 0.28f, Height * 0.52f),
+                new PointF(Width * 0.44f, Height * 0.68f),
+                new PointF(Width * 0.73f, Height * 0.34f),
+            });
+        }
+        else
+        {
+            using var pen = new Pen(Theme.Line, 2f);
+            g.DrawEllipse(pen, r);
+        }
+    }
+}
+
+/// <summary>
+/// The six weekly rewards, each with an optional picture and a tick for "owned" (ownership cannot be read from
+/// replays, so the tick is manual). Pictures are never downloaded: put PNG or JPG files with the names below in the
+/// rewards folder (%APPDATA%\ChestCounter\rewards).
+/// </summary>
+[SupportedOSPlatform("windows")]
+public sealed class RewardsForm : Form
+{
+    private static readonly (string Key, string Title)[] Rewards =
+    {
+        ("gold-outfit", "Weekly Gold Outfit"),
+        ("pirate-shop-access", "Pirate Shop Access"),
+        ("vehicle-decal", "Weekly Vehicle & Decal"),
+        ("pickaxe-back-bling", "Weekly Pickaxe or Back Bling"),
+        ("jam-track", "Weekly Jam Track"),
+        ("loading-screen", "Weekly Loading Screen"),
+    };
+
+    private readonly Monitor _monitor;
+    private readonly List<Image> _images = new();
+
+    public RewardsForm(Monitor monitor, Store store)
+    {
+        _monitor = monitor;
+        Text = "Weekly rewards";
+        AutoScaleMode = AutoScaleMode.Dpi;
+        AutoScaleDimensions = new SizeF(96, 96);
+        Font = Theme.Text();
+        BackColor = Theme.Bg;
+        ForeColor = Theme.Ink;
+        StartPosition = FormStartPosition.CenterParent;
+        ClientSize = new Size(620, 650);
+        MinimumSize = new Size(440, 420);
+        ShowInTaskbar = false;
+        Icon = AppIcon.Load();
+
+        var folder = Path.Combine(store.Folder, "rewards");
+        try
+        {
+            Directory.CreateDirectory(folder);
+        }
+        catch
+        {
+            // the checklist still works without pictures
+        }
+
+        var header = new Panel { Dock = DockStyle.Top, Height = 74, BackColor = Theme.Bg };
+        var title = new Label { Text = "Weekly rewards", Font = Theme.Text(18f, FontStyle.Bold), ForeColor = Theme.Ink, AutoSize = true, Location = new Point(20, 10), BackColor = Theme.Bg };
+        var counter = new Label { Font = Theme.Text(10f, FontStyle.Bold), ForeColor = Theme.Mint, AutoSize = true, Location = new Point(22, 46), BackColor = Theme.Bg };
+        var open = new PillButton { Text = "Open pictures folder", Size = new Size(170, 32), Radius = 10, Font = Theme.Text(8.5f, FontStyle.Bold), Anchor = AnchorStyles.Top | AnchorStyles.Right, Location = new Point(620 - 20 - 170, 16) };
+        open.Click += (_, _) =>
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(folder) { UseShellExecute = true })?.Dispose();
+            }
+            catch
+            {
+                // no file manager available
+            }
+        };
+        header.Controls.Add(title);
+        header.Controls.Add(counter);
+        header.Controls.Add(open);
+
+        var flow = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Theme.Bg, Padding = new Padding(14, 6, 14, 14) };
+        Controls.Add(flow);
+        Controls.Add(header);
+
+        var owned = _monitor.Config.OwnedRewards;
+        void UpdateCounter() => counter.Text = $"{Rewards.Count(r => owned.GetValueOrDefault(r.Key))}/{Rewards.Length} weekly tokens";
+
+        foreach (var (key, name) in Rewards)
+        {
+            var rewardKey = key;
+            var card = new Card { Size = new Size(176, 226), Radius = 14, Margin = new Padding(6) };
+
+            var pictureHolder = new Card { Location = new Point(10, 10), Size = new Size(156, 118), Radius = 12, BackColor = Theme.Panel, Padding = new Padding(4) };
+            var picture = LoadPicture(folder, key, 156, 118);
+            if (picture != null)
+            {
+                pictureHolder.Controls.Add(new PictureBox { Dock = DockStyle.Fill, SizeMode = PictureBoxSizeMode.Zoom, Image = picture, BackColor = Theme.Panel });
+            }
+            else
+            {
+                pictureHolder.Controls.Add(new Label { Dock = DockStyle.Fill, Text = "★", Font = Theme.Text(30f), ForeColor = Theme.Line, BackColor = Theme.Panel, TextAlign = ContentAlignment.MiddleCenter });
+            }
+            card.Controls.Add(pictureHolder);
+
+            card.Controls.Add(new Label { Text = name, Font = Theme.Text(9.5f, FontStyle.Bold), ForeColor = Theme.Ink, BackColor = Theme.Card, Location = new Point(10, 134), Size = new Size(156, 40), AutoEllipsis = true });
+
+            var tick = new TickBadge { Location = new Point(12, 182), On = owned.GetValueOrDefault(key), BackColor = Theme.Card };
+            var state = new Label { Font = Theme.Text(9f, FontStyle.Bold), BackColor = Theme.Card, Location = new Point(50, 187), Size = new Size(110, 20) };
+            void ShowOwned()
+            {
+                state.Text = tick.On ? "Owned" : "Not owned";
+                state.ForeColor = tick.On ? Theme.Mint : Theme.Muted;
+            }
+            ShowOwned();
+            tick.Toggled += (_, _) =>
+            {
+                _monitor.Change(c => c.OwnedRewards[rewardKey] = tick.On);
+                ShowOwned();
+                UpdateCounter();
+            };
+            card.Controls.Add(tick);
+            card.Controls.Add(state);
+            flow.Controls.Add(card);
+        }
+        UpdateCounter();
+    }
+
+    private Image? LoadPicture(string folder, string key, int width, int height)
+    {
+        foreach (var extension in new[] { ".png", ".jpg", ".jpeg" })
+        {
+            var path = Path.Combine(folder, key + extension);
+            if (!File.Exists(path))
+            {
+                continue;
+            }
+            try
+            {
+                using var source = Image.FromStream(new MemoryStream(File.ReadAllBytes(path)));
+                var scale = Math.Min(1.0, Math.Min(width * 2.0 / source.Width, height * 2.0 / source.Height));
+                var small = new Bitmap(Math.Max(1, (int)(source.Width * scale)), Math.Max(1, (int)(source.Height * scale)));
+                using (var g = Graphics.FromImage(small))
+                {
+                    g.InterpolationMode = InterpolationMode.HighQualityBicubic;
+                    g.DrawImage(source, 0, 0, small.Width, small.Height);
+                }
+                _images.Add(small);
+                return small;
+            }
+            catch
+            {
+                // unreadable picture: show the placeholder instead
+            }
+        }
+        return null;
+    }
+
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        Theme.Chrome(Handle);
+    }
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            foreach (var image in _images)
+            {
+                image.Dispose();
+            }
+            _images.Clear();
+        }
+        base.Dispose(disposing);
+    }
+}

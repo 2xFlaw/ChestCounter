@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<meta name='color-scheme' content='dark'>
+<title>My stats - Chest Counter</title>
+<link rel='preconnect' href='https://fonts.googleapis.com'>
+<link href='https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='/theme.css'>
+</head>
+<body>
+<main>
+<header class='hero'><div class='in'>
+  <div>
+    <div class='lbl eyebrow'>2xFlaw's Chest Counter</div>
+    <h1>My stats</h1>
+    <div class='chips' id='chips'></div>
+  </div>
+  <div class='resetbox'>
+    <div class='lbl'>Weekly reset in</div>
+    <div class='big num' id='resetCd'>--</div>
+    <div class='muted' style='font-size:12.5px'>Every Sunday at 14:00 GMT</div>
+  </div>
+</div></header>
+
+<section id='linkSec'></section>
+
+<section>
+  <div class='sh'><h2>Totals</h2><span class='meta' id='totMeta'></span></div>
+  <div class='kpis' id='kpis'></div>
+</section>
+
+<section>
+  <div class='sh'><h2>This week</h2><span class='meta'>Chests per day since the reset (UTC days).</span></div>
+  <div class='card days' id='days'></div>
+</section>
+
+<section>
+  <div class='sh'><h2>Matches</h2><div class='form' style='margin:0'><input type='search' id='q' placeholder='Filter by mode or date'><span class='meta' id='mcount'></span></div></div>
+  <div class='card tw'><table><thead><tr><th>When</th><th>Mode</th><th>Opened</th><th>Destroyed</th><th>Total</th></tr></thead><tbody id='matches'></tbody></table></div>
+</section>
+
+<section>
+  <div class='sh'><h2>Profile and privacy</h2><span class='meta'>Syncing is always your choice.</span></div>
+  <div class='card' id='settings'></div>
+</section>
+</main>
+<script type='module'>
+import { $, esc, n0, api, nav, resetInfo, startResetClock } from '/app.js';
+nav('stats');
+startResetClock($('#resetCd'));
+
+async function load() {
+  await api('/api/profile', { method: 'POST' });
+  const me = await api('/api/me');
+  const linked = me.linkedPcs.length > 0;
+
+  $('#chips').innerHTML =
+    `<span class='chip'>Profile ${esc(me.id)}</span>` +
+    `<span class='chip ${linked ? 'mint' : 'mute'}'>${linked ? 'Sync on - ' + me.linkedPcs.length + ' PC' + (me.linkedPcs.length > 1 ? 's' : '') : 'Sync off'}</span>` +
+    (me.username ? `<span class='chip amber'>${esc(me.username)}</span>` : '') +
+    (me.is_private ? `<span class='chip coral'>Private</span>` : '');
+
+  $('#linkSec').innerHTML = linked ? '' :
+    `<div class='card'><div class='lbl'>Link this site to the app</div><h3 style='margin-top:6px;font-size:26px'>Nothing is uploaded until you say so</h3>` +
+    `<p class='muted'>Get a one-time code here, then enter it in the app and turn sync on. The code expires after 10 minutes.</p>` +
+    `<button class='btn on' id='getCode' type='button'>Get link code</button><div id='codeOut'></div><div class='err' id='codeErr'></div></div>`;
+  const gc = $('#getCode');
+  if (gc) gc.onclick = async () => {
+    try { const r = await api('/api/link/code', { method: 'POST' }); $('#codeOut').innerHTML = `<div class='code'>${esc(r.code)}</div><div class='muted'>Expires in ${r.expiresInMinutes} minutes</div>`; $('#codeErr').textContent = ''; }
+    catch (e) { $('#codeErr').textContent = e.message; }
+  };
+
+  const t = me.totals;
+  $('#totMeta').textContent = me.starting_total ? `Includes your starting total of ${n0(me.starting_total)}.` : '';
+  $('#kpis').innerHTML = [
+    ['Global chests', t.global, 'var(--acc)', 'Opened + destroyed'],
+    ['Opened', t.opened, 'var(--mint)', 'Starting total included'],
+    ['Destroyed', t.destroyed, 'var(--amber)', 'From replays'],
+    ['Matches', t.matches, 'var(--ink)', 'Counted from replays'],
+  ].map((k) => `<div class='card kpi' style='--c:${k[2]}'><div class='lbl'>${k[0]}</div><div class='v num'>${n0(k[1])}</div><div class='s'>${k[3]}</div></div>`).join('');
+
+  const start = resetInfo().start;
+  const byDay = Object.fromEntries(me.daily.map((d) => [d.day, d.chests]));
+  const days = Array.from({ length: 7 }, (_, i) => { const d = new Date(start + i * 864e5); const key = d.toISOString().slice(0, 10); return { key, label: d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' }), chests: byDay[key] || 0 }; });
+  const max = Math.max(1, ...days.map((d) => d.chests));
+  $('#days').innerHTML = days.map((d) => `<div class='day'><div class='b ${d.chests ? '' : 'zero'}' style='height:${Math.max(2, d.chests / max * 100)}%'>${d.chests ? `<span>${n0(d.chests)}</span>` : ''}</div><div class='l'>${d.label}</div></div>`).join('');
+
+  const rows = me.recent;
+  const draw = () => {
+    const q = $('#q').value.trim().toLowerCase();
+    const list = rows.filter((r) => !q || (r.mode || '').toLowerCase().includes(q) || new Date(r.started_at).toLocaleString().toLowerCase().includes(q));
+    $('#mcount').textContent = `${list.length} of ${rows.length}`;
+    $('#matches').innerHTML = list.length ? list.map((r) => `<tr><td>${esc(new Date(r.started_at).toLocaleString())}</td><td>${esc(r.mode || '-')}</td><td>${n0(r.opened)}</td><td>${n0(r.destroyed)}</td><td><b>${n0(r.opened + r.destroyed)}</b></td></tr>`).join('') : `<tr><td colspan='5' class='muted'>No matches yet. They appear here after your PC syncs.</td></tr>`;
+  };
+  $('#q').oninput = draw;
+  draw();
+
+  $('#settings').innerHTML =
+    `<div class='lbl'>Username</div><div class='form'><input type='text' id='user' maxlength='20' placeholder='3-20 characters' value='${esc(me.username || '')}'><button class='btn on' id='saveUser' type='button'>Save username</button></div>` +
+    `<div class='muted' style='font-size:12.5px;margin-top:6px'>Needs a linked PC. Can be changed once every 7 days. Shown on the public leaderboard.</div><div class='err' id='userErr'></div>` +
+    `<div class='lbl' style='margin-top:14px'>Starting total</div><div class='form'><input type='number' id='start' min='0' max='15000' value='${me.starting_total}'><label><input type='checkbox' id='priv' ${me.is_private ? 'checked' : ''}> Private mode (hide me from the leaderboard)</label><button class='btn' id='saveSet' type='button'>Save</button></div><div class='err' id='setErr'></div>` +
+    `<div class='lbl' style='margin-top:14px'>Your data</div><div class='form'><button class='btn danger' id='del' type='button'>Delete my data</button></div>`;
+  $('#saveUser').onclick = async () => { try { await api('/api/username', { method: 'PUT', body: { username: $('#user').value } }); load(); } catch (e) { $('#userErr').textContent = e.message; } };
+  $('#saveSet').onclick = async () => { try { await api('/api/settings', { method: 'PUT', body: { startingTotal: Number($('#start').value), isPrivate: $('#priv').checked } }); load(); } catch (e) { $('#setErr').textContent = e.message; } };
+  $('#del').onclick = async () => { if (confirm('Delete your profile, linked PCs and all synced matches? This cannot be undone.')) { await api('/api/me', { method: 'DELETE' }); location.reload(); } };
+}
+load().catch((e) => { $('#linkSec').innerHTML = `<div class='card err'>${esc(e.message)}</div>`; });
+</script>
+</body>
+</html>

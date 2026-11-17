@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<meta name='color-scheme' content='dark'>
+<title>Friends - Chest Counter</title>
+<link rel='preconnect' href='https://fonts.googleapis.com'>
+<link href='https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='/theme.css'>
+</head>
+<body>
+<main>
+<header class='hero'><div class='in'>
+  <div><div class='lbl eyebrow'>2xFlaw's Chest Counter</div><h1>Friends</h1><div class='chips' id='chips'></div></div>
+  <div class='resetbox'><div class='lbl'>Private groups</div><div class='muted' style='max-width:320px'>Up to 24 friends and 5 groups you own. Only people in a group see its board.</div></div>
+</div></header>
+
+<section><div class='card'>
+  <div class='lbl'>Your friend ID</div>
+  <div class='form'><span class='code' style='font-size:34px;margin:0' id='fid'>--</span><button class='btn' id='copy' type='button'>Copy</button></div>
+  <div class='muted' style='margin-top:8px;font-size:12.5px'>Friends add you with this ID. Set a username on My stats to show a name instead.</div>
+</div></section>
+
+<section><div class='sh'><h2>Create a group</h2></div><div class='card'>
+  <div class='form' style='margin-top:0'><input type='text' id='gname' maxlength='30' placeholder='e.g. Week 3 crew'><button class='btn on' id='mk' type='button'>Create group</button></div>
+  <div class='err' id='mkErr'></div>
+</div></section>
+
+<section><div class='sh'><h2>Your groups</h2></div><div id='groups'></div></section>
+</main>
+<script type='module'>
+import { $, esc, n0, api, nav } from '/app.js';
+nav('friends');
+let myId = '';
+
+async function load() {
+  await api('/api/profile', { method: 'POST' });
+  const me = await api('/api/me');
+  myId = me.id;
+  $('#fid').textContent = me.id;
+  $('#chips').innerHTML = `<span class='chip'>Profile ${esc(me.id)}</span>` + (me.username ? `<span class='chip amber'>${esc(me.username)}</span>` : '');
+  const r = await api('/api/friends/groups');
+  $('#groups').innerHTML = r.groups.length ? r.groups.map((g) =>
+    `<div class='card' style='margin-bottom:12px'><div class='sh' style='margin-bottom:8px'><h2 style='font-size:20px'>${esc(g.name)}</h2><span class='meta'>${g.members.length} members</span></div>` +
+    `<div class='tw'><table><thead><tr><th>#</th><th>Player</th><th>Global chests</th><th>Matches</th></tr></thead><tbody>${g.members.map((m, i) => `<tr><td>${i + 1}</td><td>${esc(m.name)}${m.name === me.username || m.name === me.id ? " <span class='chip mute'>you</span>" : ''}</td><td><b>${n0(m.global)}</b></td><td>${n0(m.matches)}</td></tr>`).join('')}</tbody></table></div>` +
+    `<div class='form'><input type='text' data-g='${esc(g.id)}' placeholder='Friend ID, e.g. 78CD-05A6' maxlength='9'><button class='btn' data-add='${esc(g.id)}' type='button'>Add friend</button></div><div class='err' data-err='${esc(g.id)}'></div></div>`).join('')
+    : `<div class='card muted'>No groups yet. Name a group above, create it, then paste a friend's ID to start the board.</div>`;
+  document.querySelectorAll('[data-add]').forEach((b) => {
+    b.onclick = async () => {
+      const id = b.dataset.add;
+      const val = document.querySelector(`input[data-g='${id}']`).value;
+      try { await api(`/api/friends/groups/${id}/members`, { method: 'POST', body: { friendId: val } }); load(); }
+      catch (e) { document.querySelector(`[data-err='${id}']`).textContent = e.message; }
+    };
+  });
+}
+$('#copy').onclick = () => navigator.clipboard && navigator.clipboard.writeText(myId);
+$('#mk').onclick = async () => { try { await api('/api/friends/groups', { method: 'POST', body: { name: $('#gname').value } }); $('#gname').value = ''; $('#mkErr').textContent = ''; load(); } catch (e) { $('#mkErr').textContent = e.message; } };
+load().catch((e) => { $('#mkErr').textContent = e.message; });
+</script>
+</body>
+</html>
