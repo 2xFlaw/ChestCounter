@@ -1,3 +1,2 @@
 import('/ui.js').then(({polish})=>polish()).catch(error=>console.error('UI enhancement failed',error));
-const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-if(!reduced&&'IntersectionObserver' in window){const observer=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting){entry.target.classList.add('visible');observer.unobserve(entry.target);}}, {threshold:.12});document.documentElement.classList.add('js-motion');document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));}
+import('/home.js').catch(error=>{document.documentElement.classList.remove('fx');console.error('Homepage motion failed',error);});
