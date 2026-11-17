@@ -2,7 +2,8 @@ const doc = document.documentElement;
 let stored = null;
 try { stored = localStorage.getItem('cc.motion'); } catch { /* storage blocked */ }
 const osReduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-export const motion = stored === 'on' ? true : stored === 'off' ? false : !osReduced;
+// On by default for everyone. Only an explicit "off" from the visitor turns it off.
+export const motion = stored !== 'off';
 
 if (window.__fxT) clearTimeout(window.__fxT);
 doc.dataset.motion = motion ? 'full' : 'reduced';
@@ -15,7 +16,7 @@ if (!document.querySelector('link[href="/fx.css"]')) {
   document.head.append(l);
 }
 
-// When the visitor turns motion on against a system reduced-motion setting, drop the stylesheets' blanket reduce rules.
+// Motion is on by default, so drop the stylesheets' blanket system reduced-motion rules (the visitor can still switch motion off).
 function stripReducedRules() {
   for (const sheet of document.styleSheets) {
     let rules;
@@ -26,7 +27,7 @@ function stripReducedRules() {
     }
   }
 }
-if (stored === 'on' && osReduced) {
+if (motion && osReduced) {
   stripReducedRules();
   addEventListener('load', () => { stripReducedRules(); setTimeout(stripReducedRules, 800); setTimeout(stripReducedRules, 2500); });
 }
@@ -132,7 +133,9 @@ function toggle() {
   b.className = 'fx-toggle';
   b.textContent = motion ? 'Motion: on' : 'Motion: off';
   b.setAttribute('aria-pressed', String(motion));
-  b.title = osReduced && !motion ? 'Your system asks for reduced motion. Click to turn animations on for this site.' : 'Turn animations on or off';
+  b.title = motion
+    ? (osReduced ? 'Animations are on. Your system prefers reduced motion, so you may want to turn them off.' : 'Click to turn animations off')
+    : 'Click to turn animations on';
   b.addEventListener('click', () => {
     try { localStorage.setItem('cc.motion', motion ? 'off' : 'on'); } catch { /* storage blocked */ }
     location.reload();

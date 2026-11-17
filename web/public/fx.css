@@ -21,8 +21,8 @@ html.fx .go [data-r]{opacity:1;translate:none}
 .w{display:inline-block;overflow:hidden;vertical-align:top;font-weight:inherit;padding-bottom:.1em;margin-bottom:-.1em}
 .w>i{display:inline-block;font-style:normal;transition:transform 1.05s var(--fx-ease) calc(var(--i,0)*70ms + 120ms)}
 
-.hero h1 span{animation:glowpulse 3.6s ease-in-out infinite}
-@keyframes glowpulse{0%,100%{text-shadow:0 0 0 #ff66b200}50%{text-shadow:0 0 42px #ff66b270}}
+.hero h1 span{display:inline-block;animation:glowpulse 3.6s ease-in-out infinite}
+@keyframes glowpulse{0%,100%{filter:drop-shadow(0 0 0 #ff66b200)}50%{filter:drop-shadow(0 0 16px #ff66b2aa)}}
 .scroll{animation:bob 2.4s ease-in-out infinite}
 @keyframes bob{50%{transform:translateY(7px)}}
 
