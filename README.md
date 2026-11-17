@@ -143,6 +143,6 @@ The website lives in [`web/`](web/README.md): Cloudflare Workers, D1 and static 
 
 [MIT](LICENSE). Replay parsing is based on [FortniteReplayDecompressor](https://github.com/Shiqan/FortniteReplayDecompressor) by Shiqan (MIT), lightly modified: see [`lib/PATCHES.md`](lib/PATCHES.md).
 
-Not affiliated with Epic Games. Fortnite is a trademark of Epic Games, Inc.
+Not affiliated with Epic Games, content is not official or endorsed by Epic Games in any way.
 
 Made by 2xFlaw.
