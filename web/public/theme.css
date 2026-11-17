@@ -1,0 +1,14 @@
+:root {
+  --bg: #0b0710;
+  --panel: #150d1c;
+  --border: #2a1a36;
+  --text: #f4eef8;
+  --muted: #a894b8;
+  --accent: #c2417f; /* adjust to match banner */
+  --accent-2: #8b3fd0;
+  --live: #2ecc71;
+  --afk: #e74c3c;
+}
+body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Burbank Big Regular', 'Segoe UI', sans-serif; }
+.card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; }
+.btn { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; border: 0; border-radius: 8px; padding: 8px 14px; cursor: pointer; }
