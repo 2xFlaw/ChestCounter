@@ -11,7 +11,7 @@ public sealed class OnlineSettings
     /// <summary>Off by default. Nothing is sent until the player links this PC and turns it on.</summary>
     public bool Enabled { get; set; }
     public string? Token { get; set; }
-    public string ApiBase { get; set; } = "https://chesttracker.io";
+    public string ApiBase { get; set; } = "https://chestcounter.io";
     /// <summary>Only matches that started on or after this time are uploaded (null = also the existing history).</summary>
     public DateTime? SinceUtc { get; set; }
     public List<string> Synced { get; set; } = new();

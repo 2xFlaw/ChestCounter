@@ -69,7 +69,7 @@ For streaming, the same overlay is served at `http://localhost:7373/` while the 
 
 ## Online sync (optional)
 
-The website is **chesttracker.io**. Nothing is uploaded unless you choose to:
+The website is **chestcounter.io**. Nothing is uploaded unless you choose to:
 
 1. On the website, open **My stats** and press **Get link code**.
 2. In the app, open **Settings > Online connection**, type the code and link the PC.
