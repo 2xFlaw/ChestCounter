@@ -1,0 +1,30 @@
+import { init } from '/i18n.js';
+const codes=['en','es','pt','ru','fr','de','it','pl','tr','ja'];
+const words={
+home:['Chest Counter home','Inicio de Chest Counter','Início do Chest Counter','Главная Chest Counter','Accueil Chest Counter','Chest-Counter-Startseite','Home di Chest Counter','Strona główna Chest Counter','Chest Counter ana sayfa','Chest Counterホーム'],
+choices:['Privacy choices','Opciones de privacidad','Opções de privacidade','Настройки конфиденциальности','Choix de confidentialité','Datenschutzoptionen','Scelte sulla privacy','Ustawienia prywatności','Gizlilik seçenekleri','プライバシーの選択'],
+back:['Return to Chest Counter','Volver a Chest Counter','Voltar ao Chest Counter','Вернуться в Chest Counter','Revenir à Chest Counter','Zurück zu Chest Counter','Torna a Chest Counter','Wróć do Chest Counter','Chest Counter’a dön','Chest Counterに戻る'],
+notice:[
+'Language preferences: the cc_lang cookie remembers a language choice for up to one year. The cc.lang local-storage entry remains until changed or cleared. The language in a supported URL takes priority; without a saved choice, the main pages may use the country supplied by Cloudflare to choose a default, with browser language or English as a fallback. You can change the language with the picker or clear these preferences through browser settings.',
+'Preferencias de idioma: la cookie cc_lang recuerda una elección de idioma durante un máximo de un año. La entrada cc.lang del almacenamiento local permanece hasta que se cambie o se borre. El idioma de una URL compatible tiene prioridad; sin una elección guardada, las páginas principales pueden usar el país proporcionado por Cloudflare para elegir un idioma predeterminado y, como alternativa, el idioma del navegador o el inglés. Puedes cambiar el idioma con el selector o borrar estas preferencias en la configuración del navegador.',
+'Preferências de idioma: o cookie cc_lang lembra uma escolha de idioma por até um ano. A entrada cc.lang do armazenamento local permanece até ser alterada ou apagada. O idioma de uma URL compatível tem prioridade; sem uma escolha salva, as páginas principais podem usar o país fornecido pela Cloudflare para escolher um padrão, com o idioma do navegador ou o inglês como alternativa. Você pode mudar o idioma pelo seletor ou apagar essas preferências nas configurações do navegador.',
+'Языковые предпочтения: cookie cc_lang сохраняет выбор языка на срок до одного года. Запись cc.lang в локальном хранилище остаётся до изменения или удаления. Язык в поддерживаемом URL имеет приоритет; если выбор не сохранён, основные страницы могут использовать страну, предоставленную Cloudflare, для выбора языка по умолчанию, а иначе — язык браузера или английский. Вы можете изменить язык через переключатель или удалить эти настройки в браузере.',
+'Préférences linguistiques : le cookie cc_lang mémorise un choix de langue pendant un an au maximum. L’entrée cc.lang du stockage local reste jusqu’à sa modification ou sa suppression. La langue d’une URL prise en charge est prioritaire ; sans choix enregistré, les pages principales peuvent utiliser le pays fourni par Cloudflare pour choisir une langue par défaut, avec la langue du navigateur ou l’anglais en solution de repli. Vous pouvez changer la langue avec le sélecteur ou effacer ces préférences dans les paramètres du navigateur.',
+'Spracheinstellungen: Das Cookie cc_lang speichert eine Sprachauswahl für bis zu ein Jahr. Der Eintrag cc.lang im lokalen Speicher bleibt bis zur Änderung oder Löschung erhalten. Die Sprache in einer unterstützten URL hat Vorrang. Ohne gespeicherte Auswahl können die Hauptseiten das von Cloudflare bereitgestellte Land für eine Standardsprache nutzen; alternativ wird die Browsersprache oder Englisch verwendet. Du kannst die Sprache im Auswahlmenü ändern oder diese Einstellungen im Browser löschen.',
+'Preferenze di lingua: il cookie cc_lang ricorda una scelta di lingua per un massimo di un anno. La voce cc.lang nella memoria locale rimane finché non viene modificata o cancellata. La lingua in un URL supportato ha la precedenza; senza una scelta salvata, le pagine principali possono usare il paese fornito da Cloudflare per scegliere una lingua predefinita, con la lingua del browser o l’inglese come alternativa. Puoi cambiare lingua con il selettore o cancellare queste preferenze nelle impostazioni del browser.',
+'Preferencje językowe: plik cookie cc_lang zapamiętuje wybór języka przez maksymalnie rok. Wpis cc.lang w pamięci lokalnej pozostaje do czasu zmiany lub usunięcia. Język w obsługiwanym adresie URL ma pierwszeństwo. Bez zapisanego wyboru strony główne mogą wybrać język na podstawie kraju podanego przez Cloudflare, a w razie potrzeby użyć języka przeglądarki lub angielskiego. Język można zmienić za pomocą selektora, a preferencje usunąć w ustawieniach przeglądarki.',
+'Dil tercihleri: cc_lang çerezi dil seçimini en fazla bir yıl hatırlar. Yerel depolamadaki cc.lang kaydı değiştirilene veya silinene kadar kalır. Desteklenen bir URL’deki dil önceliklidir; kayıtlı seçim yoksa ana sayfalar varsayılan dili belirlemek için Cloudflare’in sağladığı ülkeyi kullanabilir ve gerektiğinde tarayıcı diline veya İngilizceye geçebilir. Dili seçiciden değiştirebilir veya bu tercihleri tarayıcı ayarlarından silebilirsin.',
+'言語設定: cc_lang Cookieは言語の選択を最長1年間記憶します。ローカルストレージのcc.langは変更または削除されるまで残ります。対応するURL内の言語指定が優先されます。選択が保存されていない場合、主要ページではCloudflareから提供される国情報を使って既定の言語を選び、必要に応じてブラウザーの言語または英語を使用します。言語選択メニューで変更するか、ブラウザー設定でこれらの設定を削除できます。'
+]
+};
+const main=document.querySelector('main');
+const home=main.querySelector('nav a[href="/"]');
+const choices=main.querySelector('a[href="#choices"]');
+const back=main.querySelector(':scope > p:last-child a');
+const notice=document.getElementById('language-storage');
+function paint(){
+ const i=Math.max(0,codes.indexOf(document.documentElement.lang.slice(0,2).toLowerCase()));
+ for(const [node,key] of [[home,'home'],[choices,'choices'],[back,'back'],[notice,'notice']])if(node)node.textContent=words[key][i];
+}
+init();paint();
+new MutationObserver(paint).observe(document.documentElement,{attributes:true,attributeFilter:['lang']});
