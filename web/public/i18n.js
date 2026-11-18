@@ -2,6 +2,8 @@ import { ROWS, HEADS, PATS } from '/i18n-data.js';
 const NL = String.fromCharCode(10);
 const LANGS = [['es', 'Español'], ['en', 'English'], ['pt', 'Português (Brasil)'], ['ru', 'Русский'], ['fr', 'Français'], ['de', 'Deutsch'], ['it', 'Italiano'], ['pl', 'Polski'], ['tr', 'Türkçe'], ['ja', '日本語']];
 const COLS = ['es', 'pt', 'ru', 'fr', 'de', 'it', 'pl', 'tr', 'ja'];
+const PAGE_LINKS = new Set(['/', '/index.html', '/stats.html', '/luck.html', '/community.html', '/leaderboard.html', '/friends.html', '/privacy.html', '/link.html']);
+const PREFIX = new RegExp('^/([a-z]{2})(-[A-Za-z]{2,4})?(?=/|$)', 'i');
 const rows = block => block.trim().split(NL).map(line => line.split('|'));
 const dict = new Map(rows(ROWS).map(r => [r[0], r.slice(1)]));
 const heads = rows(HEADS);
@@ -10,7 +12,7 @@ const nodes = new WeakMap();
 const attrs = new WeakMap();
 const ATTRS = ['placeholder', 'aria-label', 'title', 'alt'];
 const SKIP = 'script,style,textarea,noscript,.cc-lang';
-let lang = 'en', titleEn = '', picker = null, label = null, menu = null, button = null, observer = null;
+let lang = 'en', htmlLang = 'en', titleEn = '', picker = null, label = null, menu = null, button = null, observer = null;
 
 const CSS = `
 .cc-lang{position:relative;display:inline-flex;align-items:center;margin:0 12px;font:600 13px/1 Inter,system-ui,sans-serif}
@@ -26,18 +28,34 @@ const CSS = `
 .cc-lang-menu li{display:flex;justify-content:space-between;gap:14px;padding:10px 12px;border-radius:10px;color:#f9ecf6;cursor:pointer}
 .cc-lang-menu li:hover,.cc-lang-menu li:focus-visible{background:#46183d;outline:none}
 .cc-lang-menu li[aria-selected=true]{color:#ff7fb4}
-.cc-lang-menu li[aria-selected=true]::after{content:'\2713'}
+.cc-lang-menu li[aria-selected=true]::after{content:'✓'}
 @media(max-width:640px){.cc-lang{margin:0 8px}.cc-lang-btn{padding:8px 10px}}
 `;
 const GLOBE = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.6 2.7 3.9 5.7 3.9 9s-1.3 6.3-3.9 9c-2.6-2.7-3.9-5.7-3.9-9S9.4 5.7 12 3z"/></svg>';
 const CHEVRON = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>';
 
+function split(path) {
+  const m = path.match(PREFIX);
+  if (m && LANGS.some(l => l[0] === m[1].toLowerCase())) {
+    return { code: m[1].toLowerCase(), tag: m[1] + (m[2] || ''), rest: path.slice(m[0].length) || '/' };
+  }
+  return { code: null, tag: null, rest: path };
+}
+
+function remember(code) {
+  try { localStorage.setItem('cc.lang', code); } catch (e) { /* storage blocked */ }
+  document.cookie = 'cc_lang=' + code + '; Path=/; Max-Age=31536000; SameSite=Lax';
+}
+
 function detect() {
+  const p = split(location.pathname);
+  if (p.code) return { code: p.code, tag: p.tag, fromUrl: true };
   let saved = null;
   try { saved = localStorage.getItem('cc.lang'); } catch (e) { saved = null; }
-  if (LANGS.some(l => l[0] === saved)) return saved;
+  if (LANGS.some(l => l[0] === saved)) return { code: saved, tag: saved, fromUrl: false };
   const guess = String((navigator.languages && navigator.languages[0]) || navigator.language || 'en').slice(0, 2).toLowerCase();
-  return LANGS.some(l => l[0] === guess) ? guess : 'en';
+  const code = LANGS.some(l => l[0] === guess) ? guess : 'en';
+  return { code, tag: code, fromUrl: false };
 }
 
 export function t(src) {
@@ -90,10 +108,26 @@ function attributes(el) {
   }
 }
 
+function links(root) {
+  if (!root.querySelectorAll) return;
+  const list = [...root.querySelectorAll('a[href^="/"]')];
+  if (root.matches && root.matches('a[href^="/"]')) list.push(root);
+  for (const a of list) {
+    const href = a.getAttribute('href');
+    if (href.startsWith('//')) continue;
+    const m = href.match(/^([^?#]*)(.*)$/);
+    const p = split(m[1]);
+    if (!PAGE_LINKS.has(p.rest)) continue;
+    const next = (lang === 'en' ? p.rest : '/' + lang + p.rest) + m[2];
+    if (next !== href) a.setAttribute('href', next);
+  }
+}
+
 function walk(root) {
   if (root.nodeType === 3) { text(root); return; }
   if (root.nodeType !== 1 || root.closest(SKIP)) return;
   attributes(root);
+  links(root);
   const tree = document.createTreeWalker(root, 5);
   let n;
   while ((n = tree.nextNode())) {
@@ -165,10 +199,19 @@ function apply() {
   if (observer) observer.takeRecords();
 }
 
+function address(code) {
+  const p = split(location.pathname);
+  if (!PAGE_LINKS.has(p.rest) && p.rest !== '/stats' && p.rest !== '/luck') return;
+  const path = code === 'en' ? p.rest : '/' + code + p.rest;
+  if (path !== location.pathname) history.replaceState(null, '', path + location.search + location.hash);
+}
+
 function choose(code) {
   lang = code;
-  try { localStorage.setItem('cc.lang', code); } catch (e) { /* storage blocked */ }
+  htmlLang = code;
+  remember(code);
   document.documentElement.lang = code;
+  address(code);
   refresh();
   apply();
 }
@@ -230,8 +273,12 @@ function build() {
 
 export function init() {
   if (picker) return;
-  lang = detect();
-  document.documentElement.lang = lang;
+  const found = detect();
+  lang = found.code;
+  htmlLang = found.tag;
+  document.documentElement.lang = htmlLang;
+  if (found.fromUrl) remember(lang);
+  else if (lang !== 'en') address(lang);
   build();
   refresh();
   observer = new MutationObserver(list => {
