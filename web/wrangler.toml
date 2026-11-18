@@ -2,6 +2,10 @@ name = "chestcounter-api"
 main = "src/index.js"
 compatibility_date = "2026-11-01"
 
+[build]
+command = "node build-branding.mjs"
+cwd = "."
+
 [assets]
 directory = "./public"
 binding = "ASSETS"
