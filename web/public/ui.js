@@ -2,6 +2,7 @@ let started=false;
 export function polish(){if(started)return;started=true;
 for(const href of ['/modern.css','/art.css']){const l=document.createElement('link');l.rel='stylesheet';l.href=href;document.head.append(l);}
 import('/fx.js').catch(error=>console.error('Motion layer failed',error));
+import('/i18n.js').then(m=>m.init()).catch(error=>console.error('Language picker failed',error));
 const contact=document.querySelector('footer a[href^="mailto:"]');
 let privacy=document.querySelector('a[href="/privacy.html"]');
 if(!privacy){privacy=document.createElement('a');privacy.href='/privacy.html';privacy.textContent='Privacy policy';}
