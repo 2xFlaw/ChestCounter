@@ -1,46 +1,4 @@
 <!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark">
-<meta name="referrer" content="no-referrer">
-<title>Link this PC - Chest Counter</title>
-<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/theme.css">
-</head>
-<body>
-<main>
-<header class="hero"><div class="in"><div>
-<div class="lbl eyebrow">Chest Counter</div>
-<h1>Link this PC</h1>
-<p class="muted">Only approve this if you just pressed the link button in the Chest Counter app on your own computer.</p>
-</div></div></header>
-<section><div class="card" id="box">
-<div class="lbl">Request</div>
-<div class="code" id="code">...</div>
-<p class="muted">The app will upload match IDs, start times, modes and chest counts to this profile. It never uploads your Epic login, player name, teammates or replay files. You can unlink at any time.</p>
-<button class="btn on" id="approve" type="button" disabled>Link this PC</button>
-<div class="err" id="err"></div>
-</div></section>
-</main>
-<script type="module">
-import { $, api } from '/app.js';
-const code = (new URLSearchParams(location.search).get('code') || '').toUpperCase();
-$('#code').textContent = code || 'Missing code';
-if (!code) {
-  $('#err').textContent = 'Open this page from the Chest Counter app.';
-} else {
-  try { await api('/api/profile', { method: 'POST' }); $('#approve').disabled = false; }
-  catch (e) { $('#err').textContent = e.message; }
-  $('#approve').onclick = async () => {
-    try {
-      $('#approve').disabled = true;
-      await api('/api/link/approve', { method: 'POST', body: { code } });
-      $('#box').innerHTML = '<div class="lbl">Done</div><h3 style="font-size:28px;margin:10px 0">This PC is approved</h3><p class="muted">Return to Chest Counter. It finishes linking automatically.</p><a class="btn on" href="/stats.html" style="display:inline-block;text-decoration:none">Open my stats</a>';
-    } catch (e) { $('#err').textContent = e.message; $('#approve').disabled = false; }
-  };
-}
-</script>
-</body>
-</html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="referrer" content="no-referrer"><title>Link this PC - Chest Counter</title><link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap" rel="stylesheet"><link rel="stylesheet" href="/theme.css"></head><body><main>
+<header class="hero"><div class="in"><div><div class="lbl eyebrow">Chest Counter</div><h1 data-msg="link">Link this PC</h1><p class="muted" data-msg="warning">Only approve this if you just pressed the link button in the Chest Counter app on your own computer.</p></div></div></header>
+<section><div class="card" id="box"><div class="lbl" data-msg="request">Request</div><div class="code" id="code">...</div><p class="muted" data-msg="disclosure">The app will upload match IDs, start times, modes and chest counts to this profile. It never uploads your Epic login, player name, teammates or replay files. You can unlink at any time.</p><button class="btn on" id="approve" type="button" disabled data-msg="link">Link this PC</button><div class="err" id="err" role="status"></div></div></section></main><script type="module" src="/link-i18n.js"></script></body></html>
