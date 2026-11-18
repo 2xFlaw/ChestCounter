@@ -9,7 +9,7 @@ public static class PersonalIntegration
     private static PersonalLedger cached=new();
     private static DateTime stamp=DateTime.MinValue;
     private static long bytes=-1;
-    public static void Bind(string path) {lock(Gate){if(folder!=path){folder=path;stamp=DateTime.MinValue;bytes=-1;cached=new();}} OnlineSync.Start(path); if(OperatingSystem.IsWindows())OnlineEntry.Install();}
+    public static void Bind(string path) {lock(Gate){if(folder!=path){folder=path;stamp=DateTime.MinValue;bytes=-1;cached=new();}} OnlineSync.Start(path); PersonalCloud.Start(path); if(OperatingSystem.IsWindows())OnlineEntry.Install();}
     private static PersonalLedger Ledger()
     {
         lock(Gate)
@@ -31,7 +31,6 @@ public static class PersonalIntegration
     {
         var imports=Ledger().Imports;
         if(imports.Count==0)return original;
-        // Original history wins when a session has subsequently been scanned normally.
         var matches=original.Matches.Concat(imports.Select(x=>x.Match))
             .GroupBy(m=>!string.IsNullOrWhiteSpace(m.SessionId)?"session:"+m.SessionId:
                 $"fallback:{Profiles.Key(m)}|{m.MatchStartUtc:O}|{Path.GetFileName(m.ReplayFile)}")
