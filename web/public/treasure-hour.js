@@ -21,7 +21,7 @@ function tick(){
   if(preview){const elapsed=now-previewAt;state=preview==='end'?'ended':preview==='start'&&elapsed<4000?'starting':elapsed<(preview==='start'?24000:60000)?'live':'ended';const sample=windows.find(w=>w.confirmed);current=state==='live'?sample||null:null;remaining=state==='starting'?4000-elapsed:(preview==='start'?24000:60000)-elapsed;}
   active=current;banner.hidden=!preview&&!current;atmosphere.hidden=!current;
   root.classList.toggle('th-paused',document.hidden);
-  title.textContent=preview?`VISUAL PREVIEW — ${state==='live'?'TREASURE HOUR LIVE':state==='starting'?'STARTING SOON':'TREASURE HOUR ENDED'}`:'TREASURE HOUR LIVE';
+  title.textContent=preview?`VISUAL PREVIEW - ${state==='live'?'TREASURE HOUR LIVE':state==='starting'?'STARTING SOON':'TREASURE HOUR ENDED'}`:'TREASURE HOUR LIVE';
   clock.textContent=state==='live'?`Ends in ${seconds(remaining)}`:state==='starting'?`Starts in ${seconds(remaining)}`:'';
   boosts.textContent=current?Object.values(fields).filter(([field])=>Number(current[field])>1).map(([field,label])=>`${label} ${current[field]}×`).join(' · '):'';
   note.textContent=preview?'Visual test only. Stats, saved data, real event times and Luck calculations are unchanged.':current?'Only the listed prizes receive these confirmed boosts.':'';
