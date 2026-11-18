@@ -62,6 +62,23 @@ async function weekEvents(env, profileId, start, end) {
 export async function handleExtra(req, env, url) {
   const route = req.method + ' ' + url.pathname;
 
+  // The app tells the server to forget this PC when the player unlinks it.
+  if (route === 'POST /api/pc/unlink') {
+    const m = (req.headers.get('authorization') || '').match(/^Bearer ([a-f0-9]+)\.([a-f0-9]+)$/);
+    if (!m) return J({ error: 'Unauthorized' }, 401);
+    const r = await env.DB.prepare('DELETE FROM linked_pcs WHERE id=? AND token_hash=?').bind(m[1], await sha(m[2])).run();
+    return J({ unlinked: r.meta.changes > 0 });
+  }
+
+  // The player removes one of their own linked PCs from the website.
+  const removePc = url.pathname.match(/^\/api\/linked-pcs\/([a-f0-9]+)$/);
+  if (removePc && req.method === 'DELETE') {
+    const me = await profileAuth(req, env);
+    if (!me) return J({ error: 'No profile' }, 401);
+    const r = await env.DB.prepare('DELETE FROM linked_pcs WHERE id=? AND profile_id=?').bind(removePc[1], me).run();
+    return J({ removed: r.meta.changes > 0 });
+  }
+
   // Linked app asks for a one-time ticket that signs the browser in as the same profile.
   if (route === 'POST /api/pc/web-session') {
     const pid = await pcAuth(req, env);

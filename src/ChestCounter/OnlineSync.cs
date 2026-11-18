@@ -114,13 +114,42 @@ public static class OnlineSync
         }
     }
 
-    /// <summary>Forgets the link on this PC and stops uploading. Data already on the website is deleted from the website.</summary>
-    public static void Unlink() => Update(s =>
+    /// <summary>
+    /// Forgets the link on this PC, stops uploading, and asks the website to delete this PC's record so it is not
+    /// counted as a linked PC any more. The website request is best effort and runs in the background; if it fails
+    /// (for example offline) the PC can still be removed from the website's My stats page. Matches already uploaded stay
+    /// on the website until the player deletes their data there.
+    /// </summary>
+    public static void Unlink()
     {
-        s.Enabled = false;
-        s.Token = null;
-        s.Synced.Clear();
-    });
+        var s = Load();
+        var token = s.Token;
+        var baseUrl = s.ApiBase.TrimEnd('/');
+        Update(x =>
+        {
+            x.Enabled = false;
+            x.Token = null;
+            x.Synced.Clear();
+        });
+        if (!string.IsNullOrEmpty(token))
+        {
+            _ = RevokeAsync(baseUrl, token);
+        }
+    }
+
+    private static async Task RevokeAsync(string baseUrl, string token)
+    {
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Post, baseUrl + "/api/pc/unlink");
+            req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            using var resp = await Http.SendAsync(req);
+        }
+        catch (Exception ex)
+        {
+            ErrorLog.Write("Online unlink", ex);
+        }
+    }
 
     private static string ErrorOf(JsonElement json, HttpResponseMessage resp) =>
         json.ValueKind == JsonValueKind.Object && json.TryGetProperty("error", out var e) ? e.GetString() ?? $"HTTP {(int)resp.StatusCode}" : $"HTTP {(int)resp.StatusCode}";
