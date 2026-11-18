@@ -1,0 +1,14 @@
+.th-banner{box-sizing:border-box;position:relative;max-width:1180px;margin:16px auto;padding:14px 20px;border:1px solid #ffb84d66;border-radius:16px;background:linear-gradient(110deg,#392238,#211925);color:#fff0cf;font:600 13px/1.6 Inter,system-ui,sans-serif;z-index:2;overflow:hidden}
+.th-banner[hidden],.th-atmosphere[hidden]{display:none!important}
+.th-banner strong{color:#ffd18a;letter-spacing:.08em}.th-banner time{font-variant-numeric:tabular-nums;color:#ff95cb;margin-left:12px}.th-boosts{display:block;color:#f8dcc0}.th-preview-note{display:block;color:#ffbde0}.th-controls{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}.th-controls button{font:inherit;color:inherit;background:#ffffff0c;border:1px solid #ffffff44;border-radius:8px;padding:4px 12px;cursor:pointer}
+.th-atmosphere{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden;background:radial-gradient(ellipse at 10% 30%,#ffb84d13,transparent 60%),radial-gradient(ellipse at 95% 75%,#ff66b210,transparent 50%)}
+.th-atmosphere i{position:absolute;left:var(--x);bottom:-20px;width:3px;height:3px;background:#ffd38a;border-radius:50%;opacity:0;animation:th-drift 16s linear infinite;animation-delay:var(--delay)}
+@keyframes th-drift{10%,80%{opacity:.55}to{transform:translateY(-105vh);opacity:0}}
+.th-boosted{outline:1px solid #ffbd65;outline-offset:2px;animation:th-pulse 3.5s ease-in-out infinite!important}
+@keyframes th-pulse{50%{outline-color:#ff79bd;box-shadow:0 0 22px #ffb84d22}}
+.th-shimmer:after{content:'';position:absolute;inset:0;pointer-events:none;background:linear-gradient(110deg,transparent 30%,#ffd68744 50%,transparent 70%);animation:th-shimmer 1.2s ease-out both}
+@keyframes th-shimmer{from{transform:translateX(-110%)}to{transform:translateX(110%)}}
+#goal{animation:none!important}main>section:has(#goal){transform:none!important;opacity:1!important;transition:none!important}
+.th-paused .th-atmosphere i,[data-motion=reduced] .th-atmosphere i{display:none}.th-paused .th-boosted,[data-motion=reduced] .th-boosted{animation:none!important}.th-paused .th-shimmer:after,[data-motion=reduced] .th-shimmer:after{display:none}
+@media(prefers-reduced-motion:reduce){html .th-atmosphere i{display:none!important}html .th-boosted{animation:none!important}html .th-shimmer:after{display:none!important}}
+@media(max-width:700px){.th-banner{margin:12px 18px;padding:12px 14px}.th-banner time{display:block;margin:0}}

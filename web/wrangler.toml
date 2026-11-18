@@ -3,7 +3,7 @@ main = "src/index.js"
 compatibility_date = "2026-11-01"
 
 [build]
-command = "node build-branding.mjs"
+command = "node build-branding.mjs && node build-treasure-hour.mjs"
 cwd = "."
 
 [assets]
