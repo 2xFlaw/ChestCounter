@@ -35,6 +35,24 @@ const spanish=readFileSync(join(publicDir,'privacy-es.js'),'utf8').replace(/\r\n
 const begin=spanish.indexOf('const content=['),end=spanish.indexOf('\nconst main=',begin);
 if(begin<0||end<begin)throw Error('Spanish policy data boundaries changed');
 writeFileSync(join(publicDir,'privacy-es-data.js'),spanish.slice(begin,end).replace('const content=','export const sections='));
+const i18nPath=join(publicDir,'i18n.js');
+let i18n=readFileSync(i18nPath,'utf8');
+if(!i18n.includes("from '/i18n-extra.js'")){
+ const anchor='const dict = new Map(rows(ROWS).map(r => [r[0], r.slice(1)]));';
+ if(!i18n.includes(anchor))throw Error('Shared translation dictionary integration point changed');
+ i18n="import { EXTRA } from '/i18n-extra.js';\n"+i18n.replace(anchor,anchor+`
+for(const [source, translations] of EXTRA){
+ const values=dict.get(source)||[];
+ for(const [code,value] of Object.entries(translations)){
+  const col=COLS.indexOf(code);
+  if(col<0||typeof value!=='string'||!value.trim())throw Error('Invalid supplemental translation');
+  values[col]=value;
+ }
+ dict.set(source,values);
+}
+`);
+ writeFileSync(i18nPath,i18n);
+}
 visit(publicDir);
 const appPath = join(publicDir, 'app.js');
 writeFileSync(appPath, brand(readFileSync(appPath, 'utf8')));
