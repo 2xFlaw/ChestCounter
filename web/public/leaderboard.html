@@ -12,44 +12,45 @@
 <body>
 <main>
 <header class='hero'><div class='in'>
-  <div><div class='lbl eyebrow'>2xFlaw's Chest Counter</div><h1>Leaderboard</h1><div class='chips'><span class='chip mute'>Opt-in only</span></div></div>
+  <div><div class='lbl eyebrow'>2xFlaw's Chest Counter</div><h1>Leaderboard</h1><div class='chips'><span class='chip mute'>Opt-in only</span><span class='chip mint'>App-tracked matches only</span></div></div>
   <div class='resetbox'><div class='lbl'>Who appears here</div><div class='muted' style='max-width:300px'>Players with a username, a linked PC and private mode switched off.</div></div>
 </div></header>
-
+<section aria-labelledby='ranking-rules'><div class='card'><h2 id='ranking-rules'>What counts toward rankings</h2><p>Only chest and match statistics recorded and synced by the Chest Counter app count here. Manual chest additions and editable starting totals do not count toward any leaderboard tab, season medals or the single-match record.</p><p class='muted'>Global combines opened and destroyed chests from synced matches. Use Opened to rank by openings alone. Your personal app or website total can be higher because it includes manual adjustments. App-tracked statistics are client-submitted, not independently verified or guaranteed cheat-proof.</p></div></section>
 <section id='recordSec'></section>
-
 <section>
   <div class='sh'><h2>Ranks</h2><div class='tabs' id='tabs'></div></div>
   <div class='card tw'><table><thead id='thead'></thead><tbody id='body'></tbody></table></div>
-  <p class='note' id='note'></p>
+  <p class='note' id='note' role='status'></p>
 </section>
 </main>
 <script type='module'>
 import { $, esc, n0, api, nav } from '/app.js';
 nav('board');
 const TABS = [['global', 'Global'], ['opened', 'Opened'], ['broken', 'Destroyed'], ['matches', 'Matches'], ['season', 'Season medals']];
-let tab = 'global';
-
-const rankCell = (i) => i < 3 ? `<span class='medal ${['gold', 'silver', 'bronze'][i]}'>#${i + 1}</span>` : `<span class='medal'>#${i + 1}</span>`;
-
+let tab = 'global', requestId=0;
+const rankCell = i => i < 3 ? `<span class='medal ${['gold', 'silver', 'bronze'][i]}'>#${i + 1}</span>` : `<span class='medal'>#${i + 1}</span>`;
 async function draw() {
-  $('#tabs').innerHTML = TABS.map((t) => `<button class='btn ${t[0] === tab ? 'on' : ''}' data-t='${t[0]}' type='button'>${t[1]}</button>`).join('');
-  document.querySelectorAll('#tabs [data-t]').forEach((el) => { el.onclick = () => { tab = el.dataset.t; draw(); }; });
-  if (tab === 'season') {
-    const r = await api('/api/leaderboard/season');
-    $('#recordSec').innerHTML = '';
-    $('#thead').innerHTML = `<tr><th>#</th><th>Player</th><th>Chests this season</th><th>Medal</th></tr>`;
-    $('#body').innerHTML = r.players.length ? r.players.map((p, i) => `<tr><td>${rankCell(i)}</td><td>${esc(p.username)}</td><td><b>${n0(p.total)}</b></td><td>${p.medal ? `<span class='medal ${p.medal}'>${p.medal}</span>` : ''}</td></tr>`).join('') : `<tr><td colspan='4' class='muted'>No season is running yet.</td></tr>`;
-    $('#note').textContent = r.season ? `Season: ${r.season.name}` : '';
-    return;
-  }
-  const r = await api('/api/leaderboard?sort=' + tab);
-  $('#recordSec').innerHTML = r.record ? `<div class='card record'><div><div class='lbl' style='color:var(--amber)'>World record</div><h2 style='font-size:30px;margin-top:6px'>Most chests in one game</h2><div class='muted'>${esc(r.record.username)} &middot; ${esc(r.record.mode || '')}</div></div><div class='v num'>${n0(r.record.total)}</div></div>` : '';
-  $('#thead').innerHTML = `<tr><th>#</th><th>Player</th><th>Global</th><th>Opened</th><th>Destroyed</th><th>Matches</th></tr>`;
-  $('#body').innerHTML = r.players.length ? r.players.map((p, i) => `<tr><td>${rankCell(i)}</td><td>${esc(p.username)}</td><td><b>${n0(p.global)}</b></td><td>${n0(p.opened)}</td><td>${n0(p.destroyed)}</td><td>${n0(p.matches)}</td></tr>`).join('') : `<tr><td colspan='6' class='muted'>No players yet. Be the first: link a PC and set a username on My stats.</td></tr>`;
-  $('#note').textContent = `${r.players.length} players`;
+  const id=++requestId, selected=tab;
+  $('#tabs').innerHTML = TABS.map(t => `<button class='btn ${t[0] === selected ? 'on' : ''}' data-t='${t[0]}' type='button'>${t[1]}</button>`).join('');
+  document.querySelectorAll('#tabs [data-t]').forEach(el => { el.onclick = () => { tab = el.dataset.t; draw(); }; });
+  $('#note').textContent='Loading rankings...';
+  try {
+    const r=await api(selected==='season'?'/api/leaderboard/season':'/api/leaderboard?sort='+selected);
+    if(id!==requestId)return;
+    if(selected==='season'){
+      $('#recordSec').innerHTML='';
+      $('#thead').innerHTML='<tr><th>#</th><th>Player</th><th>App-tracked chests this season</th><th>Medal</th></tr>';
+      $('#body').innerHTML=r.players.length?r.players.map((p,i)=>`<tr><td>${rankCell(i)}</td><td>${esc(p.username)}</td><td>${n0(p.total)}</td><td>${p.medal?`<span class='medal ${p.medal}'>${p.medal}</span>`:''}</td></tr>`).join(''):`<tr><td colspan='4' class='muted'>${r.season?'No eligible players this season yet.':'No season is running yet.'}</td></tr>`;
+      $('#note').textContent=r.season?`Season: ${r.season.name}. Manual additions and starting totals excluded.`:'Manual additions and starting totals excluded.';
+      return;
+    }
+    $('#recordSec').innerHTML=r.record?`<div class='card record'><div><div class='lbl' style='color:var(--amber)'>Best synced match</div><h2 style='font-size:30px;margin-top:6px'>Most chests in one game</h2><div class='muted'>${esc(r.record.username)} &middot; ${esc(r.record.mode||'')}</div></div><div class='v num'>${n0(r.record.total)}</div></div>`:'';
+    $('#thead').innerHTML='<tr><th>#</th><th>Player</th><th>Global</th><th>Opened</th><th>Destroyed</th><th>Matches</th></tr>';
+    $('#body').innerHTML=r.players.length?r.players.map((p,i)=>`<tr><td>${rankCell(i)}</td><td>${esc(p.username)}</td><td>${n0(p.global)}</td><td>${n0(p.opened)}</td><td>${n0(p.destroyed)}</td><td>${n0(p.matches)}</td></tr>`).join(''):`<tr><td colspan='6' class='muted'>No players yet. Link a PC and set a username on My stats.</td></tr>`;
+    $('#note').textContent=`${r.players.length} players. App-tracked matches only; manual additions and starting totals excluded.`;
+  }catch(e){if(id===requestId)$('#note').textContent=e.message;}
 }
-draw().catch((e) => { $('#note').textContent = e.message; });
+draw();
 </script>
 </body>
 </html>
