@@ -51,8 +51,13 @@ for(const [source, translations] of EXTRA){
  dict.set(source,values);
 }
 `);
- writeFileSync(i18nPath,i18n);
 }
+if(!i18n.includes("from '/i18n-stats.js'")){
+ const anchor='for(const [source, translations] of EXTRA){';
+ if(!i18n.includes(anchor))throw Error('Stats translation integration point changed');
+ i18n="import { STATS } from '/i18n-stats.js';\n"+i18n.replace(anchor,'for(const [source, translations] of [...EXTRA,...STATS]){');
+}
+writeFileSync(i18nPath,i18n);
 visit(publicDir);
 const appPath = join(publicDir, 'app.js');
 writeFileSync(appPath, brand(readFileSync(appPath, 'utf8')));

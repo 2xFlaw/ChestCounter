@@ -1,0 +1,46 @@
+export const STATS=[
+['In the updated Windows app, open Settings > Online connection and choose “Sync full personal history (includes manual additions)”. This works without unlinking. Select the correct app profile first. Keep app sync enabled for future manual edits and deletions to update here.',{
+ es:'En la aplicación actualizada de Windows, abre Settings > Online connection y elige “Sync full personal history (includes manual additions)”. No es necesario desvincular. Selecciona primero el perfil correcto de la aplicación. Mantén la sincronización activada para que las futuras modificaciones y eliminaciones manuales se reflejen aquí.',
+ pt:'No aplicativo atualizado para Windows, abra Settings > Online connection e escolha “Sync full personal history (includes manual additions)”. Não é necessário desvincular. Primeiro selecione o perfil correto do aplicativo. Mantenha a sincronização ativada para que futuras edições e exclusões manuais sejam atualizadas aqui.',
+ ru:'В обновлённом приложении для Windows откройте Settings > Online connection и выберите “Sync full personal history (includes manual additions)”. Отвязывать приложение не нужно. Сначала выберите нужный профиль приложения. Оставьте синхронизацию включённой, чтобы будущие ручные изменения и удаления отображались здесь.',
+ fr:'Dans l’application Windows mise à jour, ouvrez Settings > Online connection et choisissez “Sync full personal history (includes manual additions)”. Il n’est pas nécessaire de dissocier l’application. Sélectionnez d’abord le bon profil. Gardez la synchronisation activée pour que les futures modifications et suppressions manuelles soient répercutées ici.',
+ de:'Öffne in der aktualisierten Windows-App Settings > Online connection und wähle “Sync full personal history (includes manual additions)”. Die Verknüpfung muss dafür nicht aufgehoben werden. Wähle zuerst das richtige App-Profil. Lass die Synchronisierung aktiviert, damit zukünftige manuelle Änderungen und Löschungen hier übernommen werden.',
+ it:'Nell’app Windows aggiornata, apri Settings > Online connection e scegli “Sync full personal history (includes manual additions)”. Non occorre scollegare l’app. Seleziona prima il profilo corretto. Mantieni attiva la sincronizzazione affinché le future modifiche ed eliminazioni manuali vengano riportate qui.',
+ pl:'W zaktualizowanej aplikacji dla Windows otwórz Settings > Online connection i wybierz “Sync full personal history (includes manual additions)”. Nie trzeba odłączać aplikacji. Najpierw wybierz właściwy profil aplikacji. Pozostaw synchronizację włączoną, aby przyszłe ręczne zmiany i usunięcia były tutaj uwzględniane.',
+ tr:'Güncellenmiş Windows uygulamasında Settings > Online connection bölümünü açın ve “Sync full personal history (includes manual additions)” seçeneğini seçin. Bağlantıyı kaldırmanız gerekmez. Önce doğru uygulama profilini seçin. Gelecekteki elle düzenlemelerin ve silmelerin buraya yansıması için eşitlemeyi açık tutun.',
+ ja:'更新済みのWindowsアプリでSettings > Online connectionを開き、“Sync full personal history (includes manual additions)”を選択してください。連携解除は不要です。最初に正しいアプリのプロフィールを選んでください。今後の手動編集や削除がここに反映されるよう、同期を有効にしておいてください。'
+}],
+['Only statistics are sent, not replay files, manual notes, player names or Epic IDs. App date filters and teammate-count settings apply. Unknown-date matches cannot appear in a daily chart. Leaderboard totals remain separate.',{
+ es:'Solo se envían estadísticas, no archivos de repetición, notas manuales, nombres de jugadores ni identificadores de Epic. Se aplican los filtros de fecha y los ajustes de recuento de compañeros de la aplicación. Las partidas sin fecha conocida no pueden aparecer en un gráfico diario. Los totales de la clasificación se mantienen separados.',
+ pt:'Somente estatísticas são enviadas, não arquivos de replay, anotações manuais, nomes de jogadores ou IDs da Epic. Os filtros de data e as configurações de contagem dos colegas de equipe do aplicativo são aplicados. Partidas sem data conhecida não podem aparecer em um gráfico diário. Os totais do ranking permanecem separados.',
+ ru:'Передаётся только статистика, а не файлы повторов, ручные заметки, имена игроков или идентификаторы Epic. Применяются фильтры дат и настройки подсчёта товарищей по команде из приложения. Матчи с неизвестной датой не могут отображаться на дневном графике. Итоги таблицы лидеров остаются отдельными.',
+ fr:'Seules les statistiques sont envoyées, pas les fichiers de rediffusion, les notes manuelles, les noms de joueurs ni les identifiants Epic. Les filtres de date et les paramètres de comptage des coéquipiers de l’application s’appliquent. Les parties sans date connue ne peuvent pas apparaître dans un graphique quotidien. Les totaux du classement restent séparés.',
+ de:'Es werden nur Statistiken übertragen, keine Replay-Dateien, manuellen Notizen, Spielernamen oder Epic-IDs. Die Datumsfilter und Einstellungen zur Teamkollegenzählung der App gelten. Matches mit unbekanntem Datum können nicht im Tagesdiagramm erscheinen. Die Bestenlistensummen bleiben getrennt.',
+ it:'Vengono inviate solo statistiche, non file di replay, note manuali, nomi dei giocatori o ID Epic. Si applicano i filtri per data e le impostazioni di conteggio dei compagni dell’app. Le partite con data sconosciuta non possono apparire in un grafico giornaliero. I totali della classifica restano separati.',
+ pl:'Przesyłane są tylko statystyki, a nie pliki powtórek, ręczne notatki, nazwy graczy ani identyfikatory Epic. Obowiązują filtry dat i ustawienia zliczania członków drużyny z aplikacji. Mecze o nieznanej dacie nie mogą pojawić się na wykresie dziennym. Sumy rankingu pozostają oddzielne.',
+ tr:'Yalnızca istatistikler gönderilir; tekrar dosyaları, elle yazılan notlar, oyuncu adları veya Epic kimlikleri gönderilmez. Uygulamanın tarih filtreleri ve takım arkadaşı sayım ayarları uygulanır. Tarihi bilinmeyen maçlar günlük grafikte gösterilemez. Liderlik tablosu toplamları ayrı kalır.',
+ ja:'送信されるのは統計のみで、リプレイファイル、手動メモ、プレイヤー名、Epic IDは送信されません。アプリの日付フィルターとチームメイトのカウント設定が適用されます。日付不明の試合は日別グラフに表示できません。リーダーボードの合計は別に扱われます。'
+}],
+['Full personal-history sync is not enabled yet. These totals only include synced matches and your website starting total.',{
+ es:'La sincronización completa del historial personal aún no está activada. Estos totales solo incluyen las partidas sincronizadas y tu total inicial del sitio.',
+ pt:'A sincronização completa do histórico pessoal ainda não está ativada. Estes totais incluem apenas partidas sincronizadas e seu total inicial do site.',
+ ru:'Полная синхронизация личной истории ещё не включена. Эти итоги включают только синхронизированные матчи и начальное значение на сайте.',
+ fr:'La synchronisation complète de l’historique personnel n’est pas encore activée. Ces totaux comprennent uniquement les parties synchronisées et votre total initial sur le site.',
+ de:'Die vollständige Synchronisierung des persönlichen Verlaufs ist noch nicht aktiviert. Diese Summen enthalten nur synchronisierte Matches und deinen Website-Anfangsgesamtwert.',
+ it:'La sincronizzazione completa della cronologia personale non è ancora attiva. Questi totali includono solo le partite sincronizzate e il totale iniziale del sito.',
+ pl:'Pełna synchronizacja historii osobistej nie jest jeszcze włączona. Te sumy obejmują tylko zsynchronizowane mecze i początkową wartość w witrynie.',
+ tr:'Kişisel geçmişin tamamının eşitlenmesi henüz etkin değil. Bu toplamlar yalnızca eşitlenen maçları ve sitedeki başlangıç toplamınızı içerir.',
+ ja:'個人履歴全体の同期はまだ有効になっていません。これらの合計には、同期した試合とサイトの開始時の合計値だけが含まれます。'
+}],
+['Starting total never counts on the leaderboard. After full personal sync it is retained but excluded from the personal total to avoid double counting.',{
+ es:'El total inicial nunca cuenta en la clasificación. Tras la sincronización personal completa se conserva, pero se excluye del total personal para evitar contarlo dos veces.',
+ pt:'O total inicial nunca conta no ranking. Após a sincronização pessoal completa, ele é mantido, mas excluído do total pessoal para evitar contagem duplicada.',
+ ru:'Начальное значение никогда не учитывается в таблице лидеров. После полной личной синхронизации оно сохраняется, но исключается из личного итога во избежание двойного подсчёта.',
+ fr:'Le total initial ne compte jamais dans le classement. Après la synchronisation personnelle complète, il est conservé mais exclu du total personnel pour éviter un double comptage.',
+ de:'Der Anfangsgesamtwert zählt nie für die Bestenliste. Nach der vollständigen persönlichen Synchronisierung bleibt er gespeichert, wird aber zur Vermeidung einer Doppelzählung aus der persönlichen Summe ausgeschlossen.',
+ it:'Il totale iniziale non conta mai nella classifica. Dopo la sincronizzazione personale completa viene conservato, ma escluso dal totale personale per evitare un doppio conteggio.',
+ pl:'Wartość początkowa nigdy nie liczy się w rankingu. Po pełnej synchronizacji osobistej jest zachowywana, ale wykluczana z sumy osobistej, aby uniknąć podwójnego zliczania.',
+ tr:'Başlangıç toplamı liderlik tablosunda hiçbir zaman sayılmaz. Tam kişisel eşitlemeden sonra saklanır ancak iki kez sayılmasını önlemek için kişisel toplamdan çıkarılır.',
+ ja:'開始時の合計値はリーダーボードには一切加算されません。個人履歴全体の同期後も保持されますが、二重計上を防ぐため個人合計からは除外されます。'
+}]
+];
