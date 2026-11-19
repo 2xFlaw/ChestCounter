@@ -1044,27 +1044,16 @@ export const EXTRA=[
  tr:"fortnite.com için ücretsiz bir eklenti. İstediklerini ve ücretsiz yardımcını seç, tüm ücretsiz eşyalar dolabına gelsin. Asla V-Papel harcamaz.",
  ja:"fortnite.com用の無料アドオンです。欲しいものと無料の相棒を選ぶだけで、無料アイテムがすべてロッカーに入ります。V-Bucksは一切使いません。"
 }],
-["Get Claim All →",{
- es:"Consigue Reclamar todo →",
- pt:"Baixe o Resgatar tudo →",
- ru:"Получить «Забрать всё» →",
- fr:"Obtenir Tout récupérer →",
- de:"Alles abholen installieren →",
- it:"Ottieni Riscatta tutto →",
- pl:"Pobierz Odbierz wszystko →",
- tr:"Hepsini al'ı edin →",
- ja:"まとめて入手を使う →"
-}],
-["Get Claim All",{
- es:"Consigue Reclamar todo",
- pt:"Baixe o Resgatar tudo",
- ru:"Получить «Забрать всё»",
- fr:"Obtenir Tout récupérer",
- de:"Alles abholen installieren",
- it:"Ottieni Riscatta tutto",
- pl:"Pobierz Odbierz wszystko",
- tr:"Hepsini al'ı edin",
- ja:"まとめて入手を使う"
+["Claim All →",{
+ es:"Reclamar todo →",
+ pt:"Resgatar tudo →",
+ ru:"Забрать всё →",
+ fr:"Tout récupérer →",
+ de:"Alles abholen →",
+ it:"Riscatta tutto →",
+ pl:"Odbierz wszystko →",
+ tr:"Hepsini al →",
+ ja:"まとめて入手 →"
 }],
 ["FOR CHROME, EDGE, FIREFOX AND SAFARI.",{
  es:"PARA CHROME, EDGE, FIREFOX Y SAFARI.",
