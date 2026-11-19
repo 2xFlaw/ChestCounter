@@ -1,0 +1,21 @@
+<Project>
+  <UsingTask TaskName="PrepareWeeklyTranslations" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup><SourcePath ParameterType="System.String" Required="true" /></ParameterGroup>
+    <Task>
+      <Using Namespace="System" /><Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string source=File.ReadAllText(SourcePath).Replace("\r\n","\n");
+string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Weekly translation integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
+source=Once(source,"TextRenderer.DrawText(g, text, font, box, color,","TextRenderer.DrawText(g, WeeklyChanceText.T(text), font, box, color,");
+source=Once(source,"text = Fonts.Track(text.ToUpperInvariant());","text = Fonts.Track(WeeklyChanceText.T(text).ToUpper(L.Culture));");
+source=Once(source,"var tracked = Fonts.Track(text.ToUpperInvariant());","var tracked = Fonts.Track(WeeklyChanceText.T(text).ToUpper(L.Culture));");
+foreach(string text in new[]{"IF YOU OPEN THIS MANY CHESTS","NORMAL RATE"}){string literal="\""+text+"\"";source=Once(source,"Fonts.Track("+literal+")","Fonts.Track(WeeklyChanceText.T("+literal+").ToUpper(L.Culture))");}
+File.WriteAllText(SourcePath,source);
+return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="IntegrateWeeklyTranslations" AfterTargets="IntegrateTreasureHour241" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PrepareWeeklyTranslations SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/WeeklyChances241.g.cs" />
+  </Target>
+</Project>

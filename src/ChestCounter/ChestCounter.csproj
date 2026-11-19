@@ -29,4 +29,5 @@
   <Import Project="ObsTheme.targets" />
   <Import Project="AppTranslations.targets" />
   <Import Project="PerformanceTranslations.targets" />
+  <Import Project="WeeklyTranslations.targets" />
 </Project>
