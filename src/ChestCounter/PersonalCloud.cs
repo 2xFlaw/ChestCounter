@@ -33,21 +33,21 @@ public static class PersonalCloud
                 var panel=form.Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
                 if(panel==null||panel.Controls.OfType<Button>().Any(b=>Equals(b.Tag,"personal-cloud")))continue;
                 panel.AutoScroll=true;
-                var button=new Button{AutoSize=true,Tag="personal-cloud",Text="Sync full personal history (includes manual additions)"};
-                var stop=new Button{AutoSize=true,Text="Stop personal-history sync"};
-                var status=new Label{AutoSize=false,Width=440,Height=60,Text="Optional: manual entries and imported replays stay out of leaderboard rankings. Sync uses this PC as your personal-history source."};
+                var button=new Button{AutoSize=true,Tag="personal-cloud",Text="Sync my full personal history (including manual additions)"};
+                var stop=new Button{AutoSize=true,Text="Stop syncing personal history"};
+                var status=new Label{AutoSize=false,Width=440,Height=60,Text="Optional. Manual entries and imported replays are kept out of leaderboard rankings. Syncing makes this PC the source of your personal history."};
                 panel.Controls.Add(button);panel.Controls.Add(stop);panel.Controls.Add(status);
                 panel.Controls.SetChildIndex(button,0);panel.Controls.SetChildIndex(stop,1);panel.Controls.SetChildIndex(status,2);
                 button.Click+=async(_,_)=>
                 {
                     var s=OnlineSync.Load();
-                    if(string.IsNullOrEmpty(s.Token)||!s.Enabled){status.Text="Link this PC and enable sync first.";return;}
-                    if(MessageBox.Show(form,"Upload all existing eligible replay history, imported replay statistics and manual chest amounts? Notes, names, Epic IDs and replay files are not uploaded. This replaces the website starting-total contribution, not adds to it. Future edits and deletions sync while enabled.","Sync personal history",MessageBoxButtons.YesNo)!=DialogResult.Yes)return;
-                    options.Consent=Hash(s.Token);Save();button.Enabled=false;status.Text="Syncing history...";
+                    if(string.IsNullOrEmpty(s.Token)||!s.Enabled){status.Text="Link this PC and turn on sync first.";return;}
+                    if(MessageBox.Show(form,"Upload all your eligible replay history, imported replay statistics and manual chest amounts? Notes, names, Epic IDs and replay files are not uploaded. This replaces your starting total on the website rather than adding to it. Future edits and deletions sync while this is on.","Sync personal history",MessageBoxButtons.YesNo)!=DialogResult.Yes)return;
+                    options.Consent=Hash(s.Token);Save();button.Enabled=false;status.Text="Syncing history…";
                     var error=await Sync(true);
-                    if(!form.IsDisposed){button.Enabled=true;status.Text=error??"History synced. Refresh My stats. Personal changes now sync every minute while app sync is enabled.";}
+                    if(!form.IsDisposed){button.Enabled=true;status.Text=error??"History synced. Refresh My stats on the website. Changes now sync every minute while sync is on.";}
                 };
-                stop.Click+=(_,_)=>{options.Consent=null;Save();status.Text="Personal-history uploads stopped. The last website snapshot remains until you clear it there.";};
+                stop.Click+=(_,_)=>{options.Consent=null;Save();status.Text="Personal-history uploads have stopped. The last snapshot stays on the website until you clear it there.";};
             }
         };
     }
@@ -64,11 +64,11 @@ public static class PersonalCloud
     }
     private static async Task<string?> Sync(bool history)
     {
-        if(!await Busy.WaitAsync(0))return history?"A sync is already running. Try again shortly.":null;
+        if(!await Busy.WaitAsync(0))return history?"A sync is already running. Please try again shortly.":null;
         try
         {
             var s=OnlineSync.Load();
-            if(!s.Enabled||string.IsNullOrEmpty(s.Token)||options.Consent!=Hash(s.Token))return history?"Enable sync and approve personal-history upload first.":null;
+            if(!s.Enabled||string.IsNullOrEmpty(s.Token)||options.Consent!=Hash(s.Token))return history?"Turn on sync and approve the personal-history upload first.":null;
             var data=Read<TrackerData>("data.json")??throw new InvalidOperationException("No replay history available.");
             var config=File.Exists(Path.Combine(folder,"config.json"))?Read<Config>("config.json")??new():new Config();
             var ledger=File.Exists(Path.Combine(folder,"2xflaw-ledger.json"))?Read<PersonalLedger>("2xflaw-ledger.json")??throw new InvalidOperationException("Cannot read manual ledger."):new PersonalLedger();

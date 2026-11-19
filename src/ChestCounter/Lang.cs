@@ -98,7 +98,7 @@ public static class L
         }
         if (Slot == -1)
         {
-            return en;
+            return EnglishText.Fix(en);
         }
         return Translations.Table.TryGetValue(key, out var row) && row[Slot] is { Length: > 0 } text ? text : en;
     }
@@ -124,7 +124,7 @@ public static class L
         (n % 100) is 11 or 12 or 13 ? "th" : (n % 10) switch { 1 => "st", 2 => "nd", 3 => "rd", _ => "th" };
 
     /// <summary>Fecha corta + hora de una partida ("05/11 22:54" / "Nov 5 22:54").</summary>
-    public static string DateTimeShort(DateTime d) => d.ToString(En ? "MMM d HH:mm" : "dd/MM HH:mm", Culture);
+    public static string DateTimeShort(DateTime d) => d.ToString(En ? "d MMM HH:mm" : "dd/MM HH:mm", Culture);
 
     // Nombres internos guardados en data.json (en inglés) -> nombre mostrado.
     private static readonly Dictionary<string, (string Es, string En)> Names = new(StringComparer.OrdinalIgnoreCase)

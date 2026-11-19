@@ -1,0 +1,21 @@
+<Project>
+  <!-- Adds the chest statistics section (switch, tiles, per-match chart) to the top of the dashboard. -->
+  <UsingTask TaskName="PrepareDashboardStats" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup><SourcePath ParameterType="System.String" Required="true" /></ParameterGroup>
+    <Task>
+      <Using Namespace="System" /><Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string source=File.ReadAllText(SourcePath).Replace("\r\n","\n");
+string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Dashboard statistics integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
+source=Once(source,"    private readonly Store store;\n","    private readonly Store store;\n    private ChestStatsPanel? chestStats;\n");
+source=Once(source,"        var metrics=new TableLayoutPanel {Dock=DockStyle.Top,Height=255,","        chestStats=new ChestStatsPanel(monitor,store);body.Controls.Add(chestStats);\n        var metrics=new TableLayoutPanel {Dock=DockStyle.Top,Height=255,");
+source=Once(source,"state=s;UpdateStatus(s);","state=s;chestStats?.Refresh(s);UpdateStatus(s);");
+File.WriteAllText(SourcePath,source);
+return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="IntegrateDashboardStats" AfterTargets="IntegrateMainTranslations" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PrepareDashboardStats SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/MainForm241.g.cs" />
+  </Target>
+</Project>

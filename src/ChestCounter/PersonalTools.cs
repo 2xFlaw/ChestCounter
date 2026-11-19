@@ -38,7 +38,7 @@ public sealed class PersonalOdds
 {
     public string Source { get; set; } = "https://fortnite.bot/treasure";
     public DateTime CapturedUtc { get; set; } = new(2026,11,14,1,34,0,DateTimeKind.Utc);
-    public string Status { get; set; } = "Dated snapshot. Event times supplied by user; rates checked against source. No automatic retrieval.";
+    public string Status { get; set; } = "Dated snapshot. Event times are entered by you and the rates are checked against the source. Nothing is fetched automatically.";
     public List<TreasureWindow> Windows { get; set; } = new();
     public static PersonalOdds Seed()
     {
@@ -69,7 +69,7 @@ public sealed class PersonalTools : Form
     private readonly CheckedListBox claimed = new() { Width=230, Height=115, CheckOnClick=true };
     // Saved ticks use the English key; only the displayed text is translated.
     private sealed record ClaimItem(string Key) { public override string ToString() => WeeklyChanceText.T(Key); }
-    private static readonly string[] Names = {"Weekly Gold Outfit","Pirate Shop Access","Weekly Vehicle & Decal","Weekly Pickaxe or Back Bling","Weekly Jam Track","Weekly Loading Screen","Any Gizmo"};
+    private static readonly string[] Names = {"Weekly Gold Outfit","Pirate Shop Access","Weekly Vehicle & Decal","Weekly Pickaxe or Back Bling","Weekly Jam Track","Weekly Loading Screen","Any gizmo"};
     private static readonly double[] Den = {1562500,137500,7813,568,391,272,127};
     private string LedgerPath => Path.Combine(store.Folder,"2xflaw-ledger.json");
     private string OddsPath => Path.Combine(store.Folder,"2xflaw-odds.json");
@@ -103,6 +103,8 @@ public sealed class PersonalTools : Form
         profiles.SelectedIndexChanged+=(_,_)=>RefreshEntries();
         AllowDrop=true; DragEnter+=(_,e)=> {if(e.Data?.GetDataPresent(DataFormats.FileDrop)==true)e.Effect=DragDropEffects.Copy;};
         DragDrop+=(_,e)=> {if(e.Data?.GetData(DataFormats.FileDrop) is string[] f) _=Import(f);};
+        // Readable column headings instead of the property names (AtUtc, Mine…); the internal id is not shown.
+        grid.DataBindingComplete+=(_,_)=> { foreach(DataGridViewColumn c in grid.Columns) { switch(c.DataPropertyName) { case "Id": c.Visible=false; break; case "AtUtc": c.HeaderText=ToolText.T("Date (UTC)"); break; case "Profile": c.HeaderText=ToolText.T("Profile"); break; case "Mine": c.HeaderText=ToolText.T("Your chests"); break; case "Squad": c.HeaderText=ToolText.T("Teammates only"); break; case "Note": c.HeaderText=ToolText.T("Note"); break; } } };
         grid.SelectionChanged+=(_,_)=> { if(grid.CurrentRow?.DataBoundItem is PersonalEntry e) { when.Value=e.AtUtc.ToLocalTime();mine.Value=Math.Clamp(e.Mine,0,1000000);squad.Value=Math.Clamp(e.Squad,0,1000000);note.Text=e.Note; } };
         RefreshEntries();
     }
@@ -178,9 +180,9 @@ public sealed class PersonalTools : Form
             static string H(object? x)=>System.Net.WebUtility.HtmlEncode(x?.ToString()??"");
             var b=new StringBuilder("<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width'><title>2xFlaw's Chest Counter</title><style>body{background:#0b0e14;color:#e6eaf2;font:16px Segoe UI,sans-serif;max-width:1150px;margin:30px auto;padding:15px}h1,h2,a{color:#ff66b2}table{width:100%;border-collapse:collapse;background:#151a24}td,th{padding:12px;text-align:left;border-bottom:1px solid #343d50}.card{background:#151a24;border-radius:14px;padding:20px;margin:16px 0}.muted{color:#b0bacb}.banner{width:100%;border-radius:16px}strong{color:#ff80b8}</style>");
             b.Append("<img class='banner' src='2xflaw-banner.jpg' alt='2xFlaw'><h1>2xFlaw's Chest Counter</h1>");
-            b.Append($"<p>Profile: {H((profiles.SelectedItem as Profile)?.Name)} | Generated {H(now.ToLocalTime())}. Reopen report to refresh statistics.</p>");
-            b.Append($"<div class='card'><strong>{personal:N0}</strong> personal weekly chests | <strong>≥ {mates:N0}</strong> observed/manual teammate chests | Team ≥ {personal+mates:N0}<p>Manual personal: {entries.Sum(e=>e.Mine):N0}. Teammate visibility is incomplete; no fixed radius assumed.</p><p>Weekly reset: <span data-date='{end:O}'></span> — <span data-count='{end:O}'></span></p></div>");
-            b.Append("<h2>Your chances</h2><p>Estimated chance of at least one drop; independent-trial model, not a guarantee or odds of the next chest. Claimed states are manual per profile/week; verify reward identities each week. Squad eligibility and exact teammate opening times are unknown.</p><table><tr><th>Reward</th><th>Next chest now</th><th>Personal this week</th><th>Squad illustration</th><th>Status</th></tr>");
+            b.Append($"<p>Profile: {H((profiles.SelectedItem as Profile)?.Name)} | Generated {H(now.ToLocalTime())}. Reopen the report to refresh the statistics.</p>");
+            b.Append($"<div class='card'><strong>{personal:N0}</strong> of your chests this week | <strong>≥ {mates:N0}</strong> teammate chests (seen or added by hand) | Team ≥ {personal+mates:N0}<p>Added by hand: {entries.Sum(e=>e.Mine):N0}. Teammates are only partly visible in replays, so their counts are a minimum.</p><p>Weekly reset: <span data-date='{end:O}'></span> — <span data-count='{end:O}'></span></p></div>");
+            b.Append("<h2>Your chances</h2><p>The estimated chance of at least one drop, treating each chest as an independent try. It isn't a guarantee or the odds for your next chest. Claimed prizes are ticked by hand per profile and week, so check which rewards are on offer each week. Squad eligibility and exact teammate opening times are unknown.</p><table><tr><th>Reward</th><th>Next chest now</th><th>Personal this week</th><th>Squad illustration</th><th>Status</th></tr>");
             var live=o.Windows.FirstOrDefault(w=>now>=w.StartUtc&&now<w.EndUtc);
             var claims=ledger.Claimed.GetValueOrDefault(ClaimKey)??new();
             for(int i=0;i<Names.Length;i++)

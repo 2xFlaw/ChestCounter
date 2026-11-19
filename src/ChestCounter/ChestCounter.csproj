@@ -8,7 +8,7 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <AssemblyName>ChestCounter</AssemblyName>
     <RootNamespace>ChestCounter</RootNamespace>
-    <Version>2.4.2</Version>
+    <Version>2.4.3</Version>
     <Product>2xFlaw's Chest Counter</Product>
     <InvariantGlobalization>false</InvariantGlobalization>
     <PublishTrimmed>false</PublishTrimmed>
@@ -31,4 +31,5 @@
   <Import Project="PerformanceTranslations.targets" />
   <Import Project="WeeklyTranslations.targets" />
   <Import Project="WeeklyMoreTranslations.targets" />
+  <Import Project="DashboardStats.targets" />
 </Project>
