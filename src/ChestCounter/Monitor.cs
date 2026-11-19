@@ -79,6 +79,7 @@ public sealed class Monitor
     private volatile UpdateInfo? _update;
     private bool _updateAnnounced;
     private volatile bool _installing;
+    private volatile bool _updateOffered;
     private volatile string? _notice;
     private volatile bool _keepOpenRequested;
     private DateTime? _fortniteClosedSince;
@@ -130,19 +131,25 @@ public sealed class Monitor
 
         new Thread(Loop) { IsBackground = true, Name = "Vigilancia" }.Start();
 
-        // Nueva versión en GitHub: única conexión de red de la herramienta (se puede desactivar en ajustes).
-        if (_config.UpdateMode != "off")
+        // Nueva versión en GitHub: se comprueba al abrir y cada 6 horas (se puede desactivar en ajustes).
+        _ = Task.Run(async () =>
         {
-            _ = Task.Run(async () =>
+            while (true)
             {
-                var found = await Updater.CheckAsync();
-                if (found != null)
+                if (_config.UpdateMode != "off" && !_installing)
                 {
-                    _update = found;
-                    RequestPublish();
+                    var found = await Updater.CheckAsync();
+                    var known = _update;
+                    if (found != null && (known == null || found.Version > known.Version))
+                    {
+                        _update = found;
+                        _updateAnnounced = false;
+                        RequestPublish();
+                    }
                 }
-            });
-        }
+                await Task.Delay(TimeSpan.FromHours(6));
+            }
+        });
     }
 
     public void Stop()
@@ -318,6 +325,14 @@ public sealed class Monitor
     /// <summary>El jugador decide mantener el contador abierto tras cerrar Fortnite.</summary>
     public void KeepOpen()
     {
+        // In "Ask first" mode the notice offers the new version: clicking it installs the update.
+        if (_updateOffered && _update != null && !_installing)
+        {
+            _updateOffered = false;
+            _notice = null;
+            InstallUpdate();
+            return;
+        }
         AutoMode = false;
         _keepOpenRequested = true;
         RequestPublish();
@@ -350,6 +365,9 @@ public sealed class Monitor
     }
 
     /// <summary>Descarga e instala la nueva versión en segundo plano; luego pide reiniciar.</summary>
+    /// <summary>"Ask first" mode: a new version can be installed now (raised between matches).</summary>
+    public event Action<UpdateInfo>? UpdateOffered;
+
     public void InstallUpdate()
     {
         var u = _update;
@@ -608,19 +626,26 @@ public sealed class Monitor
             return false;
         }
 
+        if (_config.UpdateMode == "off")
+        {
+            return false;
+        }
+        // Only between matches, so a match in progress is never interrupted.
+        var idle = !_tracker.IsLive && !_tracker.HasPending && !_tracker.IsFinishing;
+        if (!idle || AppInfo.ExePath == null)
+        {
+            return false;
+        }
+        _updateAnnounced = true;
         if (_config.UpdateMode == "auto")
         {
-            var idle = !_tracker.IsLive && !_tracker.HasPending && !_tracker.IsFinishing;
-            if (!idle || AppInfo.ExePath == null)
-            {
-                return false;
-            }
-            _updateAnnounced = true;
             InstallUpdate();
             return true;
         }
 
-        _updateAnnounced = true;
+        _updateOffered = true;
+        _notice = L.F("Versión {0} disponible (tienes la {1}): haz clic aquí para instalarla.", "Version {0} is available (you have {1}): click here to install it.", u.Version.ToString(3), AppInfo.VersionText);
+        UpdateOffered?.Invoke(u);
         return true;
     }
 
