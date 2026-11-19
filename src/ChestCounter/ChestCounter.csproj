@@ -26,4 +26,5 @@
     <ProjectReference Include="..\..\lib\FortniteReplayReader\FortniteReplayReader.csproj" />
   </ItemGroup>
   <Import Project="TreasureHour241.targets" />
+  <Import Project="ObsTheme.targets" />
 </Project>

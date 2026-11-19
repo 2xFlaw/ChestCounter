@@ -1,0 +1,44 @@
+<Project>
+  <!-- Patch only the shared OBS stylesheet; keep report content and overlay logic unchanged. -->
+  <UsingTask TaskName="PrepareObsTheme" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <Root ParameterType="System.String" Required="true" />
+      <OutputDirectory ParameterType="System.String" Required="true" />
+      <Generated ParameterType="Microsoft.Build.Framework.ITaskItem[]" Output="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string source=File.ReadAllText(Path.Combine(Root,"ReportWriter.cs")).Replace("\r\n","\n");
+const string marker="private const string OverlayStyle = \"\"\"";
+int start=source.IndexOf(marker,StringComparison.Ordinal);
+if(start<0||source.IndexOf(marker,start+marker.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("OBS stylesheet integration point changed");
+int contentStart=start+marker.Length;
+int end=source.IndexOf("\"\"\";",contentStart,StringComparison.Ordinal);
+if(end<contentStart)throw new InvalidOperationException("OBS stylesheet closing delimiter changed");
+string style=source.Substring(contentStart,end-contentStart);
+string Swap(string text,string before,string after){if(text.IndexOf(before,StringComparison.Ordinal)<0)throw new InvalidOperationException("OBS palette integration point changed: "+before);return text.Replace(before,after);}
+style=Swap(style,"#e6eaf2","#f9ecf6");
+style=Swap(style,"rgba(15,19,27,.9)","rgba(25,15,30,.94)");
+style=Swap(style,"#2a3344","#451c3c");
+style=Swap(style,"#ffb84d","#ff7fb4");
+source=source.Substring(0,contentStart)+style+source.Substring(end);
+Directory.CreateDirectory(OutputDirectory);
+string path=Path.GetFullPath(Path.Combine(OutputDirectory,"ReportWriterObsTheme.g.cs"));
+File.WriteAllText(path,source);
+Generated=new Microsoft.Build.Framework.ITaskItem[]{new Microsoft.Build.Utilities.TaskItem(path)};
+return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="IntegrateObsTheme" BeforeTargets="CoreCompile" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PrepareObsTheme Root="$(MSBuildProjectDirectory)" OutputDirectory="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)ObsTheme">
+      <Output TaskParameter="Generated" ItemName="_ObsThemeSources" />
+    </PrepareObsTheme>
+    <ItemGroup>
+      <Compile Remove="ReportWriter.cs" />
+      <Compile Include="@(_ObsThemeSources)" />
+    </ItemGroup>
+  </Target>
+</Project>
