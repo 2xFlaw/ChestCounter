@@ -26,6 +26,14 @@ CREATE TABLE IF NOT EXISTS matches (
   PRIMARY KEY (profile_id, session_id)
 );
 CREATE INDEX IF NOT EXISTS idx_matches_started ON matches(started_at);
+-- Teammate chests seen and match length, synced by app 2.4.3+ (created by the Worker when first needed).
+CREATE TABLE IF NOT EXISTS match_extras (
+  profile_id TEXT NOT NULL,
+  session_id TEXT NOT NULL,
+  mates INTEGER,
+  duration_s INTEGER,
+  PRIMARY KEY (profile_id, session_id)
+);
 
 CREATE TABLE IF NOT EXISTS friend_groups (
   id TEXT PRIMARY KEY,
