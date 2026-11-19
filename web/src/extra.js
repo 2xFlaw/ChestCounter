@@ -1,4 +1,5 @@
 import { computeLuck, weekStart } from './odds.js';
+import { withAllTimePirate } from './alltime.js';
 
 const J = (d, s = 200, h = {}) => new Response(JSON.stringify(d), { status: s, headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...h } });
 const hex = (b) => [...new Uint8Array(b)].map((x) => x.toString(16).padStart(2, '0')).join('');
@@ -199,7 +200,8 @@ export async function handleExtra(req, env, url) {
     const windows = (await env.DB.prepare('SELECT * FROM treasure_hours ORDER BY start_utc').all()).results;
     const ev = await weekEvents(env, row.profile_id, start, end);
     const next = windows.find((w) => new Date(w.start_utc) > now) || null;
-    return J({ chests: ev.reduce((a, e) => a + e.count, 0), prizes: computeLuck(ev, windows, now), nextHour: next });
+    const prizes = await withAllTimePirate(computeLuck(ev, windows, now), env, row.profile_id, windows, now, true);
+    return J({ chests: ev.reduce((a, e) => a + e.count, 0), prizes, nextHour: next });
   }
 
   // Loads Treasure Hour windows. Protected by a secret: wrangler secret put ADMIN_KEY

@@ -1,5 +1,6 @@
 import { TABLE, computeLuck, weekStart } from "./odds.js";
 import { MATCH_EXTRAS } from "./benchmarks.js";
+import { withAllTimePirate } from "./alltime.js";
 
 const J = (d, s = 200, h = {}) => new Response(JSON.stringify(d), { status: s, headers: { "content-type": "application/json", "cache-control": "no-store", ...h } });
 const bad = (m, s = 400) => J({ error: m }, s);
@@ -80,14 +81,6 @@ export default {
         return J({ players: rows.map((r, i) => ({ rank: i + 1, username: r.username, global: r.st + r.o + r.d, opened: r.st + r.o, destroyed: r.d, matches: r.n })), record });
       }
 
-      if (route === "GET /api/leaderboard/season") {
-        const s = await env.DB.prepare("SELECT * FROM seasons WHERE starts_at <= datetime('now') ORDER BY starts_at DESC LIMIT 1").first();
-        if (!s) return J({ season: null, players: [] });
-        const rows = (await env.DB.prepare("SELECT p.username, SUM(m.opened+m.destroyed) AS total FROM matches m JOIN profiles p ON p.id=m.profile_id WHERE p.username IS NOT NULL AND p.is_private=0 AND m.started_at >= ? AND m.started_at < ? GROUP BY p.id ORDER BY total DESC LIMIT 100").bind(s.starts_at, s.ends_at).all()).results;
-        const medals = ["gold", "silver", "bronze"];
-        return J({ season: s, players: rows.map((r, i) => ({ rank: i + 1, username: r.username, total: r.total, medal: medals[i] || null })) });
-      }
-
       if (route === "GET /api/community") {
         const t = await env.DB.prepare("SELECT COALESCE(SUM(opened),0) AS o, COALESCE(SUM(destroyed),0) AS d, COUNT(*) AS n, COUNT(DISTINCT profile_id) AS p FROM matches").first();
         const types = (await env.DB.prepare("SELECT j.key AS type, SUM(j.value) AS total FROM matches, json_each(matches.chest_types_json) j WHERE chest_types_json IS NOT NULL GROUP BY j.key ORDER BY total DESC").all()).results;
@@ -109,7 +102,9 @@ export default {
         const now = new Date(), start = weekStart(now), end = new Date(start.getTime() + 7 * 864e5);
         const win = await windows(env);
         const ev = await weekEvents(env, pid, start, end);
-        return J({ profile: pid, weekStart: iso(start), chests: ev.reduce((a, e) => a + e.count, 0), prizes: computeLuck(ev, win, now), windows: win });
+        // Pirate Shop Access is not a weekly prize: it uses the whole history (personal snapshot only for your own view).
+        const prizes = await withAllTimePirate(computeLuck(ev, win, now), env, pid, win, now, pid === me);
+        return J({ profile: pid, weekStart: iso(start), chests: ev.reduce((a, e) => a + e.count, 0), prizes, windows: win });
       }
 
       if (route === "POST /api/link/claim") {

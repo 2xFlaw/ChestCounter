@@ -62,9 +62,11 @@ Next closest|Siguiente más cercano|Próximo mais perto|Ближайший сл�
 Your pick|Tu elección|Sua escolha|Твой выбор|Votre choix|Deine Wahl|La tua scelta|Twój wybór|Senin seçimin|あなたの選択
 Auto: next closest|Auto: siguiente más cercano|Auto: próximo mais perto|Авто: ближайший|Auto : le plus proche|Auto: am nächsten|Auto: il più vicino|Auto: najbliższy|Otomatik: en yakın|自動: 最も近い報酬
 cumulative chance this week|probabilidad acumulada esta semana|chance acumulada esta semana|накопленный шанс за неделю|chance cumulée cette semaine|kumulierte Chance diese Woche|probabilità cumulata questa settimana|skumulowane szanse w tym tygodniu|bu haftaki toplam şans|今週の累積確率
+cumulative chance, all time|probabilidad acumulada, desde siempre|chance acumulada, desde sempre|накопленный шанс за всё время|chance cumulée, depuis le début|kumulierte Chance, insgesamt|probabilità cumulata, da sempre|skumulowane szanse, od początku|tüm zamanların toplam şansı|累積確率(全期間)
 per chest ·|por cofre ·|por baú ·|на сундук ·|par coffre ·|pro Truhe ·|per forziere ·|na skrzynię ·|sandık başına ·|チェスト1個あたり ·
 Past the 50% mark|Pasado el 50%|Passou de 50%|Больше 50%|Au-delà de 50 %|Über der 50-%-Marke|Oltre il 50%|Powyżej 50%|%50'yi geçti|50%を超えました
 about|unos|cerca de|примерно|environ|etwa|circa|około|yaklaşık|約
+per chest · about|por cofre · unos|por baú · cerca de|на сундук · примерно|par coffre · environ|pro Truhe · etwa|per forziere · circa|na skrzynię · około|sandık başına · yaklaşık|チェスト1個あたり · 約
 more chests to reach 50%|cofres más para llegar al 50%|baús a mais para chegar a 50%|сундуков до 50%|coffres de plus pour atteindre 50 %|weitere Truhen bis 50 %|forzieri in più per arrivare al 50%|skrzyń więcej do 50%|sandık daha 50%'ye ulaşmak için|個多く開けると50%に到達
 If you open this many chests|Si abres esta cantidad de cofres|Se você abrir esta quantidade de baús|Если откроешь столько сундуков|Si vous ouvrez ce nombre de coffres|Wenn du so viele Truhen öffnest|Se apri questo numero di forzieri|Jeśli otworzysz tyle skrzyń|Bu kadar sandık açarsan|このくらいチェストを開けた場合
 Normal rate|Tasa normal|Taxa normal|Обычный шанс|Taux normal|Normale Rate|Tasso normale|Normalny współczynnik|Normal oran|通常確率
@@ -120,7 +122,6 @@ What counts toward rankings|Qué cuenta para las clasificaciones|O que conta par
 Ranks|Rangos|Posições|Места|Rangs|Ränge|Posizioni|Pozycje|Sıralar|順位
 Global|Global|Global|Общий|Global|Global|Globale|Globalny|Genel|総合
 Matches|Partidas|Partidas|Матчи|Parties|Matches|Partite|Mecze|Maçlar|マッチ
-Season medals|Medallas de temporada|Medalhas da temporada|Медали сезона|Médailles de saison|Saisonmedaillen|Medaglie di stagione|Medale sezonu|Sezon madalyaları|シーズンメダル
 Player|Jugador|Jogador|Игрок|Joueur|Spieler|Giocatore|Gracz|Oyuncu|プレイヤー
 Medal|Medalla|Medalha|Медаль|Médaille|Medaille|Medaglia|Medal|Madalya|メダル
 Best synced match|Mejor partida sincronizada|Melhor partida sincronizada|Лучший синхронизированный матч|Meilleure partie synchronisée|Bestes synchronisiertes Match|Miglior partita sincronizzata|Najlepszy zsynchronizowany mecz|En iyi senkronize maç|同期済みの最高マッチ
@@ -156,6 +157,7 @@ export const PATS=`
 ^Profile (.+)$|Perfil $1|Perfil $1|Профиль $1|Profil $1|Profil $1|Profilo $1|Profil $1|Profil $1|プロフィール $1
 ^Linked PCs: ([0-9]+)$|PC vinculados: $1|PCs vinculados: $1|Связанные ПК: $1|PC liés : $1|Verknüpfte PCs: $1|PC collegati: $1|Połączone komputery: $1|Bağlı bilgisayarlar: $1|連携済みPC: $1
 ^([0-9,]+) chests this week$|$1 cofres esta semana|$1 baús esta semana|Сундуков за неделю: $1|$1 coffres cette semaine|$1 Truhen diese Woche|$1 forzieri questa settimana|$1 skrzyń w tym tygodniu|Bu hafta $1 sandık|今週 $1 個のチェスト
+^([0-9,]+) chests all time$|$1 cofres desde siempre|$1 baús desde sempre|Сундуков за всё время: $1|$1 coffres depuis le début|$1 Truhen insgesamt|$1 forzieri da sempre|$1 skrzyń od początku|Tüm zamanlarda $1 sandık|全期間 $1 個のチェスト
 ^([0-9,]+) chests since the last reset$|$1 cofres desde el último reinicio|$1 baús desde o último reinício|Сундуков с последнего сброса: $1|$1 coffres depuis la dernière réinitialisation|$1 Truhen seit dem letzten Reset|$1 forzieri dall'ultimo reset|$1 skrzyń od ostatniego resetu|Son sıfırlamadan bu yana $1 sandık|前回のリセット以降 $1 個のチェスト
 ^Treasure Hour ([0-9.]+)x$|Hora del Tesoro $1x|Hora do Tesouro $1x|Час сокровищ $1x|Heure du trésor $1x|Schatzstunde $1x|Ora del Tesoro $1x|Godzina Skarbów $1x|Hazine Saati $1x|トレジャーアワー $1x
 ^([0-9.]+)x now$|$1x ahora|$1x agora|$1x сейчас|$1x maintenant|$1x jetzt|$1x ora|$1x teraz|şimdi $1x|現在 $1x

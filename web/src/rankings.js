@@ -9,11 +9,5 @@ export async function handleRankings(req, env, url) {
     const record = await env.DB.prepare(`SELECT p.username,m.opened+m.destroyed AS total,m.mode,m.started_at FROM matches m JOIN profiles p ON p.id=m.profile_id WHERE ${eligible} ORDER BY total DESC,m.started_at ASC,p.id ASC,m.session_id ASC LIMIT 1`).first();
     return json({players:rows.map((p,i)=>({rank:i+1,username:p.username,global:p.total,opened:p.opened,destroyed:p.destroyed,matches:p.matches})),record,rankingSource:'synced_matches_only'});
   }
-  if (url.pathname === '/api/leaderboard/season') {
-    const season = await env.DB.prepare("SELECT * FROM seasons WHERE julianday(starts_at)<=julianday('now') AND julianday(ends_at)>julianday('now') ORDER BY julianday(starts_at) DESC LIMIT 1").first();
-    if (!season) return json({season:null,players:[],rankingSource:'synced_matches_only'});
-    const rows = (await env.DB.prepare(`SELECT p.id,p.username,SUM(m.opened+m.destroyed) AS total FROM matches m JOIN profiles p ON p.id=m.profile_id WHERE ${eligible} AND julianday(m.started_at)>=julianday(?) AND julianday(m.started_at)<julianday(?) GROUP BY p.id ORDER BY total DESC,p.id ASC LIMIT 100`).bind(season.starts_at,season.ends_at).all()).results;
-    return json({season,players:rows.map((p,i)=>({rank:i+1,username:p.username,total:p.total,medal:['gold','silver','bronze'][i]||null})),rankingSource:'synced_matches_only'});
-  }
   return null;
 }
