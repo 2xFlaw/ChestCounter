@@ -15,6 +15,8 @@ source=Once(source,"var name=n;var b=ActionButton(n,()=>Navigate(name));","var n
 source=Once(source,"var on=b.Text==name;","var on=string.Equals(b.Tag as string,name,StringComparison.Ordinal);");
 const string empty="\"No matches yet. They appear here once a replay has been analysed.\"";
 source=Once(source,empty,"MainActionText.T("+empty+")");
+foreach(string text in new[]{"● Replay folder not found, choose it in Settings","● Match in progress, counting live","● Ready, play a match and it will appear here","● Ready, watching your replays","Waiting for your first completed replay","Squad data: enable teammate tracking in Settings. Counts are limited to replay visibility.","Closing with Fortnite — click here to keep open.","Overlay on","Overlay off","Weekly tools error","Weekly chances error","History error"}){string literal="\""+text+"\"";source=Once(source,literal,"MainStatusText.T("+literal+")");}
+source=Once(source,"history.DataSource=rows;historyEmpty.Visible=rows.Count==0;","history.DataSource=rows;historyEmpty.Visible=rows.Count==0;foreach(DataGridViewColumn column in history.Columns)column.HeaderText=MainStatusText.HistoryHeader(column.DataPropertyName);");
 File.WriteAllText(SourcePath,source);
 return true;
       ]]></Code>
