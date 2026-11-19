@@ -245,6 +245,25 @@ internal static class Program
             catch (InvalidOperationException) { /* la ventana aún no existe */ }
         };
 
+        // "Ask first" updates: a Yes/No question; the notice on the Dashboard stays clickable if the answer is No.
+        monitor.UpdateOffered += u =>
+        {
+            try
+            {
+                form.BeginInvoke(new Action(() =>
+                {
+                    if (form.IsDisposed) return;
+                    var answer = MessageBox.Show(form,
+                        L.F("Versión {0} disponible (tienes la {1}). ¿Instalarla ahora? El contador se reinicia solo y no pierdes nada.",
+                            "Version {0} is available (you have {1}). Install it now? The counter restarts by itself and nothing is lost.",
+                            u.Version.ToString(3), AppInfo.VersionText),
+                        "Chest Counter", MessageBoxButtons.YesNo, MessageBoxIcon.Information);
+                    if (answer == DialogResult.Yes) monitor.InstallUpdate();
+                }));
+            }
+            catch (InvalidOperationException) { /* la ventana aún no existe: queda el aviso del panel */ }
+        };
+
         monitor.Start();
         Application.Run(form);
         monitor.Stop();
