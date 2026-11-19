@@ -1,0 +1,24 @@
+namespace ChestCounter;
+
+/// <summary>Text for the Pirate Shop Claim All card. Keyed by English; values are es, pt, ru, fr, de, it, pl, tr, ja.</summary>
+internal static class ClaimAllText
+{
+    private static readonly string[] Codes = { "es", "pt", "ru", "fr", "de", "it", "pl", "tr", "ja" };
+    private static readonly Dictionary<string, string[]> Texts = new(StringComparer.Ordinal)
+    {
+        ["Pirate Shop Claim All"] = new[] { "Reclamar todo de la tienda pirata", "Resgatar tudo da loja pirata", "Забрать всё в Пиратском магазине", "Tout récupérer dans la boutique pirate", "Piratenshop: Alles abholen", "Riscatta tutto nel negozio pirata", "Odbierz wszystko w sklepie pirackim", "Korsan dükkânı: Hepsini al", "海賊ショップまとめて入手" },
+        ["Already own the Pirate Shop Access Token? Claim the whole Item Shop with one button!"] = new[] { "¿Ya tienes el token de acceso a la tienda pirata? ¡Reclama toda la tienda de objetos con un solo botón!", "Já tem o token de acesso à loja pirata? Resgate a Loja de Itens inteira com um só botão!", "Уже есть жетон доступа в Пиратский магазин? Заберите весь магазин предметов одной кнопкой!", "Vous avez déjà le jeton d’accès à la boutique pirate ? Récupérez toute la boutique d’objets en un seul clic !", "Du hast schon den Zugangstoken für den Piratenshop? Hol dir den ganzen Item-Shop mit einem Klick!", "Hai già il gettone di accesso al negozio pirata? Riscatta tutto il negozio oggetti con un solo pulsante!", "Masz już żeton dostępu do sklepu pirackiego? Odbierz cały sklep z przedmiotami jednym przyciskiem!", "Korsan dükkânı erişim jetonun zaten var mı? Tüm Eşya Dükkânı'nı tek tuşla al!", "海賊ショップへのアクセストークンをもう持っていますか？ボタンひとつでアイテムショップをまるごと入手しましょう！" },
+        ["Free for Chrome, Edge, Firefox and Safari. Never spends V-Bucks."] = new[] { "Gratis para Chrome, Edge, Firefox y Safari. Nunca gasta paVos.", "Grátis para Chrome, Edge, Firefox e Safari. Nunca gasta V-Bucks.", "Бесплатно для Chrome, Edge, Firefox и Safari. В-баксы никогда не тратятся.", "Gratuit pour Chrome, Edge, Firefox et Safari. Ne dépense jamais de V-bucks.", "Kostenlos für Chrome, Edge, Firefox und Safari. Gibt nie V-Bucks aus.", "Gratis per Chrome, Edge, Firefox e Safari. Non spende mai V-buck.", "Za darmo dla Chrome, Edge, Firefox i Safari. Nigdy nie wydaje V-dolców.", "Chrome, Edge, Firefox ve Safari için ücretsiz. Asla V-Papel harcamaz.", "Chrome、Edge、Firefox、Safari向けに無料。V-Bucksは一切使いません。" },
+        ["Get Claim All"] = new[] { "Consigue Reclamar todo", "Baixe o Resgatar tudo", "Получить «Забрать всё»", "Obtenir Tout récupérer", "Alles abholen installieren", "Ottieni Riscatta tutto", "Pobierz Odbierz wszystko", "Hepsini al'ı edin", "まとめて入手を使う" },
+        ["Opens chestcounter.io/claim in your browser"] = new[] { "Abre chestcounter.io/claim en tu navegador", "Abre chestcounter.io/claim no seu navegador", "Открывает chestcounter.io/claim в браузере", "Ouvre chestcounter.io/claim dans votre navigateur", "Öffnet chestcounter.io/claim in deinem Browser", "Apre chestcounter.io/claim nel browser", "Otwiera chestcounter.io/claim w przeglądarce", "chestcounter.io/claim sayfasını tarayıcında açar", "ブラウザーで chestcounter.io/claim を開きます" },
+    };
+
+    public static string T(string source)
+    {
+        int index = Array.IndexOf(Codes, L.Code);
+        return index >= 0 && Texts.TryGetValue(source, out var row) ? row[index] : source;
+    }
+
+    /// <summary>The claim page in the app language (the site serves /es/claim, /de/claim and so on).</summary>
+    public static string PageUrl => Array.IndexOf(Codes, L.Code) >= 0 ? $"https://chestcounter.io/{L.Code}/claim" : "https://chestcounter.io/claim";
+}
