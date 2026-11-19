@@ -67,6 +67,8 @@ public sealed class PersonalTools : Form
     private readonly NumericUpDown squad = new() { Maximum=1000000, Width=85 };
     private readonly TextBox note = new() { Width=200, PlaceholderText=ToolText.T("Note / source") };
     private readonly CheckedListBox claimed = new() { Width=230, Height=115, CheckOnClick=true };
+    // Saved ticks use the English key; only the displayed text is translated.
+    private sealed record ClaimItem(string Key) { public override string ToString() => WeeklyChanceText.T(Key); }
     private static readonly string[] Names = {"Weekly Gold Outfit","Pirate Shop Access","Weekly Vehicle & Decal","Weekly Pickaxe or Back Bling","Weekly Jam Track","Weekly Loading Screen","Any Gizmo"};
     private static readonly double[] Den = {1562500,137500,7813,568,391,272,127};
     private string LedgerPath => Path.Combine(store.Folder,"2xflaw-ledger.json");
@@ -94,8 +96,8 @@ public sealed class PersonalTools : Form
         Button("Weekly report / chances",()=>WeeklyReport.Open(store,monitor,this));
         Button("Transparent overlay",()=>new PersonalOverlay(Snapshot).Show(this));
         Button("Open odds JSON",()=>Process.Start(new ProcessStartInfo(OddsPath){UseShellExecute=true}));
-        Button("Save claimed prizes",()=> {ledger.Claimed[ClaimKey]=claimed.CheckedItems.Cast<string>().ToList();Persist();});
-        foreach(var n in Names.Take(6)) claimed.Items.Add(n);
+        Button("Save claimed prizes",()=> {ledger.Claimed[ClaimKey]=claimed.CheckedItems.Cast<ClaimItem>().Select(i=>i.Key).ToList();Persist();});
+        foreach(var n in Names.Take(6)) claimed.Items.Add(new ClaimItem(n));
         top.Controls.Add(claimed);
         Controls.Add(grid);Controls.Add(top);Controls.Add(new Panel { Dock=DockStyle.Bottom, Height=42, Controls={status} });
         profiles.SelectedIndexChanged+=(_,_)=>RefreshEntries();
@@ -119,7 +121,7 @@ public sealed class PersonalTools : Form
     {
         grid.DataSource=ledger.Entries.Where(e=>e.Profile==Key).OrderByDescending(e=>e.AtUtc).ToList();
         var c=ledger.Claimed.GetValueOrDefault(ClaimKey) ?? new();
-        for(int i=0;i<claimed.Items.Count;i++)claimed.SetItemChecked(i,c.Contains((string)claimed.Items[i]));
+        for(int i=0;i<claimed.Items.Count;i++)claimed.SetItemChecked(i,c.Contains(((ClaimItem)claimed.Items[i]).Key));
         status.Text=ToolText.T("Manual additions feed dashboard totals and daily charts. Dates below are UTC. Drop .replay files here.");
     }
         public static DateTime Week(DateTime utc) => WeeklyReset.Start(utc);
