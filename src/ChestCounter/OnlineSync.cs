@@ -18,11 +18,16 @@ public sealed class OnlineSettings
     public List<string> Synced { get; set; } = new();
     public DateTime? LastSyncUtc { get; set; }
     public string? LastError { get; set; }
+    /// <summary>1 once the matches synced before 2.4.3 were sent again with their teammate chests and match length.</summary>
+    public int ExtrasVersion { get; set; }
+    /// <summary>Progress of that one-off resend (start time of the last match sent).</summary>
+    public DateTime? ExtrasCursorUtc { get; set; }
 }
 
 /// <summary>
 /// Optional upload of finished matches to the website. Sends only: match id, start time, mode, chest counts,
-/// chest types and chest times. Never player names, Epic ids, teammates or replay files.
+/// chest types, chest times, the number of teammate chests seen and the match length. Never player names, Epic ids,
+/// teammate names or replay files.
 /// Runs on its own low-priority thread, one small request at most once a minute, 10 s timeout.
 /// </summary>
 public static class OnlineSync
@@ -335,6 +340,26 @@ public static class OnlineSync
             .OrderBy(m => m.MatchStartUtc)
             .Take(50)
             .ToList();
+        // Once new matches are all sent: re-send the ones synced before 2.4.3 so the website also gets their
+        // teammate chests and match length (the website keeps the match itself unchanged).
+        var backfill = false;
+        if (batch.Count == 0 && s.ExtrasVersion < 1)
+        {
+            var cursor = s.ExtrasCursorUtc ?? DateTime.MinValue;
+            batch = data.Matches
+                .Where(m => m.IsBattleRoyale && m.MatchStartUtc is { } t && t.ToUniversalTime() >= since && t.ToUniversalTime() > cursor
+                    && !string.IsNullOrEmpty(m.SessionId) && done.Contains(m.SessionId)
+                    && (key == null || Profiles.Key(m) == key))
+                .OrderBy(m => m.MatchStartUtc)
+                .Take(50)
+                .ToList();
+            if (batch.Count == 0)
+            {
+                Update(x => { x.ExtrasVersion = 1; x.ExtrasCursorUtc = null; });
+                return minute;
+            }
+            backfill = true;
+        }
         if (batch.Count == 0)
         {
             return minute;
@@ -352,6 +377,9 @@ public static class OnlineSync
                 destroyed,
                 chestTypes = m.Chests.GroupBy(c => c.Kind).ToDictionary(g => g.Key, g => g.Count()),
                 chestTimes = m.Chests.Select(c => (int)c.TimeSeconds).ToArray(),
+                // Counts only (no names). Null when the replay did not record teammates or the match length.
+                mates = m.Teammates?.Sum(t => Math.Max(0, t.ChestsSeen)),
+                durationS = m.DurationSeconds is > 0 and < 7200 ? m.DurationSeconds : null,
             };
         }).ToList();
 
@@ -373,6 +401,12 @@ public static class OnlineSync
             return TimeSpan.FromMinutes(5);
         }
 
+        if (backfill)
+        {
+            var last = batch[^1].MatchStartUtc!.Value.ToUniversalTime();
+            Update(x => { x.ExtrasCursorUtc = last; x.LastSyncUtc = DateTime.UtcNow; x.LastError = null; });
+            return batch.Count == 50 ? TimeSpan.FromSeconds(5) : minute;
+        }
         var ids = batch.Select(m => m.SessionId).ToList();
         Update(x =>
         {

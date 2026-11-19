@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Drawing.Drawing2D;
 
 namespace ChestCounter;
@@ -11,9 +12,10 @@ internal sealed class ChestStatsPanel : Control
 {
     private sealed record Row(DateTime When, int Opened, int Broken, int Mates, int? Seconds);
     private sealed record Data(List<Row> Rows);
-    private sealed record Bar(DateTime When, int You, int Broken, int Mates)
+    private sealed record Bar(DateTime When, int You, int Broken, int Mates, int? Seconds = null)
     {
         public int Total => You + Mates;
+        public double PerMinute => Seconds is > 0 ? Total * 60.0 / Seconds.Value : 0;
     }
 
     private readonly Monitor _monitor;
@@ -26,6 +28,15 @@ internal sealed class ChestStatsPanel : Control
     private string _signature = "";
     private int _loading;
     private int _hover = -1;
+    // Clicking a tile changes the chart: 0 just you, 1 teammate chests, 2 bars that beat the average,
+    // 3 best match pinned, 4 chests per minute. Clicking the selected tile again goes back to the normal chart.
+    private const int NoFocus = -1, FocusYou = 0, FocusMates = 1, FocusAverage = 2, FocusBest = 3, FocusRate = 4;
+    private int _focus = NoFocus;
+    private int _hoverTile = -1, _hoverLink = -1;
+    private readonly Rectangle[] _tileBoxes = new Rectangle[5];
+    private readonly Rectangle[] _linkBoxes = new Rectangle[5];
+    private readonly ToolTip _tip = new() { InitialDelay = 400, ShowAlways = true };
+    private const string LeaderboardUrl = "https://chestcounter.io/leaderboard";
     private readonly List<(Rectangle Box, Action Click)> _hits = new();
     private readonly List<(float X, float Width)> _columns = new();
     private Rectangle _plot;
@@ -49,6 +60,7 @@ internal sealed class ChestStatsPanel : Control
     private static readonly Color YouBar = Theme.Accent;
     private static readonly Color BrokenBar = Theme.AccentSoft;
     private static readonly Color MateBar = Color.FromArgb(120, 72, 112);
+    private static readonly Color MateFocusBar = Color.FromArgb(196, 124, 182);
 
     public ChestStatsPanel(Monitor monitor, Store store)
     {
@@ -206,6 +218,10 @@ internal sealed class ChestStatsPanel : Control
         base.OnMouseMove(e);
         var hand = _hits.Any(h => h.Box.Contains(e.Location));
         if ((Cursor == Cursors.Hand) != hand) Cursor = hand ? Cursors.Hand : Cursors.Default;
+        int tile = Array.FindIndex(_tileBoxes, b => b.Contains(e.Location));
+        int link = Array.FindIndex(_linkBoxes, b => !b.IsEmpty && b.Contains(e.Location));
+        if (link != _hoverLink) _tip.SetToolTip(this, link >= 0 ? StatsText.T("See the leaderboard on chestcounter.io") : null);
+        if (tile != _hoverTile || link != _hoverLink) { _hoverTile = tile; _hoverLink = link; Invalidate(); }
         int hover = -1;
         if (_plot.Contains(e.Location))
             for (int i = 0; i < _columns.Count; i++)
@@ -216,7 +232,23 @@ internal sealed class ChestStatsPanel : Control
     protected override void OnMouseLeave(EventArgs e)
     {
         base.OnMouseLeave(e);
-        if (_hover != -1) { _hover = -1; Invalidate(); }
+        if (_hoverLink != -1) _tip.SetToolTip(this, null);
+        if (_hover != -1 || _hoverTile != -1 || _hoverLink != -1) { _hover = -1; _hoverTile = -1; _hoverLink = -1; Invalidate(); }
+    }
+
+    private void SelectTile(int i)
+    {
+        if (_focus == i) { _focus = NoFocus; return; }
+        _focus = i;
+        if (i == FocusYou) { _withMates = false; _modeChosen = true; }
+        else if (i == FocusMates) { _withMates = true; _modeChosen = true; }
+        else if (i is FocusAverage or FocusBest) _perDay = false;
+    }
+
+    private static void OpenLeaderboard()
+    {
+        try { Process.Start(new ProcessStartInfo(LeaderboardUrl) { UseShellExecute = true })?.Dispose(); }
+        catch (Exception ex) { ErrorLog.Write("Open leaderboard", ex); }
     }
 
     // ---- Drawing helpers ------------------------------------------------------------------------------
@@ -338,6 +370,14 @@ internal sealed class ChestStatsPanel : Control
         g.FillPolygon(b, points);
     }
 
+    private static double NiceStep(double max)
+    {
+        double raw = Math.Max(0.2, max) / 4.0, mag = Math.Pow(10, Math.Floor(Math.Log10(raw)));
+        foreach (var f in new[] { 1, 2, 2.5, 5, 10 })
+            if (raw <= f * mag + 1e-9) return f * mag;
+        return 10 * mag;
+    }
+
     private static int NiceStep(int max)
     {
         double raw = Math.Max(1, max) / 4.0, mag = Math.Pow(10, Math.Floor(Math.Log10(raw)));
@@ -362,8 +402,8 @@ internal sealed class ChestStatsPanel : Control
         var f = L.Culture;
 
         // Switch, and the rankings toggle on the right.
-        int x = Pill(g, 0, 0, StatsText.T("Just you"), you.ToString("N0", f), !_withMates, () => { _withMates = false; _modeChosen = true; });
-        Pill(g, x + P(8), 0, StatsText.T("With teammates"), (you + mates).ToString("N0", f), _withMates, () => { _withMates = true; _modeChosen = true; });
+        int x = Pill(g, 0, 0, StatsText.T("Just you"), you.ToString("N0", f), !_withMates, () => { _withMates = false; _modeChosen = true; if (_focus == FocusMates) _focus = NoFocus; });
+        Pill(g, x + P(8), 0, StatsText.T("With teammates"), (you + mates).ToString("N0", f), _withMates, () => { _withMates = true; _modeChosen = true; if (_focus == FocusYou) _focus = NoFocus; });
         DrawRankingsToggle(g);
 
         // Tiles
@@ -384,6 +424,7 @@ internal sealed class ChestStatsPanel : Control
             (perMinute.ToString("0.0", f), StatsText.T("Per minute"), StatsText.T("of match time"), false, "pm" + mode),
         };
         for (int i = 0; i < count; i++) DrawTile(g, new Rectangle(i * (tileW + gap), top, tileW, tileH), i, tiles[i], i == 0 && you > 0 ? youOpened / (double)you : null);
+        if (_focus == FocusMates && !_withMates) _focus = NoFocus;
 
         DrawChart(g, new Rectangle(0, top + tileH + P(14), Width - 1, Height - (top + tileH + P(14)) - 1), rows);
     }
@@ -413,6 +454,11 @@ internal sealed class ChestStatsPanel : Control
     {
         var f = L.Culture;
         var rank = RankOf(t.Key);
+        _tileBoxes[i] = box;
+        _linkBoxes[i] = Rectangle.Empty;
+        bool selected = _focus == i, hovered = _hoverTile == i;
+        // Hovered tiles lift slightly; the hit area stays where the tile rests.
+        if (hovered && !selected) box.Offset(0, -P(2));
         var baseColour = rank is { } r ? RankColour(r.Top) : TileColours[i];
         var colour = t.Dim ? Color.FromArgb(90, baseColour) : baseColour;
         using (var path = Round(box, P(10)))
@@ -422,7 +468,8 @@ internal sealed class ChestStatsPanel : Control
             using (var tint = new LinearGradientBrush(box, Color.FromArgb(t.Dim ? 14 : 44, baseColour), Color.FromArgb(0, baseColour), 90f)) g.FillRectangle(tint, box);
             using (var stripe = new SolidBrush(colour)) g.FillRectangle(stripe, box.X, box.Y, box.Width, P(3));
             g.ResetClip();
-            using var edge = new Pen(rank != null && !t.Dim ? Color.FromArgb(110, baseColour) : Theme.CardEdge); g.DrawPath(edge, path);
+            var edgeColour = selected ? Theme.AccentSoft : rank != null && !t.Dim ? Color.FromArgb(hovered ? 200 : 110, baseColour) : hovered ? Theme.Accent : Theme.CardEdge;
+            using var edge = new Pen(edgeColour, selected ? Math.Max(2, P(2)) : 1); g.DrawPath(edge, path);
         }
         int pad = P(14), inner = box.Width - pad * 2;
         Text(g, t.Value, _tileValue, new Rectangle(box.X + pad, box.Y + P(12), inner, P(42)), t.Dim ? Theme.Muted : colour);
@@ -440,7 +487,20 @@ internal sealed class ChestStatsPanel : Control
         // Ranking line
         var rankBox = new Rectangle(box.X + pad, box.Y + P(104), inner, P(18));
         if (rank is { } rk)
-            Text(g, StatsText.F("You're in the top {0}%", rk.Top), _smallBold, rankBox, t.Dim ? Theme.Muted : baseColour);
+        {
+            // The ranking line links to the website leaderboard. Its hit area is added before the tile's.
+            var rankText = StatsText.F("You're in the top {0}%", rk.Top);
+            var rankColour = t.Dim ? Theme.Muted : baseColour;
+            Text(g, rankText, _smallBold, rankBox, rankColour);
+            int rw = Math.Min(rankBox.Width, Measure(g, rankText, _smallBold));
+            var link = new Rectangle(rankBox.X, rankBox.Y, rw, rankBox.Height);
+            if (_hoverLink == i)
+                using (var pen = new Pen(rankColour, Math.Max(1, P(1)))) g.DrawLine(pen, link.X, link.Bottom - P(2), link.Right, link.Bottom - P(2));
+            // Stored at rest, so the lift on hover does not move it away from the pointer.
+            if (hovered && !selected) link.Offset(0, P(2));
+            _linkBoxes[i] = link;
+            _hits.Add((link, OpenLeaderboard));
+        }
         else if (Rankings.Enabled(_store.Folder) && _rank != null)
             Text(g, StatsText.T("Not enough players yet"), _small, rankBox, Theme.Muted);
         if (openedShare is double share)
@@ -452,36 +512,50 @@ internal sealed class ChestStatsPanel : Control
             using (var b = new SolidBrush(BrokenBar)) g.FillRectangle(b, split.X + ow, split.Y, split.Width - ow, split.Height);
             g.ResetClip();
         }
+        int tileIndex = i;
+        _hits.Add((_tileBoxes[i], () => SelectTile(tileIndex)));
     }
 
     private void DrawChart(Graphics g, Rectangle card, List<Row> rows)
     {
         var f = L.Culture;
+        bool rate = _focus == FocusRate;
         using (var path = Round(card, P(12)))
         {
             using var fill = new SolidBrush(Theme.Card); g.FillPath(fill, path);
             using var edge = new Pen(Theme.CardEdge); g.DrawPath(edge, path);
         }
         int cx = card.X + P(18);
-        Caps(g, StatsText.T(_perDay ? "Chests per day" : "Chests per match"), _title, new Rectangle(cx, card.Y + P(12), card.Width / 2, P(30)), Theme.Ink);
+        var title = rate ? "Chests per minute" : _perDay ? "Chests per day" : "Chests per match";
+        Caps(g, StatsText.T(title), _title, new Rectangle(cx, card.Y + P(12), card.Width / 2, P(30)), Theme.Ink);
         int rx = card.Right - P(18);
         int pdW = CapsWidth(g, StatsText.T("Per day"), _pill) + P(24);
         int pmW = CapsWidth(g, StatsText.T("Per match"), _pill) + P(24);
         Pill(g, rx - pdW - pmW - P(8), card.Y + P(12), StatsText.T("Per match"), null, !_perDay, () => _perDay = false);
-        Pill(g, rx - pdW, card.Y + P(12), StatsText.T("Per day"), null, _perDay, () => _perDay = true);
+        Pill(g, rx - pdW, card.Y + P(12), StatsText.T("Per day"), null, _perDay, () => { _perDay = true; if (_focus is FocusAverage or FocusBest) _focus = NoFocus; });
 
+        // Per minute uses only the matches whose length is known.
+        var source = rate ? rows.Where(r => r.Seconds is > 0).ToList() : rows;
         var series = _perDay
-            ? rows.GroupBy(r => r.When.Date).OrderBy(gr => gr.Key)
-                .Select(gr => new Bar(gr.Key, gr.Sum(r => r.Opened + r.Broken), gr.Sum(r => r.Broken), _withMates ? gr.Sum(r => r.Mates) : 0)).ToList()
-            : rows.Select(r => new Bar(r.When, r.Opened + r.Broken, r.Broken, _withMates ? r.Mates : 0)).ToList();
-        double seriesAvg = series.Count > 0 ? series.Average(s => s.Total) : 0;
-        Text(g, series.Count == 0 ? StatsText.T("No matches yet. They appear here once a replay has been analysed.")
-                : StatsText.F(_perDay ? "Oldest to newest. The line marks your average of {0:0.0} per day." : "Oldest to newest. The line marks your average of {0:0.0} per match.", seriesAvg),
-            _small, new Rectangle(cx, card.Y + P(46), card.Width - P(36), P(18)), Theme.Muted);
+            ? source.GroupBy(r => r.When.Date).OrderBy(gr => gr.Key)
+                .Select(gr => new Bar(gr.Key, gr.Sum(r => r.Opened + r.Broken), gr.Sum(r => r.Broken), _withMates ? gr.Sum(r => r.Mates) : 0,
+                    rate ? gr.Sum(r => r.Seconds ?? 0) : null)).ToList()
+            : source.Select(r => new Bar(r.When, r.Opened + r.Broken, r.Broken, _withMates ? r.Mates : 0, r.Seconds)).ToList();
+        double V(Bar b) => rate ? b.PerMinute : b.Total;
+        double seriesAvg = series.Count == 0 ? 0
+            : rate ? series.Sum(b => b.Total) * 60.0 / Math.Max(1, series.Sum(b => b.Seconds ?? 0))
+            : series.Average(b => b.Total);
+        string note = series.Count == 0
+            ? StatsText.T(rate ? "No matches with a known length yet." : "No matches yet. They appear here once a replay has been analysed.")
+            : rate ? StatsText.F("Oldest to newest, only matches with a known length. The line marks your average of {0:0.00} per minute.", seriesAvg)
+            : _focus == FocusAverage ? StatsText.F("Bright bars are the matches that beat your average of {0:0.0}.", seriesAvg)
+            : _focus == FocusBest ? StatsText.T("Your best match is pinned. Click the tile again to unpin it.")
+            : StatsText.F(_perDay ? "Oldest to newest. The line marks your average of {0:0.0} per day." : "Oldest to newest. The line marks your average of {0:0.0} per match.", seriesAvg);
+        Text(g, note, _small, new Rectangle(cx, card.Y + P(46), card.Width - P(36), P(18)), Theme.Muted);
 
         // Legend
         int ly = card.Y + P(68), lx = cx;
-        foreach (var (key, c) in new[] { ("Opened", YouBar), ("Broken", BrokenBar), ("Teammates", MateBar) })
+        foreach (var (key, c) in new[] { ("Opened", YouBar), ("Broken", BrokenBar), ("Teammates", _focus == FocusMates ? MateFocusBar : MateBar) })
         {
             if (key == "Teammates" && !_withMates) continue;
             var sw = new Rectangle(lx, ly + P(4), P(10), P(10));
@@ -493,45 +567,56 @@ internal sealed class ChestStatsPanel : Control
         }
 
         // The average pill sits in its own gutter on the right, so it never covers the newest bars.
-        var avgText = StatsText.F("Avg {0:0.0}", seriesAvg);
+        var avgText = rate ? StatsText.F("Avg {0:0.00}", seriesAvg) : StatsText.F("Avg {0:0.0}", seriesAvg);
         int aw = Measure(g, avgText, _smallBold) + P(14);
         var plot = new Rectangle(cx + P(34), ly + P(32), card.Width - P(70) - aw - P(8), card.Bottom - ly - P(58));
         if (series.Count == 0 || plot.Width < 40 || plot.Height < 40) return;
         int fit = Math.Max(1, plot.Width / Math.Max(1, P(9)));
-        var shown = series.Skip(Math.Max(0, series.Count - fit)).ToList();
+        // Normally the newest bars; with the best match pinned, a window that contains it.
+        int pinned = _focus == FocusBest && !rate && !_perDay ? series.FindIndex(b => b.Total == series.Max(x => x.Total)) : -1;
+        int start = Math.Max(0, series.Count - fit);
+        if (pinned >= 0 && pinned < start) start = Math.Max(0, Math.Min(series.Count - fit, pinned - fit / 2));
+        var shown = series.Skip(start).Take(fit).ToList();
+        if (pinned >= 0) pinned -= start;
         if (series.Count > shown.Count)
-            Text(g, StatsText.F("Showing the latest {0:N0} of {1:N0}", shown.Count, series.Count), _small, new Rectangle(card.Right - P(300), ly, P(282), P(18)), Theme.Muted, TextFormatFlags.Right);
-        int max = Math.Max(1, shown.Max(s => s.Total));
-        int step = NiceStep(max);
-        int scale = Math.Max(step, (int)Math.Ceiling(max / (double)step) * step);
+            Text(g, start + shown.Count == series.Count ? StatsText.F("Showing the latest {0:N0} of {1:N0}", shown.Count, series.Count) : StatsText.F("Showing {0:N0} of {1:N0}", shown.Count, series.Count),
+                _small, new Rectangle(card.Right - P(300), ly, P(282), P(18)), Theme.Muted, TextFormatFlags.Right);
+        double max = Math.Max(rate ? 0.05 : 1, shown.Max(V));
+        double step = rate ? NiceStep(max) : NiceStep((int)Math.Ceiling(max));
+        double scale = Math.Max(step, Math.Ceiling(max / step - 1e-9) * step);
         _plot = plot;
 
         // Grid
         using (var grid = new Pen(Color.FromArgb(90, Theme.Line)) { DashStyle = DashStyle.Dot })
         using (var axis = new Pen(Theme.Line))
         {
-            for (int v = 0; v <= scale; v += step)
+            int lines = (int)Math.Round(scale / step);
+            for (int n = 0; n <= lines; n++)
             {
-                int y = plot.Bottom - (int)Math.Round(plot.Height * (v / (double)scale));
-                g.DrawLine(v == 0 ? axis : grid, plot.X, y, plot.Right, y);
-                Text(g, v.ToString("N0", f), _small, new Rectangle(cx - P(4), y - P(9), P(34), P(18)), Theme.Muted, TextFormatFlags.Right);
+                double v = n * step;
+                int y = plot.Bottom - (int)Math.Round(plot.Height * (v / scale));
+                g.DrawLine(n == 0 ? axis : grid, plot.X, y, plot.Right, y);
+                Text(g, rate ? v.ToString("0.##", f) : v.ToString("N0", f), _small, new Rectangle(cx - P(4), y - P(9), P(34), P(18)), Theme.Muted, TextFormatFlags.Right);
             }
         }
 
         float slot = plot.Width / (float)shown.Count;
         float bar = Math.Min(Math.Max(2f, slot * 0.66f), P(46));
         float radius = Math.Min(bar / 2f, P(4));
-        int bestIndex = shown.FindIndex(t => t.Total == max);
+        int bestIndex = shown.FindIndex(t => V(t) == shown.Max(V));
+        int marked = _hover >= 0 ? _hover : pinned;
         string? lastLabel = null; int lastLabelEnd = -100000;
         for (int i = 0; i < shown.Count; i++)
         {
             var s = shown[i];
             float colX = plot.X + i * slot;
             _columns.Add((colX, slot));
-            if (i == _hover)
+            if (i == marked)
                 using (var hl = new SolidBrush(Color.FromArgb(70, Theme.PanelHover))) g.FillRectangle(hl, colX, plot.Y, slot, plot.Height);
             float bx = colX + (slot - bar) / 2;
-            float hy = plot.Height * (s.You / (float)scale), hb = plot.Height * (s.Broken / (float)scale), hm = plot.Height * (s.Mates / (float)scale);
+            // In the per-minute view the stacked parts keep their share of the bar.
+            double k = rate ? (s.Total > 0 ? s.PerMinute / s.Total : 0) : 1;
+            float hy = (float)(plot.Height * (s.You * k / scale)), hb = (float)(plot.Height * (s.Broken * k / scale)), hm = (float)(plot.Height * (s.Mates * k / scale));
             float h = hy + hm;
             if (h >= 0.5f)
             {
@@ -539,12 +624,14 @@ internal sealed class ChestStatsPanel : Control
                 using var path = Round(column, radius, false);
                 var state = g.Save();
                 g.SetClip(path);
-                bool lit = _hover == -1 || _hover == i;
-                int a = lit ? 255 : 150;
-                using (var b = new LinearGradientBrush(new RectangleF(bx, plot.Y, bar, plot.Height + 1), Color.FromArgb(a, ControlPaint.Light(YouBar, 0.25f)), Color.FromArgb(a, YouBar), 90f))
+                bool lit = _focus == FocusAverage ? (_hover == -1 ? V(s) > seriesAvg : i == _hover) : marked == -1 || marked == i;
+                int a = lit ? 255 : _focus == FocusAverage ? 80 : 150;
+                // Teammate chests selected: your own part steps back so theirs stands out.
+                int own = _focus == FocusMates && marked != i ? Math.Min(a, 110) : a;
+                using (var b = new LinearGradientBrush(new RectangleF(bx, plot.Y, bar, plot.Height + 1), Color.FromArgb(own, ControlPaint.Light(YouBar, 0.25f)), Color.FromArgb(own, YouBar), 90f))
                     g.FillRectangle(b, bx, plot.Bottom - hy + hb, bar, hy - hb + 1);
-                if (hb > 0) using (var b = new SolidBrush(Color.FromArgb(a, BrokenBar))) g.FillRectangle(b, bx, plot.Bottom - hy, bar, hb);
-                if (hm > 0) using (var b = new SolidBrush(Color.FromArgb(a, MateBar))) g.FillRectangle(b, bx, plot.Bottom - h, bar, hm);
+                if (hb > 0) using (var b = new SolidBrush(Color.FromArgb(own, BrokenBar))) g.FillRectangle(b, bx, plot.Bottom - hy, bar, hb);
+                if (hm > 0) using (var b = new SolidBrush(Color.FromArgb(a, _focus == FocusMates ? MateFocusBar : MateBar))) g.FillRectangle(b, bx, plot.Bottom - h, bar, hm);
                 g.Restore(state);
             }
             if (i == bestIndex) Star(g, colX + slot / 2, plot.Bottom - h - P(10), P(6));
@@ -562,26 +649,43 @@ internal sealed class ChestStatsPanel : Control
 
         // Average line with its value
         int ay = plot.Bottom - (int)Math.Round(plot.Height * (seriesAvg / scale));
-        using (var avgPen = new Pen(Theme.Amber, Math.Max(1, P(1.5f))) { DashStyle = DashStyle.Dash }) g.DrawLine(avgPen, plot.X, ay, plot.Right, ay);
+        float avgWidth = _focus == FocusAverage ? Math.Max(2, P(2.5f)) : Math.Max(1, P(1.5f));
+        using (var avgPen = new Pen(Theme.Amber, avgWidth) { DashStyle = DashStyle.Dash }) g.DrawLine(avgPen, plot.X, ay, plot.Right, ay);
         var avgBox = new Rectangle(plot.Right + P(6), ay - P(9), aw, P(18));
         using (var path = Round(avgBox, P(8)))
         using (var b = new SolidBrush(Theme.Amber)) g.FillPath(b, path);
         Text(g, avgText, _smallBold, avgBox, Theme.Bg, TextFormatFlags.HorizontalCenter);
 
-        if (_hover >= 0 && _hover < shown.Count) DrawTooltip(g, shown[_hover], plot, plot.X + _hover * slot + slot / 2);
+        if (marked >= 0 && marked < shown.Count) DrawTooltip(g, shown[marked], plot, plot.X + marked * slot + slot / 2, rate);
     }
 
-    private void DrawTooltip(Graphics g, Bar s, Rectangle plot, float centreX)
+    private static string Duration(int seconds)
+    {
+        var t = TimeSpan.FromSeconds(seconds);
+        return t.TotalHours >= 1 ? $"{(int)t.TotalHours}:{t.Minutes:00}:{t.Seconds:00}" : $"{t.Minutes}:{t.Seconds:00}";
+    }
+
+    private void DrawTooltip(Graphics g, Bar s, Rectangle plot, float centreX, bool rate)
     {
         var f = L.Culture;
         var head = _perDay ? s.When.ToString(L.En ? "ddd d MMM yyyy" : "D", f) : s.When.ToString(L.En ? "ddd d MMM yyyy, HH:mm" : "g", f);
-        var lines = new List<(string Label, string Value, Color Swatch)>
+        var lines = rate
+            ? new List<(string Label, string Value, Color Swatch)>
+            {
+                (StatsText.T("Chests"), s.Total.ToString("N0", f), YouBar),
+                (StatsText.T("Match time"), Duration(s.Seconds ?? 0), Theme.Muted),
+                (StatsText.T("Per minute"), s.PerMinute.ToString("0.00", f), Color.Empty),
+            }
+            : new List<(string Label, string Value, Color Swatch)>
+            {
+                (StatsText.T("Opened"), (s.You - s.Broken).ToString("N0", f), YouBar),
+                (StatsText.T("Broken"), s.Broken.ToString("N0", f), BrokenBar),
+            };
+        if (!rate)
         {
-            (StatsText.T("Opened"), (s.You - s.Broken).ToString("N0", f), YouBar),
-            (StatsText.T("Broken"), s.Broken.ToString("N0", f), BrokenBar),
-        };
-        if (_withMates) lines.Add((StatsText.T("Teammates"), s.Mates.ToString("N0", f), MateBar));
-        lines.Add((StatsText.T("Total"), s.Total.ToString("N0", f), Color.Empty));
+            if (_withMates) lines.Add((StatsText.T("Teammates"), s.Mates.ToString("N0", f), MateBar));
+            lines.Add((StatsText.T("Total"), s.Total.ToString("N0", f), Color.Empty));
+        }
         int lineH = P(18), w = Math.Max(Measure(g, head, _smallBold) + P(24), P(170));
         int h = P(30) + lines.Count * lineH + P(6);
         int x = (int)centreX + P(12);
@@ -608,7 +712,7 @@ internal sealed class ChestStatsPanel : Control
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _tileValue.Dispose(); _tileLabel.Dispose(); _small.Dispose(); _smallBold.Dispose(); _pill.Dispose(); _title.Dispose(); _icon.Dispose(); }
+        if (disposing) { _tileValue.Dispose(); _tileLabel.Dispose(); _small.Dispose(); _smallBold.Dispose(); _pill.Dispose(); _title.Dispose(); _icon.Dispose(); _tip.Dispose(); }
         base.Dispose(disposing);
     }
 }
