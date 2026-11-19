@@ -40,7 +40,7 @@ internal static class PerformanceText
     public static string T(string source)
     {
         int index = Array.IndexOf(Codes, L.Code);
-        return index >= 0 && Texts.TryGetValue(source, out var row) ? row[index] : source;
+        return index >= 0 && Texts.TryGetValue(source, out var row) ? row[index] : EnglishText.Fix(source);
     }
     public static string F(string source, params object?[] args) => string.Format(L.Culture, T(source), args);
 }

@@ -27,7 +27,7 @@ internal static class AppText
     public static string T(string source)
     {
         int index = Array.IndexOf(Codes, L.Code);
-        if (index < 0 || !Texts.TryGetValue(source, out var row)) return source;
+        if (index < 0 || !Texts.TryGetValue(source, out var row)) return EnglishText.Fix(source);
         var translated = row[index];
         bool upper = source.Any(char.IsLetter) && source == source.ToUpperInvariant();
         return upper ? translated.ToUpper(L.Culture) : translated;

@@ -11,7 +11,7 @@ internal static class StatsText
         ["By you"] = new[] { "Por ti", "Por você", "Ваши", "Par vous", "Von dir", "Da te", "Twoje", "Sizin", "自分" },
         ["{0:N0} opened · {1:N0} broken"] = new[] { "{0:N0} abiertos · {1:N0} rotos", "{0:N0} abertos · {1:N0} quebrados", "Открыто: {0:N0} · Сломано: {1:N0}", "{0:N0} ouverts · {1:N0} cassés", "{0:N0} geöffnet · {1:N0} zerstört", "{0:N0} aperti · {1:N0} distrutti", "Otwarte: {0:N0} · Zniszczone: {1:N0}", "{0:N0} açıldı · {1:N0} kırıldı", "開封 {0:N0} · 破壊 {1:N0}" },
         ["Teammate chests"] = new[] { "Cofres de compañeros", "Baús da equipe", "Сундуки союзников", "Coffres des coéquipiers", "Truhen des Teams", "Forzieri dei compagni", "Skrzynie drużyny", "Takım sandıkları", "チームメイトの宝箱" },
-        ["seen nearby (a minimum)"] = new[] { "vistos cerca (como mínimo)", "vistos por perto (no mínimo)", "замечены рядом (минимум)", "vus à proximité (au minimum)", "in der Nähe gesehen (mindestens)", "visti nelle vicinanze (minimo)", "widziane w pobliżu (minimum)", "yakında görüldü (en az)", "近くで確認（最低値）" },
+        ["seen near you (at least)"] = new[] { "vistos cerca de ti (como mínimo)", "vistos perto de você (no mínimo)", "замечены рядом с вами (минимум)", "vus près de vous (au minimum)", "in deiner Nähe gesehen (mindestens)", "visti vicino a te (almeno)", "widziane w pobliżu (co najmniej)", "yakınında görüldü (en az)", "近くで確認（最低値）" },
         ["Per match"] = new[] { "Por partida", "Por partida", "За матч", "Par partie", "Pro Match", "Per partita", "Na mecz", "Maç başına", "1マッチあたり" },
         ["average"] = new[] { "media", "média", "в среднем", "moyenne", "Durchschnitt", "media", "średnio", "ortalama", "平均" },
         ["Best match"] = new[] { "Mejor partida", "Melhor partida", "Лучший матч", "Meilleure partie", "Bestes Match", "Migliore partita", "Najlepszy mecz", "En iyi maç", "最高のマッチ" },
@@ -28,6 +28,14 @@ internal static class StatsText
         ["Showing the latest {0:N0} of {1:N0}"] = new[] { "Mostrando las últimas {0:N0} de {1:N0}", "Mostrando as últimas {0:N0} de {1:N0}", "Показаны последние {0:N0} из {1:N0}", "Affichage des {0:N0} dernières sur {1:N0}", "Die letzten {0:N0} von {1:N0}", "Ultime {0:N0} di {1:N0}", "Ostatnie {0:N0} z {1:N0}", "Son {0:N0} / {1:N0} gösteriliyor", "最新 {0:N0} / {1:N0} 件を表示" },
         ["Opened"] = new[] { "Abiertos", "Abertos", "Открыто", "Ouverts", "Geöffnet", "Aperti", "Otwarte", "Açılan", "開封" },
         ["Broken"] = new[] { "Rotos", "Quebrados", "Сломано", "Cassés", "Zerstört", "Distrutti", "Zniszczone", "Kırılan", "破壊" },
+        ["Total"] = new[] { "Total", "Total", "Всего", "Total", "Gesamt", "Totale", "Razem", "Toplam", "合計" },
+        ["Avg {0:0.0}"] = new[] { "Media {0:0.0}", "Média {0:0.0}", "Среднее {0:0.0}", "Moy. {0:0.0}", "Ø {0:0.0}", "Media {0:0.0}", "Śr. {0:0.0}", "Ort. {0:0.0}", "平均 {0:0.0}" },
+        ["You're in the top {0}%"] = new[] { "Estás en el {0}% mejor", "Você está entre os {0}% melhores", "Вы входите в топ-{0}%", "Vous êtes dans le top {0} %", "Du bist in den Top {0} %", "Sei nel top {0}%", "Jesteś w czołowych {0}%", "İlk %{0} içindesiniz", "上位{0}%に入っています" },
+        ["Not enough players yet"] = new[] { "Aún no hay suficientes jugadores", "Ainda não há jogadores suficientes", "Пока недостаточно игроков", "Pas encore assez de joueurs", "Noch nicht genug Spieler", "Non ci sono ancora abbastanza giocatori", "Za mało graczy", "Henüz yeterli oyuncu yok", "まだプレイヤーが足りません" },
+        ["Player rankings"] = new[] { "Clasificación de jugadores", "Ranking de jogadores", "Рейтинг игроков", "Classement des joueurs", "Spielerrangliste", "Classifica giocatori", "Ranking graczy", "Oyuncu sıralaması", "プレイヤーランキング" },
+        ["{0:N0} players"] = new[] { "{0:N0} jugadores", "{0:N0} jogadores", "Игроков: {0:N0}", "{0:N0} joueurs", "{0:N0} Spieler", "{0:N0} giocatori", "Graczy: {0:N0}", "{0:N0} oyuncu", "{0:N0}人のプレイヤー" },
+        ["Off"] = new[] { "Desactivada", "Desativado", "Выкл.", "Désactivé", "Aus", "Disattivata", "Wyłączony", "Kapalı", "オフ" },
+        ["Connecting…"] = new[] { "Conectando…", "Conectando…", "Подключение…", "Connexion…", "Verbinden…", "Connessione…", "Łączenie…", "Bağlanıyor…", "接続中…" },
     };
 
     public static string T(string source)

@@ -16,7 +16,7 @@ internal static class DashboardText
     public static string F(string source, params object?[] args)
     {
         int index = Array.IndexOf(Codes, L.Code);
-        var format = index >= 0 && Texts.TryGetValue(source, out var row) ? row[index] : source;
+        var format = index >= 0 && Texts.TryGetValue(source, out var row) ? row[index] : EnglishText.Fix(source);
         return string.Format(L.Culture, format, args);
     }
 }

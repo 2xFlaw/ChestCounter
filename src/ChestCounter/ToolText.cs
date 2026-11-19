@@ -27,6 +27,9 @@ internal static class ToolText
         ["2xFlaw's Chest Counter - Weekly tools"] = new[] { "2xFlaw's Chest Counter - Herramientas semanales", "2xFlaw's Chest Counter - Ferramentas semanais", "2xFlaw's Chest Counter - Недельные инструменты", "2xFlaw's Chest Counter - Outils hebdomadaires", "2xFlaw's Chest Counter - Wochenwerkzeuge", "2xFlaw's Chest Counter - Strumenti settimanali", "2xFlaw's Chest Counter - Narzędzia tygodniowe", "2xFlaw's Chest Counter - Haftalık araçlar", "2xFlaw's Chest Counter - 週間ツール" },
         ["Note / source"] = new[] { "Nota / origen", "Nota / fonte", "Заметка / источник", "Note / source", "Notiz / Quelle", "Nota / fonte", "Notatka / źródło", "Not / kaynak", "メモ / 出典" },
         ["Local date/time"] = new[] { "Fecha/hora local", "Data/hora local", "Местные дата/время", "Date/heure locale", "Lokales Datum/Uhrzeit", "Data/ora locale", "Lokalna data/godzina", "Yerel tarih/saat", "現地の日時" },
+        ["Date (UTC)"] = new[] { "Fecha (UTC)", "Data (UTC)", "Дата (UTC)", "Date (UTC)", "Datum (UTC)", "Data (UTC)", "Data (UTC)", "Tarih (UTC)", "日時（UTC）" },
+        ["Profile"] = new[] { "Perfil", "Perfil", "Профиль", "Profil", "Profil", "Profilo", "Profil", "Profil", "プロフィール" },
+        ["Note"] = new[] { "Nota", "Nota", "Заметка", "Note", "Notiz", "Nota", "Notatka", "Not", "メモ" },
         ["Your chests"] = new[] { "Tus cofres", "Seus baús", "Ваши сундуки", "Vos coffres", "Deine Truhen", "I tuoi forzieri", "Twoje skrzynie", "Sandıklarınız", "自分の宝箱" },
         ["Teammates only"] = new[] { "Solo compañeros", "Apenas colegas de equipe", "Только союзники", "Coéquipiers uniquement", "Nur Teammitglieder", "Solo compagni", "Tylko członkowie drużyny", "Yalnızca takım arkadaşları", "チームメイトのみ" },
         ["Add dated entry"] = new[] { "Añadir entrada con fecha", "Adicionar registro com data", "Добавить запись с датой", "Ajouter une entrée datée", "Datierten Eintrag hinzufügen", "Aggiungi voce con data", "Dodaj wpis z datą", "Tarihli kayıt ekle", "日付付きの記録を追加" },
@@ -54,7 +57,7 @@ internal static class ToolText
     public static string T(string source)
     {
         int index = Array.IndexOf(Codes, L.Code);
-        return index >= 0 && Texts.TryGetValue(source, out var row) ? row[index] : source;
+        return index >= 0 && Texts.TryGetValue(source, out var row) ? row[index] : EnglishText.Fix(source);
     }
 
     public static string F(string source, params object?[] args) => string.Format(L.Culture, T(source), args);
