@@ -1,4 +1,5 @@
 import { TABLE, computeLuck, weekStart } from "./odds.js";
+import { MATCH_EXTRAS } from "./benchmarks.js";
 
 const J = (d, s = 200, h = {}) => new Response(JSON.stringify(d), { status: s, headers: { "content-type": "application/json", "cache-control": "no-store", ...h } });
 const bad = (m, s = 400) => J({ error: m }, s);
@@ -128,16 +129,27 @@ export default {
         const pid = await pcAuth(req, env);
         if (!pid) return bad("Unauthorized", 401);
         const list = ((await body(req)).matches || []).slice(0, 50);
-        const stmts = [];
+        const stmts = [], extras = [];
         for (const m of list) {
           const t = new Date(m.startedAt);
           if (!m.sessionId || isNaN(t) || !(m.opened >= 0 && m.opened < 1000) || !(m.destroyed >= 0 && m.destroyed < 1000)) continue;
           stmts.push(env.DB.prepare("INSERT OR IGNORE INTO matches (profile_id, session_id, started_at, mode, opened, destroyed, chest_types_json, chest_times_json) VALUES (?,?,?,?,?,?,?,?)")
             .bind(pid, String(m.sessionId).slice(0, 80), iso(t), String(m.mode || "").slice(0, 40), m.opened | 0, m.destroyed | 0,
               m.chestTypes ? JSON.stringify(m.chestTypes) : null, Array.isArray(m.chestTimes) ? JSON.stringify(m.chestTimes.slice(0, 1000)) : null));
+          // Teammate chests seen and match length (app 2.4.3+). Kept in their own table so the matches table and
+          // older apps are unchanged. Upserted: the app re-sends its already-synced matches once to fill them in.
+          const mates = Number.isSafeInteger(m.mates) && m.mates >= 0 && m.mates < 2000 ? m.mates : null;
+          const dur = Number.isSafeInteger(m.durationS) && m.durationS > 0 && m.durationS < 7200 ? m.durationS : null;
+          if (mates !== null || dur !== null)
+            extras.push(env.DB.prepare("INSERT INTO match_extras (profile_id, session_id, mates, duration_s) VALUES (?,?,?,?) ON CONFLICT(profile_id, session_id) DO UPDATE SET mates=excluded.mates, duration_s=excluded.duration_s")
+              .bind(pid, String(m.sessionId).slice(0, 80), mates, dur));
         }
         if (stmts.length) await env.DB.batch(stmts);
-        return J({ accepted: stmts.length });
+        if (extras.length) {
+          await env.DB.prepare(MATCH_EXTRAS).run();
+          await env.DB.batch(extras);
+        }
+        return J({ accepted: stmts.length, extras: extras.length });
       }
 
       const me = await profileAuth(req, env);
@@ -217,6 +229,9 @@ export default {
 
       if (route === "DELETE /api/me") {
         await env.DB.prepare("DELETE FROM profiles WHERE id=?").bind(me).run();
+        // Rows keyed by profile that are not tied to it by a foreign key (the tables may not exist yet).
+        try { await env.DB.prepare("DELETE FROM match_extras WHERE profile_id=?").bind(me).run(); } catch {}
+        try { await env.DB.prepare("DELETE FROM benchmarks WHERE key=?").bind("p:" + me).run(); } catch {}
         return J({ deleted: true }, 200, { "set-cookie": "cc_profile=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax" });
       }
 

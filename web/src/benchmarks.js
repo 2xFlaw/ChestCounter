@@ -3,6 +3,7 @@
 // Linking a PC is not needed. A linked PC may add its token so its synced matches are not counted twice.
 const J = (data, status = 200) => new Response(JSON.stringify(data), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
 const sha = async s => Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))), v => v.toString(16).padStart(2, '0')).join('');
+export const MATCH_EXTRAS = "CREATE TABLE IF NOT EXISTS match_extras (profile_id TEXT NOT NULL, session_id TEXT NOT NULL, mates INTEGER, duration_s INTEGER, PRIMARY KEY (profile_id, session_id))";
 const TABLE = "CREATE TABLE IF NOT EXISTS benchmarks (key TEXT PRIMARY KEY, matches INTEGER NOT NULL, total INTEGER NOT NULL, mates INTEGER NOT NULL, avg REAL NOT NULL, avg_all REAL NOT NULL, best INTEGER NOT NULL, best_all INTEGER NOT NULL, pm REAL, pm_all REAL, updated_at TEXT NOT NULL DEFAULT (datetime('now')))";
 // The order matters: it is the order of the columns in the population query below.
 const METRICS = ['total', 'mates', 'avg', 'avgAll', 'best', 'bestAll', 'pm', 'pmAll'];
@@ -51,7 +52,7 @@ export async function handleBenchmarks(req, env, url) {
   }
   const v = validate(body);
   if (!v) return J({ error: 'Invalid statistics' }, 400);
-  await env.DB.prepare(TABLE).run();
+  await env.DB.batch([env.DB.prepare(TABLE), env.DB.prepare(MATCH_EXTRAS)]);
   const profile = await linkedProfile(req, env);
   const key = profile ? 'p:' + profile : 'a:' + await sha('benchmark:' + body.id);
   // A PC that links later replaces its anonymous row, so one player never counts twice.
@@ -64,13 +65,22 @@ export async function handleBenchmarks(req, env, url) {
     await env.DB.prepare('DELETE FROM benchmarks WHERE key=?').bind(key).run();
   }
   // Population: app rankings from the last 180 days, plus public website profiles with synced matches that the app
-  // has not reported yet (those only have the "just you" figures; teammates and match length are not synced).
+  // has not reported yet. Their teammate figures count once every match has them (synced by app 2.4.3+), and their
+  // per-minute figures use the matches whose length is known.
   const counts = METRICS.map(k => `COUNT(${COLUMNS[k]}) AS n_${k}, COALESCE(SUM(${COLUMNS[k]} > ?),0) AS g_${k}`).join(',');
   const sql = `WITH pop AS (
       SELECT total,mates,avg,avg_all,best,best_all,pm,pm_all FROM benchmarks WHERE matches>=${MIN_MATCHES} AND julianday(updated_at)>julianday('now','-180 days')
       UNION ALL
-      SELECT SUM(m.opened+m.destroyed),NULL,AVG(m.opened+m.destroyed),NULL,MAX(m.opened+m.destroyed),NULL,NULL,NULL
+      SELECT SUM(m.opened+m.destroyed),
+          CASE WHEN COUNT(e.mates)=COUNT(*) THEN SUM(e.mates) END,
+          AVG(m.opened+m.destroyed),
+          CASE WHEN COUNT(e.mates)=COUNT(*) THEN AVG(m.opened+m.destroyed+e.mates) END,
+          MAX(m.opened+m.destroyed),
+          CASE WHEN COUNT(e.mates)=COUNT(*) THEN MAX(m.opened+m.destroyed+e.mates) END,
+          CASE WHEN SUM(e.duration_s)>0 THEN SUM(CASE WHEN e.duration_s>0 THEN m.opened+m.destroyed END)*60.0/SUM(e.duration_s) END,
+          CASE WHEN SUM(CASE WHEN e.mates IS NOT NULL THEN e.duration_s END)>0 THEN SUM(CASE WHEN e.duration_s>0 AND e.mates IS NOT NULL THEN m.opened+m.destroyed+e.mates END)*60.0/SUM(CASE WHEN e.mates IS NOT NULL THEN e.duration_s END) END
         FROM matches m JOIN profiles p ON p.id=m.profile_id
+        LEFT JOIN match_extras e ON e.profile_id=m.profile_id AND e.session_id=m.session_id
         WHERE p.is_private=0 AND NOT EXISTS (SELECT 1 FROM benchmarks b WHERE b.key='p:'||m.profile_id)
         GROUP BY m.profile_id HAVING COUNT(*)>=${MIN_MATCHES}
     ) SELECT ${counts} FROM pop`;
