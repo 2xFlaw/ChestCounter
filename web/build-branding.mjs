@@ -57,6 +57,11 @@ if(!i18n.includes("from '/i18n-stats.js'")){
  if(!i18n.includes(anchor))throw Error('Stats translation integration point changed');
  i18n="import { STATS } from '/i18n-stats.js';\n"+i18n.replace(anchor,'for(const [source, translations] of [...EXTRA,...STATS]){');
 }
+if(!i18n.includes("from '/i18n-stats-patterns.js'")){
+ const anchor='const pats = rows(PATS).map(r => [new RegExp(r[0]), r.slice(1)]);';
+ if(!i18n.includes(anchor))throw Error('Stats pattern integration point changed');
+ i18n="import { STATS_PATTERNS } from '/i18n-stats-patterns.js';\n"+i18n.replace(anchor,anchor+"\npats.unshift(...STATS_PATTERNS.map(([re,translations])=>[re,COLS.map(code=>translations[code]||'')]));");
+}
 writeFileSync(i18nPath,i18n);
 visit(publicDir);
 const appPath = join(publicDir, 'app.js');
