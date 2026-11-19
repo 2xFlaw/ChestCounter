@@ -65,7 +65,7 @@ public sealed class PersonalTools : Form
     private readonly DateTimePicker when = new() { Width=185, Format=DateTimePickerFormat.Custom, CustomFormat="yyyy-MM-dd HH:mm" };
     private readonly NumericUpDown mine = new() { Maximum=1000000, Width=85 };
     private readonly NumericUpDown squad = new() { Maximum=1000000, Width=85 };
-    private readonly TextBox note = new() { Width=200, PlaceholderText="Note / source" };
+    private readonly TextBox note = new() { Width=200, PlaceholderText=ToolText.T("Note / source") };
     private readonly CheckedListBox claimed = new() { Width=230, Height=115, CheckOnClick=true };
     private static readonly string[] Names = {"Weekly Gold Outfit","Pirate Shop Access","Weekly Vehicle & Decal","Weekly Pickaxe or Back Bling","Weekly Jam Track","Weekly Loading Screen","Any Gizmo"};
     private static readonly double[] Den = {1562500,137500,7813,568,391,272,127};
@@ -80,16 +80,16 @@ public sealed class PersonalTools : Form
         ledger=Read<PersonalLedger>(LedgerPath) ?? new();
         odds=Read<PersonalOdds>(OddsPath) ?? PersonalOdds.Seed();
         if (!File.Exists(OddsPath)) Save(OddsPath,odds);
-        Text="2xFlaw's Chest Counter - Weekly tools"; Size=new(1120,720); BackColor=Theme.Bg; ForeColor=Theme.Ink; Font=Theme.Text(10);
+        Text=ToolText.T("2xFlaw's Chest Counter - Weekly tools"); Size=new(1120,720); BackColor=Theme.Bg; ForeColor=Theme.Ink; Font=Theme.Text(10);
         var top=new FlowLayoutPanel { Dock=DockStyle.Top, Height=150, AutoScroll=true, Padding=new Padding(8) };
-        void Caption(string text) => top.Controls.Add(new Label { Text=text, AutoSize=true, Padding=new Padding(4,8,0,0) });
-        void Button(string text, Action action) { var b=new Button { Text=text, AutoSize=true }; Theme.Style(b); b.Click+=(_,_)=>action(); top.Controls.Add(b); }
+        void Caption(string text) => top.Controls.Add(new Label { Text=ToolText.T(text), AutoSize=true, Padding=new Padding(4,8,0,0) });
+        void Button(string text, Action action) { var b=new Button { Text=ToolText.T(text), AutoSize=true }; Theme.Style(b); b.Click+=(_,_)=>action(); top.Controls.Add(b); }
         profiles.DisplayMember="Name"; profiles.DataSource=Profiles.List(PersonalReadCache.Load(store),monitor.Config);
         top.Controls.Add(profiles); Caption("Local date/time");top.Controls.Add(when);Caption("Your chests");top.Controls.Add(mine);Caption("Teammates only");top.Controls.Add(squad);top.Controls.Add(note);
         Button("Add dated entry",()=> { ledger.Entries.Add(new() { Profile=Key, AtUtc=when.Value.ToUniversalTime(), Mine=(int)mine.Value, Squad=(int)squad.Value, Note=note.Text }); Persist(); });
         Button("Update selected entry",()=> { if(grid.CurrentRow?.DataBoundItem is PersonalEntry e) { e.AtUtc=when.Value.ToUniversalTime(); e.Mine=(int)mine.Value; e.Squad=(int)squad.Value; e.Note=note.Text; Persist(); } });
         Button("Use current week",()=>when.Value=Week(DateTime.UtcNow).AddMinutes(1).ToLocalTime());
-        Button("Delete selected entry",()=> { if(grid.CurrentRow?.DataBoundItem is PersonalEntry e && MessageBox.Show(this,"Delete selected manual entry?","Confirm",MessageBoxButtons.YesNo)==DialogResult.Yes) {ledger.Entries.Remove(e);Persist();} });
+        Button("Delete selected entry",()=> { if(grid.CurrentRow?.DataBoundItem is PersonalEntry e && MessageBox.Show(this,ToolText.T("Delete selected manual entry?"),ToolText.T("Confirm"),MessageBoxButtons.YesNo)==DialogResult.Yes) {ledger.Entries.Remove(e);Persist();} });
         Button("Import replay(s)",()=> {using var f=new OpenFileDialog {Filter="Fortnite replay|*.replay",Multiselect=true};if(f.ShowDialog()==DialogResult.OK) _=Import(f.FileNames);});
         Button("Weekly report / chances",()=>WeeklyReport.Open(store,monitor,this));
         Button("Transparent overlay",()=>new PersonalOverlay(Snapshot).Show(this));
@@ -120,7 +120,7 @@ public sealed class PersonalTools : Form
         grid.DataSource=ledger.Entries.Where(e=>e.Profile==Key).OrderByDescending(e=>e.AtUtc).ToList();
         var c=ledger.Claimed.GetValueOrDefault(ClaimKey) ?? new();
         for(int i=0;i<claimed.Items.Count;i++)claimed.SetItemChecked(i,c.Contains((string)claimed.Items[i]));
-        status.Text="Manual additions feed dashboard totals and daily charts. Dates below are UTC. Drop .replay files here.";
+        status.Text=ToolText.T("Manual additions feed dashboard totals and daily charts. Dates below are UTC. Drop .replay files here.");
     }
         public static DateTime Week(DateTime utc) => WeeklyReset.Start(utc);
     private List<MatchRecord> Matches()
@@ -134,7 +134,7 @@ public sealed class PersonalTools : Form
     {
         foreach(var path in paths.Where(p=>Path.GetExtension(p).Equals(".replay",StringComparison.OrdinalIgnoreCase)))
         {
-            status.Text="Parsing "+Path.GetFileName(path)+" - please wait";
+            status.Text=ToolText.F("Parsing {0} - please wait",Path.GetFileName(path));
             try
             {
                 var result=await Task.Run(()=> {
@@ -143,12 +143,12 @@ public sealed class PersonalTools : Form
                     var match=new ReplayAnalyzer().Analyze(f,path,null);return new PersonalImport {Hash=hash,Match=match};
                 });
                 if(ledger.Imports.Any(x=>x.Hash==result.Hash) || (!string.IsNullOrEmpty(result.Match.SessionId) && PersonalReadCache.Load(store).Matches.Any(m=>m.SessionId==result.Match.SessionId)))
-                    status.Text="Duplicate skipped: "+Path.GetFileName(path);
-                else {ledger.Imports.Add(result);Save(LedgerPath,ledger); monitor.RefreshPersonalStatistics();status.Text=$"Imported {result.Match.PlayerName}: {result.Match.ChestsOpened} personal chests. Stored in ledger and projected into dashboard totals.";}
+                    status.Text=ToolText.F("Duplicate skipped: {0}",Path.GetFileName(path));
+                else {ledger.Imports.Add(result);Save(LedgerPath,ledger); monitor.RefreshPersonalStatistics();status.Text=ToolText.F("Imported {0}: {1} personal chests. Stored in ledger and projected into dashboard totals.",result.Match.PlayerName,result.Match.ChestsOpened);}
                 var k=Key;profiles.DataSource=Profiles.List(new TrackerData {Matches=PersonalReadCache.Load(store).Matches.Concat(ledger.Imports.Select(x=>x.Match)).ToList()});
                 foreach(var p in profiles.Items.Cast<Profile>())if(p.Key==k){profiles.SelectedItem=p;break;}
             }
-            catch(Exception ex){status.Text="Import failed: "+ex.Message;ErrorLog.Write("Personal replay import",ex);}
+            catch(Exception ex){status.Text=ToolText.F("Import failed: {0}",ex.Message);ErrorLog.Write("Personal replay import",ex);}
         }
     }
     private (int total,int last,int week,int squad) Snapshot()
@@ -202,7 +202,7 @@ public sealed class PersonalTools : Form
             using(var image=typeof(PersonalTools).Assembly.GetManifestResourceStream("ChestCounter.Assets.2xflaw-banner.jpg"))
             { if(image!=null) { using var target=File.Create(Path.Combine(store.Folder,"2xflaw-banner.jpg"));image.CopyTo(target); } }
             var path=Path.Combine(store.Folder,"2xflaw-report.html");File.WriteAllText(path,b.ToString(),Encoding.UTF8);Process.Start(new ProcessStartInfo(path){UseShellExecute=true});
-        }catch(Exception ex){MessageBox.Show(this,ex.Message,"Report error");}
+        }catch(Exception ex){MessageBox.Show(this,ex.Message,ToolText.T("Report error"));}
     }
 }
 public sealed class PersonalOverlay : Form
@@ -212,9 +212,9 @@ public sealed class PersonalOverlay : Form
     {
         FormBorderStyle=FormBorderStyle.None; TopMost=true; ShowInTaskbar=false;BackColor=Color.Fuchsia;TransparencyKey=Color.Fuchsia;Size=new(390,130);StartPosition=FormStartPosition.Manual;Location=new(30,100);
         var label=new Label {Dock=DockStyle.Fill,ForeColor=Color.FromArgb(255,102,178),BackColor=Color.Transparent,Font=new Font("Segoe UI",15,FontStyle.Bold)};Controls.Add(label);
-        var menu=new ContextMenuStrip();menu.Items.Add("Close",null,(_,_)=>Close());ContextMenuStrip=menu;label.ContextMenuStrip=menu;
+        var menu=new ContextMenuStrip();menu.Items.Add(ToolText.T("Close"),null,(_,_)=>Close());ContextMenuStrip=menu;label.ContextMenuStrip=menu;
         Point origin=default;bool drag=false;label.MouseDown+=(_,e)=>{if(e.Button==MouseButtons.Left){origin=e.Location;drag=true;}};label.MouseMove+=(_,e)=>{if(drag)Location=new Point(Left+e.X-origin.X,Top+e.Y-origin.Y);};label.MouseUp+=(_,_)=>drag=false;
-        void Update(){try{var x=snapshot();label.Text=$"2xFlaw · CHESTS {x.total:N0}\nPrevious {x.last}  · Week {x.week:N0}\nSquad week ≥ {x.week+x.squad:N0}";}catch{label.Text="Waiting for saved replay data…";}}
+        void Update(){try{var x=snapshot();label.Text=ToolText.F("2xFlaw · CHESTS {0:N0}\nPrevious {1}  · Week {2:N0}\nSquad week ≥ {3:N0}",x.total,x.last,x.week,x.week+x.squad);}catch{label.Text=ToolText.T("Waiting for saved replay data…");}}
         timer.Tick+=(_,_)=>Update();FormClosed+=(_,_)=>timer.Dispose();Update();timer.Start();
     }
 }

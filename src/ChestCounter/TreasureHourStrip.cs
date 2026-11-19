@@ -42,7 +42,7 @@ internal sealed class TreasureHourStrip : UserControl
         Height=66;Margin=Padding.Empty;Padding=new Padding(12,6,12,6);BackColor=Theme.Card;
         dot.Dock=DockStyle.Left;dot.Width=22;dot.Font=textFont;dot.TextAlign=ContentAlignment.MiddleCenter;dot.Text="●";
         status.Dock=DockStyle.Fill;status.Font=textFont;status.TextAlign=ContentAlignment.MiddleLeft;status.AutoEllipsis=true;status.UseMnemonic=false;
-        alerts.Dock=DockStyle.Right;alerts.Width=144;alerts.Font=smallFont;alerts.ForeColor=Theme.Ink;alerts.Text="Notify at start";alerts.Checked=preferences.Enabled;
+        alerts.Dock=DockStyle.Right;alerts.Width=144;alerts.Font=smallFont;alerts.ForeColor=Theme.Ink;alerts.Text=ToolText.T("Notify at start");alerts.Checked=preferences.Enabled;
         Controls.Add(status);Controls.Add(dot);Controls.Add(alerts);
         alerts.CheckedChanged+=(_,_)=>{if(syncing)return;bool old=preferences.Enabled;preferences.Enabled=alerts.Checked;if(!Save())preferences.Enabled=old;UpdateStatus();};
         clock.Tick+=(_,_)=>UpdateStatus();clock.Start();UpdateStatus();
@@ -56,7 +56,7 @@ internal sealed class TreasureHourStrip : UserControl
     {
         var items=new List<string>();
         foreach(var prize in new[]{("gold-outfit","Gold outfit"),("pirate-shop-access","Pirate shop"),("vehicle-decal","Vehicle & decal")})
-        {double boost=TreasureHours.Boost(window,prize.Item1);if(boost>1)items.Add($"{prize.Item2} {boost:0.#}x");}
+        {double boost=TreasureHours.Boost(window,prize.Item1);if(boost>1)items.Add($"{ToolText.T(prize.Item2)} {boost.ToString("0.#",L.Culture)}x");}
         return string.Join(" | ",items);
     }
     private void UpdateStatus()
@@ -80,7 +80,7 @@ internal sealed class TreasureHourStrip : UserControl
                 preferences.Seen.Add(id);
                 if(Save())
                 {
-                    try{notification??=new NotifyIcon{Icon=SystemIcons.Information,Text="Chest Counter"};notification.Visible=true;notification.ShowBalloonTip(8000,"Treasure Hour is live",$"{BoostText(live)}. Ends {live.EndUtc.ToLocalTime():HH:mm} local.",ToolTipIcon.Info);hideAt=now.AddSeconds(12);}
+                    try{notification??=new NotifyIcon{Icon=SystemIcons.Information,Text="Chest Counter"};notification.Visible=true;notification.ShowBalloonTip(8000,ToolText.T("Treasure Hour is live"),ToolText.F("{0}. Ends {1:HH:mm} local.",BoostText(live),live.EndUtc.ToLocalTime()),ToolTipIcon.Info);hideAt=now.AddSeconds(12);}
                     catch(Exception ex){ErrorLog.Write("Treasure Hour notification",ex);}
                 }
                 else preferences.Seen.Remove(id);
@@ -92,10 +92,10 @@ internal sealed class TreasureHourStrip : UserControl
         if(live!=null)
         {
             var left=live.EndUtc-now;
-            text=$"TREASURE HOUR LIVE - ends in {(int)left.TotalHours:00}:{left.Minutes:00}:{left.Seconds:00}\n"+(confirmed?BoostText(live):"Boosts unconfirmed - normal odds apply");
+            text=ToolText.F("TREASURE HOUR LIVE - ends in {0:00}:{1:00}:{2:00}",(int)left.TotalHours,left.Minutes,left.Seconds)+"\n"+(confirmed?BoostText(live):ToolText.T("Boosts unconfirmed - normal odds apply"));
         }
-        else if(next!=null)text=$"Next Treasure Hour: {next.StartUtc.ToLocalTime():ddd dd MMM HH:mm} local\nNotifications are optional. Uses your local odds schedule.";
-        else text=odds==null?"Treasure Hour schedule unavailable\nCheck your local 2xflaw-odds.json file.":"No upcoming Treasure Hours\nNotifications are optional. Uses your local odds schedule.";
+        else if(next!=null)text=ToolText.F("Next Treasure Hour: {0:ddd dd MMM HH:mm} local",next.StartUtc.ToLocalTime())+"\n"+ToolText.T("Notifications are optional. Uses your local odds schedule.");
+        else text=odds==null?ToolText.T("Treasure Hour schedule unavailable")+"\n"+ToolText.T("Check your local 2xflaw-odds.json file."):ToolText.T("No upcoming Treasure Hours")+"\n"+ToolText.T("Notifications are optional. Uses your local odds schedule.");
         if(status.Text!=text)status.Text=text;
         pulse=!pulse;dot.ForeColor=confirmed?(animations()&&pulse?Color.FromArgb(170,119,55):Theme.Amber):Theme.Muted;
         status.ForeColor=confirmed?Theme.Amber:Theme.Muted;
