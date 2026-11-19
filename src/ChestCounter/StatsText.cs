@@ -26,6 +26,8 @@ internal static class StatsText
         ["You"] = new[] { "Tú", "Você", "Вы", "Vous", "Du", "Tu", "Ty", "Siz", "自分" },
         ["Teammates"] = new[] { "Compañeros", "Equipe", "Союзники", "Coéquipiers", "Team", "Compagni", "Drużyna", "Takım arkadaşları", "チームメイト" },
         ["Showing the latest {0:N0} of {1:N0}"] = new[] { "Mostrando las últimas {0:N0} de {1:N0}", "Mostrando as últimas {0:N0} de {1:N0}", "Показаны последние {0:N0} из {1:N0}", "Affichage des {0:N0} dernières sur {1:N0}", "Die letzten {0:N0} von {1:N0}", "Ultime {0:N0} di {1:N0}", "Ostatnie {0:N0} z {1:N0}", "Son {0:N0} / {1:N0} gösteriliyor", "最新 {0:N0} / {1:N0} 件を表示" },
+        ["Opened"] = new[] { "Abiertos", "Abertos", "Открыто", "Ouverts", "Geöffnet", "Aperti", "Otwarte", "Açılan", "開封" },
+        ["Broken"] = new[] { "Rotos", "Quebrados", "Сломано", "Cassés", "Zerstört", "Distrutti", "Zniszczone", "Kırılan", "破壊" },
     };
 
     public static string T(string source)

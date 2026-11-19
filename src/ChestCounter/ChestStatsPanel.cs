@@ -28,11 +28,11 @@ internal sealed class ChestStatsPanel : Control
 
     private static readonly Color[] TileColours =
     {
-        Color.FromArgb(214, 128, 38), Color.FromArgb(46, 112, 214), Color.FromArgb(40, 160, 80),
-        Color.FromArgb(140, 52, 200), Color.FromArgb(210, 52, 52),
+        Theme.Accent, Color.FromArgb(176, 92, 160), Theme.AccentSoft, Theme.Amber, Theme.Mint,
     };
-    private static readonly Color YouBar = Color.FromArgb(255, 196, 46);
-    private static readonly Color MateBar = Color.FromArgb(76, 140, 255);
+    private static readonly Color YouBar = Theme.Accent;
+    private static readonly Color BrokenBar = Theme.AccentSoft;
+    private static readonly Color MateBar = Color.FromArgb(120, 72, 112);
 
     public ChestStatsPanel(Monitor monitor, Store store)
     {
@@ -129,14 +129,14 @@ internal sealed class ChestStatsPanel : Control
         int bw = badge == null ? 0 : TextRenderer.MeasureText(g, badge, _small, Size.Empty, TextFormatFlags.NoPadding).Width + P(14);
         var box = new Rectangle(x, y, w + bw + (badge == null ? 0 : P(6)), P(32));
         using (var path = Round(box, P(8)))
-        using (var fill = new SolidBrush(on ? Theme.Ink : Theme.Panel)) g.FillPath(fill, path);
-        Text(g, label, _pill, new Rectangle(x + P(12), y, w, box.Height), on ? Theme.Bg : Theme.Muted);
+        using (var fill = new SolidBrush(on ? Theme.Accent : Theme.Panel)) g.FillPath(fill, path);
+        Text(g, label, _pill, new Rectangle(x + P(12), y, w, box.Height), on ? Theme.AccentInk : Theme.Muted);
         if (badge != null)
         {
             var b = new Rectangle(x + w + P(2), y + P(7), bw, P(18));
             using (var path = Round(b, P(5)))
-            using (var fill = new SolidBrush(on ? Color.FromArgb(225, 214, 222) : Theme.Card)) g.FillPath(fill, path);
-            Text(g, badge, _small, b, on ? Theme.Bg : Theme.Muted, TextFormatFlags.HorizontalCenter);
+            using (var fill = new SolidBrush(on ? Theme.AccentHover : Theme.Card)) g.FillPath(fill, path);
+            Text(g, badge, _small, b, on ? Theme.AccentInk : Theme.Muted, TextFormatFlags.HorizontalCenter);
         }
         _hits.Add((box, click));
         return box.Right;
@@ -176,18 +176,26 @@ internal sealed class ChestStatsPanel : Control
         for (int i = 0; i < count; i++)
         {
             var box = new Rectangle(i * (tileW + gap), top, tileW, tileH);
-            var head = new Rectangle(box.X, box.Y, box.Width, P(80));
+            var colour = tiles[i].Dim ? Color.FromArgb(90, TileColours[i]) : TileColours[i];
             using (var path = Round(box, P(10)))
-            using (var fill = new SolidBrush(Theme.Card)) g.FillPath(fill, path);
-            g.SetClip(head);
-            var colour = tiles[i].Dim ? Color.FromArgb(110, TileColours[i]) : TileColours[i];
-            using (var path = Round(box, P(10)))
-            using (var fill = new LinearGradientBrush(head, colour, ControlPaint.Dark(colour, 0.15f), 90f)) g.FillPath(fill, path);
-            g.ResetClip();
-            Text(g, tiles[i].Value, _tileValue, new Rectangle(box.X + P(12), box.Y + P(8), box.Width - P(20), P(44)), Color.White);
-            Text(g, Fonts.Track(tiles[i].Label.ToUpper(f)), _tileLabel, new Rectangle(box.X + P(12), box.Y + P(52), box.Width - P(20), P(20)), Color.White);
-            Text(g, tiles[i].Foot, _small, new Rectangle(box.X + P(12), head.Bottom + P(4), box.Width - P(20), box.Bottom - head.Bottom - P(8)), Theme.Muted);
+            {
+                using (var fill = new LinearGradientBrush(box, Color.FromArgb(tiles[i].Dim ? 14 : 38, TileColours[i]), Theme.Card, 90f)) using (var card0 = new SolidBrush(Theme.Card)) { g.SetClip(path); g.FillRectangle(card0, box); g.FillRectangle(fill, box); }
+                using (var stripe = new SolidBrush(colour)) g.FillRectangle(stripe, box.X, box.Y, box.Width, P(3));
+                g.ResetClip();
+                using var edge = new Pen(Theme.CardEdge); g.DrawPath(edge, path);
+            }
+            Text(g, tiles[i].Value, _tileValue, new Rectangle(box.X + P(12), box.Y + P(12), box.Width - P(20), P(42)), tiles[i].Dim ? Theme.Muted : colour);
+            Text(g, Fonts.Track(tiles[i].Label.ToUpper(f)), _tileLabel, new Rectangle(box.X + P(12), box.Y + P(56), box.Width - P(20), P(18)), Theme.Ink);
+            Text(g, tiles[i].Foot, _small, new Rectangle(box.X + P(12), box.Y + P(78), box.Width - P(20), P(18)), Theme.Muted);
+            if (i == 0 && you > 0)
+            {
+                var split = new Rectangle(box.X + P(12), box.Bottom - P(14), box.Width - P(24), P(5));
+                int ow = (int)(split.Width * (youOpened / (double)you));
+                using (var a = new SolidBrush(YouBar)) g.FillRectangle(a, split.X, split.Y, ow, split.Height);
+                using (var b = new SolidBrush(BrokenBar)) g.FillRectangle(b, split.X + ow, split.Y, split.Width - ow, split.Height);
+            }
         }
+        g.ResetClip();
 
         // Chart card
         var card = new Rectangle(0, top + tileH + P(14), Width - 1, Height - (top + tileH + P(14)) - 1);
@@ -205,21 +213,22 @@ internal sealed class ChestStatsPanel : Control
         Pill(g, rx - pdW, card.Y + P(10), StatsText.T("Per day"), null, _perDay, () => _perDay = true);
 
         // Series: you / teammates per bar
-        List<(DateTime When, int You, int Mates)> series = _perDay
-            ? rows.GroupBy(r => r.When.Date).OrderBy(gr => gr.Key).Select(gr => (gr.Key, gr.Sum(r => r.Opened + r.Broken), _withMates ? gr.Sum(r => r.Mates) : 0)).ToList()
-            : rows.Select(r => (r.When, r.Opened + r.Broken, _withMates ? r.Mates : 0)).ToList();
+        List<(DateTime When, int You, int Mates, int Broken)> series = _perDay
+            ? rows.GroupBy(r => r.When.Date).OrderBy(gr => gr.Key).Select(gr => (gr.Key, gr.Sum(r => r.Opened + r.Broken), _withMates ? gr.Sum(r => r.Mates) : 0, gr.Sum(r => r.Broken))).ToList()
+            : rows.Select(r => (r.When, r.Opened + r.Broken, _withMates ? r.Mates : 0, r.Broken)).ToList();
         double seriesAvg = series.Count > 0 ? series.Average(s => s.You + s.Mates) : 0;
         Text(g, series.Count == 0 ? StatsText.T("No matches yet. They appear here once a replay has been analysed.")
                 : StatsText.F(_perDay ? "Oldest to newest. The line marks your average of {0:0.0} per day." : "Oldest to newest. The line marks your average of {0:0.0} per match.", seriesAvg),
             _small, new Rectangle(cx, card.Y + P(42), card.Width - P(32), P(18)), Theme.Muted);
         int ly = card.Y + P(64);
-        using (var b = new SolidBrush(YouBar)) g.FillRectangle(b, cx, ly + P(4), P(10), P(10));
-        Text(g, StatsText.T("You"), _small, new Rectangle(cx + P(14), ly, P(90), P(18)), Theme.Ink);
-        if (_withMates)
+        int lx = cx;
+        foreach (var (key, c) in new[] { ("Opened", YouBar), ("Broken", BrokenBar), ("Teammates", MateBar) })
         {
-            int mx = cx + P(14) + TextRenderer.MeasureText(g, StatsText.T("You"), _small).Width + P(12);
-            using (var b = new SolidBrush(MateBar)) g.FillRectangle(b, mx, ly + P(4), P(10), P(10));
-            Text(g, StatsText.T("Teammates"), _small, new Rectangle(mx + P(14), ly, P(140), P(18)), Theme.Ink);
+            if (key == "Teammates" && !_withMates) continue;
+            using (var b = new SolidBrush(c)) g.FillRectangle(b, lx, ly + P(4), P(10), P(10));
+            var t = StatsText.T(key);
+            Text(g, t, _small, new Rectangle(lx + P(14), ly, P(160), P(18)), Theme.Ink);
+            lx += P(14) + TextRenderer.MeasureText(g, t, _small).Width + P(14);
         }
 
         var plot = new Rectangle(cx + P(30), ly + P(28), card.Width - P(62), card.Bottom - ly - P(52));
@@ -238,6 +247,7 @@ internal sealed class ChestStatsPanel : Control
             }
         }
         float slot = plot.Width / (float)shown.Count;
+        int bestIndex = shown.FindIndex(t => t.You + t.Mates == max);
         float bar = Math.Max(1f, slot * 0.72f);
         g.SmoothingMode = SmoothingMode.None;
         string? lastLabel = null; float lastLabelX = -999;
@@ -246,8 +256,11 @@ internal sealed class ChestStatsPanel : Control
             var s = shown[i];
             float bx = plot.X + i * slot + (slot - bar) / 2;
             float hy = plot.Height * (s.You / (float)scale), hm = plot.Height * (s.Mates / (float)scale);
-            using (var b = new SolidBrush(YouBar)) g.FillRectangle(b, bx, plot.Bottom - hy, bar, hy);
+            float hb = plot.Height * (s.Broken / (float)scale);
+            using (var b = new SolidBrush(YouBar)) g.FillRectangle(b, bx, plot.Bottom - hy + hb, bar, hy - hb);
+            if (hb > 0) using (var b = new SolidBrush(BrokenBar)) g.FillRectangle(b, bx, plot.Bottom - hy, bar, hb);
             if (hm > 0) using (var b = new SolidBrush(MateBar)) g.FillRectangle(b, bx, plot.Bottom - hy - hm, bar, hm);
+            if (i == bestIndex && bar >= P(3)) using (var pen = new Pen(Theme.Ink)) g.DrawRectangle(pen, bx - 1, plot.Bottom - hy - hm - 1, bar + 1, hy + hm + 1);
             var label = s.When.ToString("d MMM", f);
             if (label != lastLabel && bx - lastLabelX > P(60))
             {
@@ -257,7 +270,7 @@ internal sealed class ChestStatsPanel : Control
         }
         g.SmoothingMode = SmoothingMode.AntiAlias;
         int ay = plot.Bottom - (int)(plot.Height * (seriesAvg / scale));
-        using (var avgPen = new Pen(Color.FromArgb(220, Theme.Ink), Math.Max(1, P(1)))) g.DrawLine(avgPen, plot.X, ay, plot.Right, ay);
+        using (var avgPen = new Pen(Theme.Amber, Math.Max(1, P(1))) { DashStyle = DashStyle.Dash }) g.DrawLine(avgPen, plot.X, ay, plot.Right, ay);
         if (series.Count > shown.Count)
             Text(g, StatsText.F("Showing the latest {0:N0} of {1:N0}", shown.Count, series.Count), _small, new Rectangle(card.Right - P(260), ly, P(244), P(18)), Theme.Muted, TextFormatFlags.Right);
     }
