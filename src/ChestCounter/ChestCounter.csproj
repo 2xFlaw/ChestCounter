@@ -8,7 +8,7 @@
     <ApplicationIcon>app.ico</ApplicationIcon>
     <AssemblyName>ChestCounter</AssemblyName>
     <RootNamespace>ChestCounter</RootNamespace>
-    <Version>2.4.1</Version>
+    <Version>2.4.2</Version>
     <Product>2xFlaw's Chest Counter</Product>
     <InvariantGlobalization>false</InvariantGlobalization>
     <PublishTrimmed>false</PublishTrimmed>
@@ -26,4 +26,9 @@
     <ProjectReference Include="..\..\lib\FortniteReplayReader\FortniteReplayReader.csproj" />
   </ItemGroup>
   <Import Project="TreasureHour241.targets" />
+  <Import Project="ObsTheme.targets" />
+  <Import Project="AppTranslations.targets" />
+  <Import Project="PerformanceTranslations.targets" />
+  <Import Project="WeeklyTranslations.targets" />
+  <Import Project="WeeklyMoreTranslations.targets" />
 </Project>

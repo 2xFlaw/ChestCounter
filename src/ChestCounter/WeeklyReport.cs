@@ -236,7 +236,7 @@ public static class WeeklyReport
         foreach (var p in snap.Prizes)
         {
             using var picture = RewardPictures.Load(folder, p.Key, 150, 14);
-            prizes.Add(new { key = p.Key, name = p.Name, den = p.Den, chance = p.Chance, owned = p.Owned, img = DataUri(picture) });
+            prizes.Add(new { key = p.Key, name = p.Name, den = p.Den, chance = p.Chance, owned = p.Owned, allTime = p.AllTimeChests != null, allChests = p.AllTimeChests, img = DataUri(picture) });
         }
 
         string? pick = null;

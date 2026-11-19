@@ -1,0 +1,64 @@
+<Project>
+  <!-- Remaining Weekly Chances and Weekly rewards text: dynamic projections, countdowns, table text and the explanation note. -->
+  <UsingTask TaskName="PrepareWeeklyMoreTranslations" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup><SourcePath ParameterType="System.String" Required="true" /></ParameterGroup>
+    <Task>
+      <Using Namespace="System" /><Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string source=File.ReadAllText(SourcePath).Replace("\r\n","\n");
+string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Weekly translation integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
+source=Once(source,"$\"1 in {vm.Den:N0} per chest   \\u00b7   {vm.Chests:N0} chests {(allTime ? \"all time\" : \"opened this week\")}\"","(allTime ? WeeklyChanceMore.F(\"1 in {0:N0} per chest   \\u00b7   {1:N0} chests all time\", vm.Den, vm.Chests) : WeeklyChanceMore.F(\"1 in {0:N0} per chest   \\u00b7   {1:N0} chests opened this week\", vm.Den, vm.Chests))");
+source=Once(source,"$\"About {Math.Ceiling(vm.ChestsToHalf):N0} more chests to reach 50%\"","WeeklyChanceMore.F(\"About {0:N0} more chests to reach 50%\", Math.Ceiling(vm.ChestsToHalf))");
+source=Once(source,"$\"If you open {vm.Ahead:N0} more chests: +{ChanceText.Pct(vm.GainNow)} now (Treasure Hour) vs +{ChanceText.Pct(vm.GainNormal)} normally\"","WeeklyChanceMore.F(\"If you open {0:N0} more chests: +{1} now (Treasure Hour) vs +{2} normally\", vm.Ahead, ChanceText.Pct(vm.GainNow), ChanceText.Pct(vm.GainNormal))");
+source=Once(source,"$\"If you open {vm.Ahead:N0} more chests: +{ChanceText.Pct(vm.GainNormal)}\"","WeeklyChanceMore.F(\"If you open {0:N0} more chests: +{1}\", vm.Ahead, ChanceText.Pct(vm.GainNormal))");
+source=Once(source,"Fonts.Track($\"TREASURE HOUR {vm.Boost:0.#}\\u00d7\")","Fonts.Track(WeeklyChanceMore.F(\"TREASURE HOUR {0:0.#}\\u00d7\", vm.Boost))");
+source=Once(source,"Fonts.Track(\"PRIZE\")","Fonts.Track(WeeklyChanceMore.T(\"PRIZE\"))");
+source=Once(source,"Fonts.Track(\"CHANCE\")","Fonts.Track(WeeklyChanceMore.T(\"CHANCE\"))");
+source=Once(source,"Fonts.Track($\"CUMULATIVE ODDS THIS WEEK  \\u00b7  DASHED = IF YOU OPEN {_ahead:N0} CHESTS\")","Fonts.Track(WeeklyChanceMore.F(\"CUMULATIVE ODDS THIS WEEK  \\u00b7  DASHED = IF YOU OPEN {0:N0} CHESTS\", _ahead))");
+source=Once(source,"$\"1 in {row.Prize.Den:N0} per chest  \\u00b7  can repeat\" : $\"1 in {row.Prize.Den:N0} per chest\"","WeeklyChanceMore.F(\"1 in {0:N0} per chest  \\u00b7  can repeat\", row.Prize.Den) : WeeklyChanceMore.F(\"1 in {0:N0} per chest\", row.Prize.Den)");
+source=Once(source,"$\"  \\u00b7  {row.Prize.Boost:0.#}\\u00d7 now\"","WeeklyChanceMore.F(\"  \\u00b7  {0:0.#}\\u00d7 now\", row.Prize.Boost)");
+source=Once(source,"Text = \"Weekly chances\";","Text = WeeklyChanceMore.T(\"Weekly chances\");");
+source=Once(source,"Text = \"WEEKLY CHANCES\",","Text = WeeklyChanceMore.T(\"WEEKLY CHANCES\"),");
+source=Once(source,"Text = \"Your odds of having found each prize this week. Click a prize to aim for it.\",","Text = WeeklyChanceMore.T(\"Your odds of having found each prize this week. Click a prize to aim for it.\"),");
+source=Once(source,"Text = \"Auto: next closest\",","Text = WeeklyChanceMore.T(\"Auto: next closest\"),");
+source=Once(source,"Text = \"Resets every Sunday at 14:00 GMT\",","Text = WeeklyChanceMore.T(\"Resets every Sunday at 14:00 GMT\"),");
+source=Once(source,"$\"{w.StartUtc:ddd d MMM HH:mm}\\u2013{w.EndUtc:HH:mm} GMT\" + (TreasureHours.IsUnconfirmed(w) ? \"  (final \\u00b7 boosts not announced yet)\" : \"\")","WeeklyChanceMore.F(\"{0:ddd d MMM HH:mm}\\u2013{1:HH:mm} GMT\", w.StartUtc, w.EndUtc) + (TreasureHours.IsUnconfirmed(w) ? WeeklyChanceMore.T(\"  (final \\u00b7 boosts not announced yet)\") : \"\")");
+source=Once(source,"$\"RESETS IN {left.Days}D {left.Hours:00}H {left.Minutes:00}M {left.Seconds:00}S\"","WeeklyChanceMore.F(\"RESETS IN {0}D {1:00}H {2:00}M {3:00}S\", left.Days, left.Hours, left.Minutes, left.Seconds)");
+source=Once(source,"$\"TREASURE HOUR LIVE  \\u00b7  ends in {(int)l.TotalHours:00}:{l.Minutes:00}:{l.Seconds:00}\" + (_snap.LiveUnknown ? \"  \\u00b7  boosts not announced\" : \"\")","WeeklyChanceMore.F(\"TREASURE HOUR LIVE  \\u00b7  ends in {0:00}:{1:00}:{2:00}\", (int)l.TotalHours, l.Minutes, l.Seconds) + (_snap.LiveUnknown ? WeeklyChanceMore.T(\"  \\u00b7  boosts not announced\") : \"\")");
+source=Once(source,"$\"Next Treasure Hour in {l.Days}d {l.Hours:00}h {l.Minutes:00}m {l.Seconds:00}s\" + (_snap.NextUnknown ? \"  \\u00b7  final, boosts not announced\" : \"\")","WeeklyChanceMore.F(\"Next Treasure Hour in {0}d {1:00}h {2:00}m {3:00}s\", l.Days, l.Hours, l.Minutes, l.Seconds) + (_snap.NextUnknown ? WeeklyChanceMore.T(\"  \\u00b7  final, boosts not announced\") : \"\")");
+source=Once(source,"_hour.Text = \"No more Treasure Hours\";","_hour.Text = WeeklyChanceMore.T(\"No more Treasure Hours\");");
+source=Once(source,"_goal.ShowMessage(\"Everything is ticked as owned. Fresh prizes arrive at the reset.\");","_goal.ShowMessage(WeeklyChanceMore.T(\"Everything is ticked as owned. Fresh prizes arrive at the reset.\"));");
+source=Once(source,"$\"TREASURE HOUR  {goal.Boost:0.#}\\u00d7\"","WeeklyChanceMore.F(\"TREASURE HOUR  {0:0.#}\\u00d7\", goal.Boost)");
+int n=source.IndexOf("        _note.Text =\n",StringComparison.Ordinal);
+int e=n<0?-1:source.IndexOf(" : \"\");\n",n,StringComparison.Ordinal);
+if(n<0||e<0||source.IndexOf("        _note.Text =\n",n+1,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Weekly note integration point changed");
+source=source.Substring(0,n)+"        _note.Text = WeeklyChanceMore.Note(hidden);\n"+source.Substring(e+" : \"\");\n".Length);
+File.WriteAllText(SourcePath,source);
+return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <UsingTask TaskName="PrepareRewardsTranslations" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup><SourcePath ParameterType="System.String" Required="true" /></ParameterGroup>
+    <Task>
+      <Using Namespace="System" /><Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string source=File.ReadAllText(SourcePath).Replace("\r\n","\n");
+string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Rewards translation integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
+source=Once(source,"Text = \"Weekly rewards\";","Text = AppText.T(\"Weekly rewards\");");
+source=Once(source,"new Label { Text = \"Weekly rewards\",","new Label { Text = AppText.T(\"Weekly rewards\"),");
+source=Once(source,"new PillButton { Text = \"Open pictures folder\",","new PillButton { Text = ToolText.T(\"Open pictures folder\"),");
+source=Once(source,"Text = \"Weekly prizes reset; Pirate Shop is permanent\",","Text = ToolText.T(\"Weekly prizes reset; Pirate Shop is permanent\"),");
+source=Once(source,"state.Text = tick.On ? \"Owned\" : \"Not owned\";","state.Text = ToolText.T(tick.On ? \"Owned\" : \"Not owned\");");
+source=Once(source,"$\"Resets in {left.Days}d {left.Hours:00}h {left.Minutes:00}m {left.Seconds:00}s\"","ToolText.F(\"Resets in {0}d {1:00}h {2:00}m {3:00}s\", left.Days, left.Hours, left.Minutes, left.Seconds)");
+source=Once(source,"Text = key == PirateShopChances.Key ? name + \" (all time)\" : name,","Text = WeeklyChanceText.T(key == PirateShopChances.Key ? name + \" (all time)\" : name),");
+File.WriteAllText(SourcePath,source);
+return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="IntegrateWeeklyMoreTranslations" AfterTargets="IntegrateWeeklyTranslations" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PrepareWeeklyMoreTranslations SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/WeeklyChances241.g.cs" />
+    <PrepareRewardsTranslations SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/RewardsForm241.g.cs" />
+  </Target>
+</Project>

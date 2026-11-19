@@ -261,7 +261,7 @@ footer .made{margin-top:14px;font:400 18px var(--display);letter-spacing:.08em;t
 
 <footer>
   <h3>How the numbers work</h3>
-  <p>For every chest you opened since the weekly reset, a prize has a 1-in-N chance. Chests opened inside a Treasure Hour use the boosted rate. The big percentage is the chance of at least one drop so far: <b>1 &minus; &prod;(1 &minus; rate)</b>, so it only rises when you open chests. The planner and the dashed bars show what extra chests would be worth. Except for Gizmos, you cannot get the same prize twice, so prizes you tick as owned in Weekly rewards are hidden.</p>
+  <p>For every chest you opened since the weekly reset, a prize has a 1-in-N chance. Chests opened inside a Treasure Hour use the boosted rate. The big percentage is the chance of at least one drop so far: <b>1 &minus; &prod;(1 &minus; rate)</b>, so it only rises when you open chests. The planner and the dashed bars show what extra chests would be worth. Except for Gizmos, you cannot get the same prize twice, so prizes you tick as owned in Weekly rewards are hidden. Pirate Shop Access uses all-time configured personal history and its owned tick is kept across weekly resets; other prizes remain weekly. Counts without exact opening times use base odds.</p>
   <p>Odds are Epic's published per-chest rates (<span id="oddsSource"></span>), constant except during Treasure Hours. <span id="oddsStatus"></span> This is a probability, not a promise.</p>
   <div class="made">Made by 2xFlaw</div>
 </footer>
@@ -358,8 +358,8 @@ function render(){
       '<div class="pic"><img alt="" src="'+goal.img+'"><span id="picSp"></span></div>'+
       '<div><div class="gtop"><span class="chip '+(auto?"":"amber")+'">'+(auto?"Next closest":"Your pick")+'</span>'+(boosted?'<span class="chip amber"><span class="dot"></span>Treasure Hour '+goal.boost+'&times;</span>':'')+'<button class="btn '+(auto?"on":"")+'" id="btnAuto" type="button">Auto: next closest</button></div>'+
       '<h3>'+esc(goal.name)+'</h3>'+
-      '<div class="gpct num" id="gpct">0%</div><div class="muted" style="margin-top:-2px">cumulative chance this week</div>'+
-      '<div class="gstats"><span><b>1 in '+n0(goal.den)+'</b> per chest</span><span><b>'+n0(D.chests)+'</b> chests opened this week</span><span>'+(half<=0?'<b style="color:var(--mint)">Past the 50% mark</b>':'About <b>'+n0(Math.ceil(half))+'</b> more chests to reach 50%')+'</span></div>'+
+      '<div class="gpct num" id="gpct">0%</div><div class="muted" style="margin-top:-2px">cumulative chance '+(goal.allTime?"all time":"this week")+'</div>'+
+      '<div class="gstats"><span><b>1 in '+n0(goal.den)+'</b> per chest</span><span><b>'+n0(goal.allTime?goal.allChests:D.chests)+'</b> chests '+(goal.allTime?"all time":"opened this week")+'</span><span>'+(half<=0?'<b style="color:var(--mint)">Past the 50% mark</b>':'About <b>'+n0(Math.ceil(half))+'</b> more chests to reach 50%')+'</span></div>'+
       '<div class="gproj" style="color:'+(boosted?"var(--amber)":"var(--muted)")+'">If you open '+n0(plan)+' more chests: +'+pct(gainNorm)+' normally'+(boosted?' &middot; <b>+'+pct(gainNow)+' during the Treasure Hour</b>':'')+'</div>'+
       '<div class="path" id="path"><div class="track"><div class="pfill" id="pfill"></div></div></div></div>';
     var path=$("#path");
@@ -514,7 +514,7 @@ function summary(){
   var w=windows(), o=ordered(w.live), goal=(pick?o.cands.find(function(p){return p.key===pick}):null)||o.cands[0];
   var t="2xFlaw's Chest Counter \u2013 weekly chances ("+(D.profile||"")+")\n";
   t+=n0(D.chests)+" chests opened since the reset.\n";
-  if(goal)t+="Goal: "+goal.name+" \u2013 "+pct(goal.chance)+" so far (1 in "+n0(goal.den)+" per chest).\n";
+  if(goal)t+="Goal: "+goal.name+" \u2013 "+pct(goal.chance)+(goal.allTime?" all time":" so far")+" (1 in "+n0(goal.den)+" per chest).\n";
   o.list.slice(0,6).forEach(function(p){t+="\u2022 "+p.name+": "+pct(p.chance)+" (1 in "+n0(p.den)+")\n"});
   if(w.live)t+="Treasure Hour is live now!\n";else if(w.next)t+="Next Treasure Hour: "+whenText(w.next)+(w.next.unknown?" (boosts not announced)":"")+"\n";
   return t;

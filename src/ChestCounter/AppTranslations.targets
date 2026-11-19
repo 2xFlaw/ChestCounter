@@ -1,0 +1,34 @@
+<Project>
+  <UsingTask TaskName="PrepareMainTranslations" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <SourcePath ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string source=File.ReadAllText(SourcePath).Replace("\r\n","\n");
+string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Main translation integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
+source=Once(source,"        var shown=text;Font font;","        text=MainActionText.T(AppText.T(text));\n        var shown=text;Font font;");
+source=Once(source,"var b=new GlowButton {Text=text,","var b=new GlowButton {Text=MainActionText.T(AppText.T(text)),");
+source=Once(source,"var name=n;var b=ActionButton(n,()=>Navigate(name));","var name=n;var b=ActionButton(n,()=>Navigate(name));b.Tag=name;");
+source=Once(source,"var on=b.Text==name;","var on=string.Equals(b.Tag as string,name,StringComparison.Ordinal);");
+const string empty="\"No matches yet. They appear here once a replay has been analysed.\"";
+source=Once(source,empty,"MainActionText.T("+empty+")");
+source=Once(source,"$\"{s.Stats.HistoryMatches:N0} saved matches · {L.Culture.TextInfo.ToTitleCase(s.View.CurrentCaption)} · {(monitor.OverlayVisible?\"Overlay on\":\"Overlay off\")}\"","DashboardText.F(\"{0:N0} saved matches · {1} · {2}\",s.Stats.HistoryMatches,L.Culture.TextInfo.ToTitleCase(s.View.CurrentCaption),monitor.OverlayVisible?\"Overlay on\":\"Overlay off\")");
+source=Once(source,"$\"Last completed match   {lm.Chests} chests · {lm.Treasures} treasures · {lm.Eliminations?.ToString()??\"—\"} eliminations\"","DashboardText.F(\"Last completed match   {0} chests · {1} treasures · {2} eliminations\",lm.Chests,lm.Treasures,lm.Eliminations?.ToString(L.Culture)??\"—\")");
+source=Once(source,"$\"Observed squad ≥ {t.Total}   |   You {t.Mine}   |   \"","DashboardText.F(\"Observed squad ≥ {0}   |   You {1}   |   \",t.Total,t.Mine)");
+source=Once(source,"$\"Goal reached  {done:N0} / {goal:N0} chests\"","DashboardText.F(\"Goal reached  {0:N0} / {1:N0} chests\",done,goal)");
+source=Once(source,"$\"Chest goal   {done:N0} / {goal:N0}   ·   {goal-done:N0} to go\"","DashboardText.F(\"Chest goal   {0:N0} / {1:N0}   ·   {2:N0} to go\",done,goal,goal-done)");
+source=Once(source,"$\"Weekly reset: {end.ToLocalTime():ddd dd MMM HH:mm} local · {d.Days}d {d.Hours:00}h {d.Minutes:00}m {d.Seconds:00}s\"","DashboardText.F(\"Weekly reset: {0:ddd dd MMM HH:mm} local · {1}d {2:00}h {3:00}m {4:00}s\",end.ToLocalTime(),d.Days,d.Hours,d.Minutes,d.Seconds)");
+foreach(string text in new[]{"● Replay folder not found, choose it in Settings","● Match in progress, counting live","● Ready, play a match and it will appear here","● Ready, watching your replays","Waiting for your first completed replay","Squad data: enable teammate tracking in Settings. Counts are limited to replay visibility.","Closing with Fortnite — click here to keep open.","Overlay on","Overlay off","Weekly tools error","Weekly chances error","History error"}){string literal="\""+text+"\"";source=Once(source,literal,"MainStatusText.T("+literal+")");}
+source=Once(source,"history.DataSource=rows;historyEmpty.Visible=rows.Count==0;","history.DataSource=rows;historyEmpty.Visible=rows.Count==0;foreach(DataGridViewColumn column in history.Columns)column.HeaderText=MainStatusText.HistoryHeader(column.DataPropertyName);");
+File.WriteAllText(SourcePath,source);
+return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="IntegrateMainTranslations" AfterTargets="IntegrateTreasureHour241" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PrepareMainTranslations SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/MainForm241.g.cs" />
+  </Target>
+</Project>

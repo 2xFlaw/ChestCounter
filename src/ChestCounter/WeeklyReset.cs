@@ -1,9 +1,8 @@
-﻿namespace ChestCounter;
+using System.Globalization;
 
-/// <summary>
-/// The weekly reset: every Sunday at 14:00 GMT (UTC). All the "week" maths goes through here so the rewards
-/// window, the dashboard countdown and Weekly chances always agree.
-/// </summary>
+namespace ChestCounter;
+
+/// <summary>Sunday 14:00 UTC reset for weekly prizes; Pirate Shop ownership is permanent.</summary>
 public static class WeeklyReset
 {
     public static readonly TimeSpan TimeOfDay = TimeSpan.FromHours(14);
@@ -11,7 +10,6 @@ public static class WeeklyReset
     private static DateTime AsUtc(DateTime t) =>
         t.Kind == DateTimeKind.Local ? t.ToUniversalTime() : DateTime.SpecifyKind(t, DateTimeKind.Utc);
 
-    /// <summary>Start (UTC) of the weekly period that contains <paramref name="now"/>: the last Sunday 14:00 GMT.</summary>
     public static DateTime Start(DateTime now)
     {
         var utc = AsUtc(now);
@@ -19,15 +17,25 @@ public static class WeeklyReset
         return sunday > utc ? sunday.AddDays(-7) : sunday;
     }
 
-    /// <summary>The next reset (UTC): the coming Sunday 14:00 GMT.</summary>
     public static DateTime Next(DateTime now) => Start(now).AddDays(7);
-
-    /// <summary>Time left until the next reset.</summary>
     public static TimeSpan Remaining(DateTime now) => Next(now) - AsUtc(now);
 
-    /// <summary>
-    /// Key under which "I own this" is stored. It includes the week, so ticks clear themselves at every reset
-    /// (each week has different prizes) and old weeks are simply ignored.
-    /// </summary>
-    public static string OwnedKey(string rewardKey, DateTime now) => $"{rewardKey}@{Start(now):yyyyMMdd}";
+    /// <summary>Only Pirate Shop uses an all-time key; other rewards retain their existing weekly keys.</summary>
+    public static string OwnedKey(string rewardKey, DateTime now) => rewardKey == PirateShopChances.Key
+        ? rewardKey + "@all-time" : $"{rewardKey}@{Start(now):yyyyMMdd}";
+
+    /// <summary>Migrate the latest dated Pirate Shop choice, including an explicit unchecked state, once.</summary>
+    public static bool MigratePirateOwnership(Config config, DateTime now)
+    {
+        var stable = OwnedKey(PirateShopChances.Key, now);
+        if (config.OwnedRewards.ContainsKey(stable)) return false;
+        var prefix = PirateShopChances.Key + "@";
+        var legacy = config.OwnedRewards.Where(pair => pair.Key.StartsWith(prefix, StringComparison.Ordinal)
+            && DateTime.TryParseExact(pair.Key.Substring(prefix.Length), "yyyyMMdd", CultureInfo.InvariantCulture,
+                DateTimeStyles.None, out var date) && date.Date <= AsUtc(now).Date)
+            .OrderByDescending(pair => pair.Key, StringComparer.Ordinal).ToList();
+        if (legacy.Count == 0) return false;
+        config.OwnedRewards[stable] = legacy[0].Value;
+        return true;
+    }
 }
