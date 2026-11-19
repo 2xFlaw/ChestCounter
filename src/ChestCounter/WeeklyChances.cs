@@ -868,6 +868,7 @@ public sealed class WeeklyChancesForm : Form
     private readonly PlannerPanel _planner = new();
     private readonly OddsTable _table = new();
     private readonly Label _note;
+    private readonly ClaimAllBanner _claim;
     private readonly GlowButton _auto;
     private DateTime _weekStart;
     private string? _pick;
@@ -977,10 +978,13 @@ public sealed class WeeklyChancesForm : Form
             UseMnemonic = false,
         };
 
+        _claim = new ClaimAllBanner(_folder);
+
         _body = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Theme.Bg };
         _body.Controls.Add(_goal);
         _body.Controls.Add(_planner);
         _body.Controls.Add(_table);
+        _body.Controls.Add(_claim);
         _body.Controls.Add(_note);
         Controls.Add(_body);
         Controls.Add(header);
@@ -1226,7 +1230,8 @@ public sealed class WeeklyChancesForm : Form
             y = _planner.Bottom + 12;
         }
         _table.SetBounds(margin, y, width, _table.WantedHeight);
-        _note.SetBounds(margin, _table.Bottom + 12, width, 130);
+        _claim.SetBounds(margin, _table.Bottom + 12, width, _claim.HeightFor(width));
+        _note.SetBounds(margin, _claim.Bottom + 12, width, 130);
     }
 
     protected override void OnHandleCreated(EventArgs e)
