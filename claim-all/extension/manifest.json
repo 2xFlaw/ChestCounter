@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "__MSG_extName__",
+  "short_name": "Claim All",
+  "description": "__MSG_extDesc__",
+  "version": "0.0.0",
+  "default_locale": "en",
+  "author": "2xFlaw",
+  "homepage_url": "https://chestcounter.io/claim",
+  "icons": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png", "128": "icons/icon128.png" },
+  "action": {
+    "default_title": "__MSG_extName__",
+    "default_popup": "popup.html",
+    "default_icon": { "16": "icons/icon16.png", "32": "icons/icon32.png", "48": "icons/icon48.png" }
+  },
+  "permissions": ["storage", "alarms", "notifications"],
+  "host_permissions": ["https://www.fortnite.com/*"],
+  "background": { "service_worker": "background.js", "type": "module" },
+  "content_scripts": [
+    { "matches": ["https://www.fortnite.com/*"], "js": ["bridge.js"], "run_at": "document_start" },
+    { "matches": ["https://www.fortnite.com/*"], "js": ["claim.js"], "run_at": "document_idle", "world": "MAIN" }
+  ],
+  "minimum_chrome_version": "111"
+}

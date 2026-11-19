@@ -1,0 +1,6 @@
+{
+  "version": "2.5.0",
+  "page": "https://chestcounter.io/claim",
+  "chrome": "https://github.com/2xFlaw/ChestCounter/releases/latest/download/ChestCounter-ClaimAll-Chrome.zip",
+  "userscript": "https://raw.githubusercontent.com/2xFlaw/ChestCounter/main/claim-all/dist/chest-counter-claim-all.user.js"
+}

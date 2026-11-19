@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Claim All</title>
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+<main>
+  <header>
+    <img src="icons/icon48.png" width="40" height="40" alt="">
+    <div><h1 id="title">Pirate Shop Claim All</h1><p id="ver"></p></div>
+  </header>
+  <section id="card" class="card">
+    <div id="big" class="big" hidden></div>
+    <p id="line" class="line"></p>
+    <p id="until" class="until" hidden></p>
+    <button id="go" class="btn primary" type="button"></button>
+  </section>
+  <section class="opts">
+    <label class="opt"><input type="checkbox" id="reminder"><span><b id="remT"></b><small id="remS"></small></span></label>
+    <label class="opt"><input type="checkbox" id="quick"><span><b id="quickT"></b></span></label>
+  </section>
+  <p id="life" class="life" hidden></p>
+  <a id="upd" class="upd" hidden target="_blank" rel="noopener"></a>
+  <footer><a href="https://chestcounter.io/claim" target="_blank" rel="noopener" id="foot"></a></footer>
+</main>
+<script type="module" src="popup.js"></script>
+</body>
+</html>
