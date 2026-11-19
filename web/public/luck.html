@@ -22,6 +22,11 @@
 .legend i.hot{border-top:3px dashed var(--amber)}
 .fill,.bar i{width:0;transition:width .9s cubic-bezier(.2,.7,.3,1)}
 .card.goal,#planner,#rows{animation:fade .6s ease both}
+.claimcta{display:flex;flex-wrap:wrap;align-items:center;gap:18px 22px;border-color:rgba(255,102,178,.45);background:linear-gradient(120deg,rgba(255,102,178,.16),transparent 60%),var(--card)}
+.claimcta img{width:76px;height:76px;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(208,0,128,.4))}
+.claimcta>div{flex:1 1 320px}
+.claimcta h3{font-size:clamp(20px,2.4vw,26px);line-height:1.15;margin:6px 0 4px}
+.claimcta a.btn{text-decoration:none;color:#1c0a17!important;padding:12px 20px;font-size:13.5px}
 @keyframes draw{to{stroke-dashoffset:0}}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.proj .line,.proj .line.hot,.card.goal,#planner,#rows{animation:none;stroke-dashoffset:0}.fill,.bar i{transition:none}}
@@ -37,6 +42,7 @@
 <section><div class='sh'><h2>Your goal</h2><span class='meta'>Defaults to the prize you are closest to. Click a prize below to aim for it.</span></div><div class='card goal' id='goal'></div></section>
 <section><div class='sh'><h2>Projection</h2><span class='meta' id='planMeta'>What more chests are worth for your goal.</span></div><div class='card' id='planner'></div></section>
 <section><div class='sh'><h2>Odds this week</h2><span class='meta' id='oddsMeta'></span></div><div class='card' id='rows' style='padding:8px'></div></section>
+<section><div class='card claimcta'><img src='/rewards/pirate-shop-access.png' width='76' height='76' alt=''><div><div class='lbl'>Pirate Shop Claim All</div><h3>Already own the Pirate Shop Access Token? Claim the whole Item Shop with one button!</h3><div class='muted'>Free for Chrome, Edge, Firefox and Safari. Never spends V-Bucks.</div></div><a class='btn on' href='/claim.html'>Get Claim All</a></div></section>
 <section><div class='sh'><h2>Treasure Hours</h2></div><div class='card tw'><table><thead><tr><th>When</th><th>Gold outfit</th><th>Pirate shop</th><th>Vehicle &amp; decal</th><th>Status</th></tr></thead><tbody id='hours'></tbody></table></div></section>
 <p class='note'>Chance of at least one drop = 1 - (1 - 1/odds)^chests, counted since the weekly reset. Pirate Shop Access does not reset, so it counts every chest you have opened, all time, like the app. Odds are the per-chest rates used by the app. Confirmed Treasure Hour boosts are included; unannounced boosts count as normal odds. This is a probability, not a promise.</p>
 </main>

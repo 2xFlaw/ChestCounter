@@ -2,7 +2,7 @@ import { ROWS, HEADS, PATS } from '/i18n-data.js';
 const NL = String.fromCharCode(10);
 const LANGS = [['es', 'Español'], ['en', 'English'], ['pt', 'Português (Brasil)'], ['ru', 'Русский'], ['fr', 'Français'], ['de', 'Deutsch'], ['it', 'Italiano'], ['pl', 'Polski'], ['tr', 'Türkçe'], ['ja', '日本語']];
 const COLS = ['es', 'pt', 'ru', 'fr', 'de', 'it', 'pl', 'tr', 'ja'];
-const PAGE_LINKS = new Set(['/', '/index.html', '/stats.html', '/luck.html', '/community.html', '/leaderboard.html', '/friends.html', '/privacy.html', '/link.html']);
+const PAGE_LINKS = new Set(['/', '/index.html', '/stats.html', '/luck.html', '/community.html', '/leaderboard.html', '/friends.html', '/privacy.html', '/link.html', '/claim.html']);
 const PREFIX = new RegExp('^/([a-z]{2})(-[A-Za-z]{2,4})?(?=/|$)', 'i');
 const rows = block => block.trim().split(NL).map(line => line.split('|'));
 const dict = new Map(rows(ROWS).map(r => [r[0], r.slice(1)]));
@@ -201,7 +201,7 @@ function apply() {
 
 function address(code) {
   const p = split(location.pathname);
-  if (!PAGE_LINKS.has(p.rest) && p.rest !== '/stats' && p.rest !== '/luck') return;
+  if (!PAGE_LINKS.has(p.rest) && p.rest !== '/stats' && p.rest !== '/luck' && p.rest !== '/claim') return;
   const path = code === 'en' ? p.rest : '/' + code + p.rest;
   if (path !== location.pathname) history.replaceState(null, '', path + location.search + location.hash);
 }

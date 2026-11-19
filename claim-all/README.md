@@ -6,7 +6,7 @@
 
 <p align="center">
   <b>Already own the Pirate Shop Access Token? Claim the whole Fortnite Item Shop with one button.</b><br>
-  Free and open source. Never spends V-Bucks.
+  Free and open source. Never spends V-Bucks. By <a href="https://github.com/2xFlaw">2xFlaw</a>.
 </p>
 
 <p align="center">
@@ -123,7 +123,11 @@ node claim-all/build.mjs
 This builds `dist/chrome/` (load it with Load unpacked), `dist/ChestCounter-ClaimAll-Chrome.zip` and `dist/chest-counter-claim-all.user.js` from [`src`](src) and [`extension`](extension). Node 18 or newer, no dependencies.
 
 ## Credits and license
-Based on [Pirate Token Claim All](https://github.com/Napzeee/fortnite-pirate-token-claim-all-extension) by Napzeee. Released under the [MIT License](LICENSE). Use at your own risk.
+Chest Counter Claim All was made by [2xFlaw](https://github.com/2xFlaw), who came up with the idea and wrote this version: the review screen, sidekick picker, safety stop, retry, saved list, demo mode, toolbar button, userscript and translations.
+
+It builds on [Pirate Token Claim All](https://github.com/Napzeee/fortnite-pirate-token-claim-all-extension) by Napzeee, whose claim requests it uses. Thanks to Napzeee for the original.
+
+Released under the [MIT License](LICENSE). Use at your own risk.
 
 ---
 Not affiliated with or endorsed by Epic Games. Fortnite and the Pirate Shop artwork are trademarks and property of Epic Games, Inc.

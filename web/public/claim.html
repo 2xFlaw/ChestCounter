@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang='en'>
+<head>
+<meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<meta name='color-scheme' content='dark'>
+<title>Pirate Shop Claim All - Chest Counter</title>
+<meta name='description' content='Already own the Pirate Shop Access Token? Claim the whole Fortnite Item Shop with one button. Free browser extension for Chrome, Edge, Brave and Opera, plus a userscript for Firefox and Safari. Never spends V-Bucks.'>
+<meta property='og:title' content='Pirate Shop Claim All - Chest Counter'>
+<meta property='og:description' content='Already own the Pirate Shop Access Token? Claim the whole Item Shop with one button.'>
+<meta property='og:image' content='https://chestcounter.io/claim-all/review.webp'>
+<link rel='preconnect' href='https://fonts.googleapis.com'>
+<link href='https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;700;800&display=swap' rel='stylesheet'>
+<link rel='stylesheet' href='/theme.css'>
+<style>
+.claim-hero .in{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);align-items:center;gap:28px;padding:34px 34px 0}
+.claim-hero h1{font-size:clamp(40px,6vw,66px)}
+.ch-lead{font-size:clamp(17px,1.8vw,21px);line-height:1.45;font-weight:700;margin:14px 0 0;max-width:620px}
+.ch-cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:22px}
+.ch-dl{display:flex;flex-direction:column;gap:2px;min-width:230px;padding:13px 20px;border-radius:14px;text-decoration:none;color:#fff;background:linear-gradient(180deg,var(--acc),var(--acc2));border:1px solid var(--acc);box-shadow:0 10px 30px rgba(208,0,128,.32);transition:transform .15s,box-shadow .15s}
+.ch-dl:hover{transform:translateY(-2px);box-shadow:0 14px 36px rgba(208,0,128,.45)}
+.ch-dl b{font-size:15px}
+.ch-dl span{font-size:12px;opacity:.85}
+.ch-dl:not(.alt),.install .row a.btn.on{color:#1c0a17!important}
+.ch-dl:not(.alt) span{opacity:.78}
+.ch-dl.alt{color:var(--ink);background:linear-gradient(180deg,#2e1d3a,var(--panel));border-color:var(--line2);box-shadow:none}
+.ch-dl.alt:hover{border-color:rgba(255,102,178,.75)}
+.ch-meta{display:flex;flex-wrap:wrap;gap:6px 14px;margin:14px 0 30px;font-size:12.5px;color:var(--muted)}
+.ch-meta a{color:var(--muted)}
+.ch-shot{align-self:end;justify-self:center;width:100%;max-width:330px;display:block;border-radius:18px 18px 0 0;box-shadow:0 -10px 50px rgba(208,0,128,.28)}
+.warn{border-color:rgba(255,184,77,.45);background:linear-gradient(120deg,rgba(255,184,77,.12),transparent 60%),var(--card);display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,.6fr);gap:24px;align-items:center}
+.warn h3{font-size:22px;color:var(--amber);margin-bottom:8px}
+.warn p{margin:0 0 10px;line-height:1.6}
+.warn ul{margin:6px 0 0;padding-left:18px;color:var(--muted);line-height:1.7}
+.deadline{text-align:center;padding:18px;border-radius:16px;background:rgba(0,0,0,.22);border:1px solid rgba(255,184,77,.35)}
+.deadline .big{font:400 clamp(26px,3.4vw,38px)/1 var(--display);color:var(--amber);margin:8px 0 6px}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;counter-reset:s}
+.step{counter-increment:s;padding:18px 20px}
+.step::before{content:counter(s);display:grid;place-items:center;width:34px;height:34px;border-radius:50%;margin-bottom:12px;font:400 18px var(--display);color:#fff;background:linear-gradient(180deg,var(--acc),var(--acc2))}
+.step h3{font-size:18px;margin-bottom:6px}
+.step p{margin:0;color:var(--muted);line-height:1.55}
+.shots{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.shots figure{margin:0;padding:12px;text-align:center}
+.shots img{width:100%;height:auto;display:block;border-radius:14px}
+.shots figcaption{margin-top:10px;font-size:12.5px;color:var(--muted)}
+.install{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.install .card{display:flex;flex-direction:column}
+.install h3{font-size:20px;margin-bottom:4px}
+.install ol{margin:12px 0 16px;padding-left:20px;line-height:1.7}
+.install li{margin-bottom:4px}
+.install .row{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto}
+.install .row a.btn{text-decoration:none;color:var(--ink)}
+.feats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.feat{padding:16px 18px}
+.feat h3{font:800 14px/1.3 var(--body);text-transform:none;letter-spacing:0;margin-bottom:6px;color:var(--ink)}
+.feat p{margin:0;color:var(--muted);font-size:13px;line-height:1.55}
+.feat i{display:block;width:26px;height:4px;border-radius:9px;margin-bottom:12px;background:var(--c,var(--acc))}
+.demo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+.demo p{margin:4px 0 0;color:var(--muted);max-width:720px;line-height:1.6}
+.demo a.btn{text-decoration:none;color:var(--ink);white-space:nowrap}
+.faq details{border-bottom:1px solid var(--line);padding:14px 4px}
+.faq details:last-child{border-bottom:0}
+.faq summary{cursor:pointer;font-weight:800;font-size:14.5px;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';color:var(--acc);font-size:18px;line-height:1}
+.faq details[open] summary::after{content:'–'}
+.faq details p{margin:10px 0 2px;color:var(--muted);line-height:1.65;max-width:860px}
+.links{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.links a{font-size:12.5px}
+@media(max-width:980px){.steps,.feats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:820px){.claim-hero .in{grid-template-columns:1fr;padding:26px 22px 0}.ch-shot{max-width:280px}.warn,.install{grid-template-columns:1fr}.shots{grid-template-columns:1fr;max-width:420px;margin:0 auto}}
+@media(max-width:520px){.steps,.feats{grid-template-columns:1fr}.ch-dl{min-width:0;width:100%}}
+</style>
+</head>
+<body>
+<main>
+<header class='hero claim-hero'><div class='in'>
+  <div>
+    <div class='lbl eyebrow'>2xFlaw's Chest Counter</div>
+    <h1>Pirate Shop Claim All</h1>
+    <p class='ch-lead'>Already own the Pirate Shop Access Token? Claim the whole Item Shop with one button!</p>
+    <div class='chips'><span class='chip mint'>Never spends V-Bucks</span><span class='chip'>Free and open source</span><span class='chip amber'>10 languages</span></div>
+    <div class='ch-cta'>
+      <a class='ch-dl' href='https://github.com/2xFlaw/ChestCounter/releases/latest/download/ChestCounter-ClaimAll-Chrome.zip'><b>Download for Chrome</b><span>Chrome, Edge, Brave and Opera</span></a>
+      <a class='ch-dl alt' href='#other'><b>Other browsers</b><span>Firefox, Safari and more</span></a>
+    </div>
+    <div class='ch-meta'><span class='num'>v2.5.0</span><a href='https://github.com/2xFlaw/ChestCounter/tree/main/claim-all'>Source code on GitHub</a><a href='#faq'>FAQ</a></div>
+  </div>
+  <img class='ch-shot' src='/claim-all/review.webp' width='538' height='692' alt='The Claim All review screen on fortnite.com' fetchpriority='high'>
+</div></header>
+
+<section><div class='card warn'>
+  <div>
+    <h3>Activate it in game first</h3>
+    <p>Owning the token isn't enough. Activate the Pirate Shop in the in-game Fortnite Item Shop, then use Claim All on fortnite.com.</p>
+    <p class='muted'>Epic's rules for the Pirate Shop:</p>
+    <ul>
+      <li>Items sold for V-Bucks are free to claim for 14 days from the moment you activate it.</li>
+      <li>Real-money offers, gifting and pass levels or rewards are excluded.</li>
+      <li>You can only claim one free sidekick you don't already own.</li>
+      <li>You can activate it once in 2026 and once in 2027. It isn't transferable.</li>
+    </ul>
+  </div>
+  <div class='deadline' id='deadline'>
+    <div class='lbl'>2026 activation deadline</div>
+    <div class='big num' id='deadlineCd'>--</div>
+    <div class='muted' style='font-size:12.5px'>Activate by 16 December 2026, 00:00 GMT</div>
+  </div>
+</div></section>
+
+<section><div class='sh'><h2>How it works</h2><span class='meta'>About a minute for a full shop.</span></div>
+<div class='steps'>
+  <div class='card step'><h3>Activate</h3><p>Activate the Pirate Shop in the in-game Item Shop.</p></div>
+  <div class='card step'><h3>Sign in</h3><p>Sign in at fortnite.com/item-shop with the same account.</p></div>
+  <div class='card step'><h3>Choose</h3><p>Press Claim all free next to Buy V-Bucks, then pick your categories and your one free sidekick.</p></div>
+  <div class='card step'><h3>Done</h3><p>Every free item lands in your locker and your V-Bucks stay untouched.</p></div>
+</div>
+<div class='shots' style='margin-top:14px'>
+  <figure class='card'><img src='/claim-all/sidekick.webp' width='538' height='692' loading='lazy' alt='Picking a free sidekick'><figcaption>Pick your one free sidekick.</figcaption></figure>
+  <figure class='card'><img src='/claim-all/progress.webp' width='538' height='692' loading='lazy' alt='Claiming in progress'><figcaption>Watch it claim. Stop whenever you like.</figcaption></figure>
+  <figure class='card'><img src='/claim-all/done.webp' width='538' height='692' loading='lazy' alt='Finished screen'><figcaption>See everything you got.</figcaption></figure>
+</div></section>
+
+<section id='install'><div class='sh'><h2>Install</h2><span class='meta'>Use one or the other, not both.</span></div>
+<div class='install'>
+  <div class='card'>
+    <h3>Chrome, Edge, Brave and Opera</h3>
+    <div class='muted'>Browser extension</div>
+    <ol>
+      <li>Download the zip and unzip it. Keep the folder somewhere you won't delete it.</li>
+      <li>Open chrome://extensions and turn on Developer mode.</li>
+      <li>Click Load unpacked and pick the unzipped folder.</li>
+      <li>Pin the pirate chest to your toolbar to see how many free items are waiting.</li>
+    </ol>
+    <div class='row'><a class='btn on' href='https://github.com/2xFlaw/ChestCounter/releases/latest/download/ChestCounter-ClaimAll-Chrome.zip'>Download for Chrome</a></div>
+  </div>
+  <div class='card' id='other'>
+    <h3>Firefox, Safari and other browsers</h3>
+    <div class='muted'>Userscript</div>
+    <ol>
+      <li>Install a userscript manager: Violentmonkey or Tampermonkey on Firefox, or Userscripts on Safari.</li>
+      <li>Open the userscript and press Install when your manager asks.</li>
+      <li>It updates itself automatically when a new version comes out.</li>
+    </ol>
+    <div class='row'><a class='btn on' href='https://raw.githubusercontent.com/2xFlaw/ChestCounter/main/claim-all/dist/chest-counter-claim-all.user.js'>Install the userscript</a><a class='btn' href='https://addons.mozilla.org/firefox/addon/violentmonkey/'>Violentmonkey</a><a class='btn' href='https://addons.mozilla.org/firefox/addon/tampermonkey/'>Tampermonkey</a><a class='btn' href='https://apps.apple.com/app/userscripts/id1463298887'>Userscripts</a></div>
+  </div>
+</div></section>
+
+<section><div class='sh'><h2>What it does</h2></div>
+<div class='feats'>
+  <div class='card feat' style='--c:var(--acc)'><i></i><h3>Review before claiming</h3><p>See how many items there are and what they're worth, then choose the categories you want.</p></div>
+  <div class='card feat' style='--c:var(--amber)'><i></i><h3>Your pick of sidekick</h3><p>Epic only gives one free sidekick, so you choose it. Everything else with a sidekick is left out.</p></div>
+  <div class='card feat' style='--c:var(--mint)'><i></i><h3>Safety stop</h3><p>Every claim is sent with a price of 0, and it stops straight away if your V-Bucks balance ever drops.</p></div>
+  <div class='card feat' style='--c:var(--rose)'><i></i><h3>Handles slowdowns</h3><p>If Epic asks it to slow down, it backs off and carries on instead of failing.</p></div>
+  <div class='card feat' style='--c:var(--acc)'><i></i><h3>Retry in one click</h3><p>Anything that failed or was stopped can be claimed again with one button.</p></div>
+  <div class='card feat' style='--c:var(--amber)'><i></i><h3>Badge and reminders</h3><p>The Chrome extension shows how many free items are waiting and can remind you when the shop refreshes.</p></div>
+  <div class='card feat' style='--c:var(--mint)'><i></i><h3>Save your list</h3><p>Download a list of everything you claimed.</p></div>
+  <div class='card feat' style='--c:var(--rose)'><i></i><h3>10 languages</h3><p>It follows the language you pick on fortnite.com.</p></div>
+</div></section>
+
+<section><div class='card demo'>
+  <div><h3 style='font-size:22px'>Try it first</h3><p>Demo mode runs the whole thing with today's real shop, but nothing is sent to Epic. It works even without the token, so you can see what you'd get before activating.</p></div>
+  <a class='btn' href='https://www.fortnite.com/item-shop?ccdemo=1'>Open the demo</a>
+</div></section>
+
+<section id='faq'><div class='sh'><h2>FAQ</h2></div>
+<div class='card faq'>
+  <details><summary>Is this a mod or a cheat?</summary><p>No. It only runs on fortnite.com in your browser and never touches the game or your PC. It does the same thing as pressing Claim on every item yourself, just faster.</p></details>
+  <details><summary>Can it spend my V-Bucks?</summary><p>No. Every claim is sent with an expected price of 0, so Epic rejects anything that isn't free. Your balance is also checked before, during and after each run.</p></details>
+  <details><summary>It says the Pirate Shop isn't active.</summary><p>Activate it in the in-game Item Shop first. Activating starts the 14-day clock.</p></details>
+  <details><summary>Can I claim every sidekick?</summary><p>No. Epic only lets you claim one free sidekick you don't already own, and a bundle with a sidekick counts as that one.</p></details>
+  <details><summary>The shop changed. Can I claim again?</summary><p>Yes. The shop refreshes every day at 00:00 UTC, so you can come back for new items for the whole 14 days.</p></details>
+  <details><summary>Does it work on mobile or console?</summary><p>The Chrome extension needs a desktop browser. The userscript also works in Safari on iPhone and iPad. Items you claim show up everywhere you play.</p></details>
+  <details><summary>Does it see my password?</summary><p>No. It runs only on fortnite.com, uses the session you're already signed in with and sends nothing anywhere else. The code is open source, so anyone can check it.</p></details>
+  <details><summary>How do I update it?</summary><p>The extension popup tells you when a new version is out. Unzip the new version over the old folder, then press reload on the extension card. The userscript updates itself.</p></details>
+  <details><summary>Why isn't it on the Chrome Web Store?</summary><p>Loading it unpacked lets you read every line of code you run. A store listing may follow.</p></details>
+</div>
+<p class='note'>Idea and code by 2xFlaw, based on Pirate Token Claim All by Napzeee (MIT License). Not affiliated with or endorsed by Epic Games. Use at your own risk.</p>
+<div class='links'><a href='https://github.com/2xFlaw/ChestCounter/tree/main/claim-all'>Source code on GitHub</a><a href='https://github.com/Napzeee/fortnite-pirate-token-claim-all-extension'>Original project by Napzeee</a></div>
+</section>
+</main>
+<script type='module'>
+import { $, nav, countdown } from '/app.js';
+nav('claim');
+const end = Date.UTC(2026, 11, 16);
+const box = $('#deadline'), cd = $('#deadlineCd');
+const tick = () => { const left = end - Date.now(); if (left <= 0) { box.hidden = true; return; } cd.textContent = countdown(left); };
+tick(); setInterval(tick, 1000);
+</script>
+</body>
+</html>

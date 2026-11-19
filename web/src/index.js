@@ -4,7 +4,7 @@ import { seedTreasureHours } from './schedule.js';
 import { handleRankings } from './rankings.js';
 import { handlePersonal } from './personal.js';
 import { handleBenchmarks } from './benchmarks.js';
-const adPages = new Set(['/', '/index.html', '/stats', '/stats.html', '/luck', '/luck.html', '/community', '/community.html', '/leaderboard', '/leaderboard.html', '/friends', '/friends.html']);
+const adPages = new Set(['/', '/index.html', '/stats', '/stats.html', '/luck', '/luck.html', '/community', '/community.html', '/leaderboard', '/leaderboard.html', '/friends', '/friends.html', '/claim', '/claim.html']);
 const recoveryTag = `<script async src="https://fundingchoicesmessages.google.com/i/pub-3617574685495506?ers=1"></script><script>(function() {function signalGooglefcPresent() {if (!window.frames['googlefcPresent']) {if (document.body) {const iframe = document.createElement('iframe'); iframe.style = 'width: 0; height: 0; border: none; z-index: -1000; left: -1000px; top: -1000px;'; iframe.style.display = 'none'; iframe.name = 'googlefcPresent'; document.body.appendChild(iframe);} else {setTimeout(signalGooglefcPresent, 0);}}}signalGooglefcPresent();})();</script>`;
 const LANGS = ['en', 'es', 'pt', 'ru', 'fr', 'de', 'it', 'pl', 'tr', 'ja'];
 const COUNTRY = {};
