@@ -1,0 +1,85 @@
+name: Windows app test build
+
+on:
+  push:
+    branches: [app/pirate-shop-all-time]
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'lib/**'
+      - 'build.bat'
+      - 'global.json'
+      - '.github/scripts/audit_app_translations.py'
+      - '.github/workflows/app-test-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: app-test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows-app:
+    name: Build Windows executable and audit translations
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out requested revision
+        uses: actions/checkout@v4
+      - name: Install .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Install Python for translation audit
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build and publish using build.bat settings
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force audit | Out-Null
+          dotnet --info | Out-File audit/dotnet-info.txt
+          dotnet publish src/ChestCounter/ChestCounter.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:EnableCompressionInSingleFile=true -p:DebugType=none -o dist/test 2>&1 | Tee-Object -FilePath audit/windows-publish.log
+          if ($LASTEXITCODE -ne 0) { throw 'Windows app publish failed. See windows-publish.log.' }
+          if (!(Test-Path dist/test/ChestCounter.exe)) { throw 'Publish did not produce ChestCounter.exe.' }
+      - name: Check translation placeholders and list remaining English candidates
+        if: ${{ !cancelled() }}
+        shell: pwsh
+        run: |
+          python .github/scripts/audit_app_translations.py
+          if ($LASTEXITCODE -ne 0) { throw 'Translation validation failed. See translation-audit.txt.' }
+      - name: Stamp test build and checksum
+        shell: pwsh
+        run: |
+          $info = @(
+            'Chest Counter - unreleased Windows x64 test build',
+            'Repository: ${{ github.repository }}',
+            'Built commit: ${{ github.sha }}',
+            'Ref: ${{ github.ref }}',
+            'PR head (when applicable): ${{ github.event.pull_request.head.sha }}',
+            'Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}',
+            'This build has not passed a full interactive Windows/OBS or gameplay test.',
+            'The app version may still display 2.4.1; identify this test build by its commit.',
+            'Back up your ChestCounter application data before testing.'
+          )
+          $info | Set-Content -Encoding utf8 dist/test/BUILD-INFO.txt
+          $hash = (Get-FileHash dist/test/ChestCounter.exe -Algorithm SHA256).Hash.ToLowerInvariant()
+          "$hash  ChestCounter.exe" | Set-Content -Encoding ascii dist/test/SHA256SUMS.txt
+          @('Download the ChestCounter-win-x64-test artifact from this run.', 'Extract its ZIP and run ChestCounter.exe.', 'This is a test artifact, not a public GitHub Release.') | Add-Content $env:GITHUB_STEP_SUMMARY
+      - name: Upload executable test ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChestCounter-win-x64-test-${{ github.sha }}
+          path: dist/test/
+          if-no-files-found: error
+          retention-days: 14
+      - name: Upload build logs and translation audit
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: ChestCounter-build-audit-${{ github.sha }}
+          path: audit/
+          if-no-files-found: warn
+          retention-days: 14
