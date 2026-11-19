@@ -31,4 +31,5 @@
   <Import Project="PerformanceTranslations.targets" />
   <Import Project="WeeklyTranslations.targets" />
   <Import Project="WeeklyMoreTranslations.targets" />
+  <Import Project="DashboardStats.targets" />
 </Project>
