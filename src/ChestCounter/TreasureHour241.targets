@@ -13,12 +13,18 @@
 string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Treasure Hour integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
 string Read(string name){return File.ReadAllText(Path.Combine(Root,name)).Replace("\r\n","\n");}
 string weekly=Read("WeeklyChances.cs");
+weekly=Once(weekly,"public sealed record PrizeChance(string Key, string Name, double Den, double Boost, double Chance, double Next50, bool Owned);","public sealed record PrizeChance(string Key, string Name, double Den, double Boost, double Chance, double Next50, bool Owned) { public int? AllTimeChests { get; init; } }");
+weekly=Once(weekly,"return new ChanceSnapshot(\n            prizes, events.Sum(x => x.count), live, next, start,\n            live != null && TreasureHours.IsUnconfirmed(live), next != null && TreasureHours.IsUnconfirmed(next));","return PirateShopChances.Apply(new ChanceSnapshot(\n            prizes, events.Sum(x => x.count), live, next, start,\n            live != null && TreasureHours.IsUnconfirmed(live), next != null && TreasureHours.IsUnconfirmed(next)), store, monitor, now);");
 int g=weekly.IndexOf("internal sealed class GoalPanel : Control",StringComparison.Ordinal),p=weekly.IndexOf("internal sealed class PlannerPanel : Control",StringComparison.Ordinal),o=weekly.IndexOf("internal sealed class OddsTable : Control",StringComparison.Ordinal),f=weekly.IndexOf("public sealed class WeeklyChancesForm : Form",StringComparison.Ordinal);
 if(!(g>0&&p>g&&o>p&&f>o))throw new InvalidOperationException("Weekly Chances class boundaries changed");
 string goal=Once(weekly.Substring(g,p-g),"    public bool Step()","    public void Snap(){_shown=_target;Invalidate();}\n\n    public bool Step()");
+goal=Once(goal,"        var vm = _vm;","        var vm = _vm;\n        var allTime = vm.Name.EndsWith(\" (all time)\", StringComparison.Ordinal);");
+goal=Once(goal,"\"cumulative chance this week\"","(allTime ? \"cumulative chance all time\" : \"cumulative chance this week\")");
+goal=Once(goal,"{vm.Chests:N0} chests opened this week","{vm.Chests:N0} chests {(allTime ? \"all time\" : \"opened this week\")}");
 string planner=Once(weekly.Substring(p,o-p),"    public bool Step()","    public void Snap(){_normalShown=_normalTarget;_boostShown=_boostTarget;Invalidate();}\n\n    public bool Step()");
 string table=Once(weekly.Substring(o,f-o),"    public bool Step()","    public void Snap(){foreach(var row in _rows)row.Fill=row.Target;Invalidate();}\n\n    public bool Step()");
 string form=weekly.Substring(f);
+form=Once(form,"                snap.Chests,\n                WeeklyChanceModel.ChestsToHalf","                goal.AllTimeChests ?? snap.Chests,\n                WeeklyChanceModel.ChestsToHalf");
 form=Once(form,"private const int HeaderHeight = 124;","private const int HeaderHeight = 190;\n    private readonly TreasureHourStrip _eventStrip;");
 form=Once(form,"        _store = store;","        _store = store;\n        _eventStrip = new TreasureHourStrip(store, () => _monitor.Config.Animations);");
 form=Once(form,"        header.Controls.Add(_hour);","        header.Controls.Add(_hour);\n        _eventStrip.Dock=DockStyle.Bottom;\n        header.Controls.Add(_eventStrip);\n        _eventStrip.BringToFront();");
@@ -26,7 +32,11 @@ form=Once(form,"        _anim.Tick += (_, _) =>\n        {","        _anim.Tick 
 form=Once(form,"        _sparkle.Start();","        if(_monitor.Config.Animations)_sparkle.Start();");
 form=Once(form,"            var weekChanged =","            _goal.Sparkle=_monitor.Config.Animations;\n            _sparkle.Enabled=_monitor.Config.Animations&&Visible&&WindowState!=FormWindowState.Minimized;\n            if(!_monitor.Config.Animations&&_anim.Enabled){_goal.Snap();_table.Snap();_planner.Snap();_anim.Stop();}\n            var weekChanged =");
 form=Once(form,"        if (!_anim.Enabled)","        if (!_monitor.Config.Animations){_goal.Snap();_table.Snap();_planner.Snap();_anim.Stop();}\n        else if (!_anim.Enabled)");
-form=Once(form,"The last two Treasure Hours (28 and 29 Nov) are confirmed, but their boosts are not announced yet, so they count as normal odds until you confirm them.","Confirmed boosts are applied using your local schedule. Unconfirmed windows count as normal odds until their boosts are confirmed.");
+form=Once(form,"The last two Treasure Hours (28 and 29 Nov) are confirmed, but their boosts are not announced yet, so they count as normal odds until you confirm them.","Confirmed boosts are applied using your local schedule. Unconfirmed windows count as normal odds until their boosts are confirmed. Pirate Shop Access uses all-time configured personal history; other prizes remain weekly. Counts without exact opening times use base odds.");
+string rewards=Read("RewardsForm.cs");
+rewards=Once(rewards,"        _monitor = monitor;","        _monitor = monitor;\n        if (WeeklyReset.MigratePirateOwnership(monitor.Config, DateTime.UtcNow)) store.SaveConfig(monitor.Config);");
+rewards=Once(rewards,"Text = \"Resets every Sunday at 14:00 GMT\",","Text = \"Weekly prizes reset; Pirate Shop is permanent\",");
+rewards=Once(rewards,"                Text = name,","                Text = key == PirateShopChances.Key ? name + \" (all time)\" : name,");
 string main=Read("MainForm.cs");
 main=Once(main,"    private readonly Monitor monitor;","    private readonly Monitor monitor;\n    private readonly TreasureHourStrip treasureHour;");
 main=Once(main,"        this.monitor=monitor;this.store=store;","        this.monitor=monitor;this.store=store;\n        treasureHour=new TreasureHourStrip(store,()=>monitor.Config.Animations);");
@@ -35,7 +45,7 @@ main=Once(main,"Controls.Add(shell);","Controls.Add(shell);\n        shell.RowSt
 main=Once(main,"shell.Controls.Add(side,0,0);shell.Controls.Add(content,1,0);","shell.Controls.Add(side,0,1);shell.Controls.Add(content,1,1);");
 Directory.CreateDirectory(OutputDirectory);
 var results=new List<Microsoft.Build.Framework.ITaskItem>();
-foreach(var entry in new[]{new KeyValuePair<string,string>("WeeklyChances241.g.cs",weekly.Substring(0,g)+goal+planner+table+form),new KeyValuePair<string,string>("MainForm241.g.cs",main)}){string path=Path.GetFullPath(Path.Combine(OutputDirectory,entry.Key));File.WriteAllText(path,entry.Value);results.Add(new Microsoft.Build.Utilities.TaskItem(path));}
+foreach(var entry in new[]{new KeyValuePair<string,string>("WeeklyChances241.g.cs",weekly.Substring(0,g)+goal+planner+table+form),new KeyValuePair<string,string>("MainForm241.g.cs",main),new KeyValuePair<string,string>("RewardsForm241.g.cs",rewards)}){string path=Path.GetFullPath(Path.Combine(OutputDirectory,entry.Key));File.WriteAllText(path,entry.Value);results.Add(new Microsoft.Build.Utilities.TaskItem(path));}
 Generated=results.ToArray();
 return true;
       ]]></Code>
@@ -46,7 +56,7 @@ return true;
       <Output TaskParameter="Generated" ItemName="_TreasureHour241Sources" />
     </PrepareTreasureHour241>
     <ItemGroup>
-      <Compile Remove="WeeklyChances.cs;MainForm.cs" />
+      <Compile Remove="WeeklyChances.cs;MainForm.cs;RewardsForm.cs" />
       <Compile Include="@(_TreasureHour241Sources)" />
     </ItemGroup>
   </Target>
