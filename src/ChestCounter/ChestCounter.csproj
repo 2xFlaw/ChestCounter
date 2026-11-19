@@ -28,4 +28,5 @@
   <Import Project="TreasureHour241.targets" />
   <Import Project="ObsTheme.targets" />
   <Import Project="AppTranslations.targets" />
+  <Import Project="PerformanceTranslations.targets" />
 </Project>

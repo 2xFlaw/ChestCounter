@@ -1,0 +1,22 @@
+<Project>
+  <UsingTask TaskName="PreparePerformanceTranslations" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup><SourcePath ParameterType="System.String" Required="true" /></ParameterGroup>
+    <Task>
+      <Using Namespace="System" /><Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string source=File.ReadAllText(SourcePath).Replace("\r\n","\n");
+string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Performance translation integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
+source=Once(source,"text=MainActionText.T(AppText.T(text));","text=PerformanceText.T(MainActionText.T(AppText.T(text)));");
+source=Once(source,"var l=new Label {Text=text,Font=F(size,style),","var l=new Label {Text=PerformanceText.T(text),Font=F(size,style),");
+source=Once(source,"Text=liveLabels[i],","Text=PerformanceText.T(liveLabels[i]),");
+source=Once(source,"Text=presets[i],","Text=PerformanceText.T(presets[i]),");
+source=Once(source,"$\"Memory in use: {p.WorkingSet64/1048576.0:0.0} MB   |   .NET managed memory: {GC.GetTotalMemory(false)/1048576.0:0.0} MB\"","PerformanceText.F(\"Memory in use: {0:0.0} MB   |   .NET managed memory: {1:0.0} MB\",p.WorkingSet64/1048576.0,GC.GetTotalMemory(false)/1048576.0)");
+File.WriteAllText(SourcePath,source);
+return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="IntegratePerformanceTranslations" AfterTargets="IntegrateMainTranslations" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PreparePerformanceTranslations SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/MainForm241.g.cs" />
+  </Target>
+</Project>
