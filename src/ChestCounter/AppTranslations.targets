@@ -1,0 +1,24 @@
+<Project>
+  <UsingTask TaskName="PrepareMainTranslations" TaskFactory="RoslynCodeTaskFactory" AssemblyFile="$(MSBuildToolsPath)/Microsoft.Build.Tasks.Core.dll">
+    <ParameterGroup>
+      <SourcePath ParameterType="System.String" Required="true" />
+    </ParameterGroup>
+    <Task>
+      <Using Namespace="System" />
+      <Using Namespace="System.IO" />
+      <Code Type="Fragment" Language="cs"><![CDATA[
+string source=File.ReadAllText(SourcePath).Replace("\r\n","\n");
+string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Main translation integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
+source=Once(source,"        var shown=text;Font font;","        text=AppText.T(text);\n        var shown=text;Font font;");
+source=Once(source,"var b=new GlowButton {Text=text,","var b=new GlowButton {Text=AppText.T(text),");
+source=Once(source,"var name=n;var b=ActionButton(n,()=>Navigate(name));","var name=n;var b=ActionButton(n,()=>Navigate(name));b.Tag=name;");
+source=Once(source,"var on=b.Text==name;","var on=string.Equals(b.Tag as string,name,StringComparison.Ordinal);");
+File.WriteAllText(SourcePath,source);
+return true;
+      ]]></Code>
+    </Task>
+  </UsingTask>
+  <Target Name="IntegrateMainTranslations" AfterTargets="IntegrateTreasureHour241" Condition="'$(DesignTimeBuild)' != 'true'">
+    <PrepareMainTranslations SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/MainForm241.g.cs" />
+  </Target>
+</Project>

@@ -27,4 +27,5 @@
   </ItemGroup>
   <Import Project="TreasureHour241.targets" />
   <Import Project="ObsTheme.targets" />
+  <Import Project="AppTranslations.targets" />
 </Project>
