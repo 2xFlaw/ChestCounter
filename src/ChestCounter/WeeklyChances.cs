@@ -1222,7 +1222,10 @@ public sealed class WeeklyChancesForm : Form
     {
         const int margin = 20;
         var width = Math.Max(640, _body.ClientSize.Width - margin * 2);
-        _goal.SetBounds(margin, 8, width, 244);
+        // Child positions in a scrolled panel are relative to what is on screen, so add the scroll offset
+        // (zero or negative). Without it, a refresh while scrolled down pushed everything down by that amount.
+        var scroll = _body.AutoScrollPosition;
+        _goal.SetBounds(margin + scroll.X, 8 + scroll.Y, width, 244);
         var y = _goal.Bottom + 12;
         if (_planner.Visible)
         {

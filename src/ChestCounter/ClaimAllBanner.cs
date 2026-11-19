@@ -11,7 +11,7 @@ namespace ChestCounter;
 /// It only opens the page in the browser: the app never signs in to Epic or touches the Item Shop itself.
 /// </summary>
 [SupportedOSPlatform("windows")]
-internal sealed class ClaimAllBanner : Control
+internal sealed class ClaimAllBanner : Control, IPaintsBehindChildren
 {
     private const int Pad = 18;
     private const int IconSize = 60;
@@ -35,13 +35,14 @@ internal sealed class ClaimAllBanner : Control
 
         _button = new GlowButton
         {
-            Text = ClaimAllText.T("Get Claim All"),
+            Text = ClaimAllText.T("Claim All"),
             Size = new Size(ButtonWidth, ButtonHeight),
             Radius = 12,
             Font = Theme.Text(9.5f, FontStyle.Bold),
             BackColor = Theme.Accent,
             ForeColor = Theme.AccentInk,
             UseMnemonic = false,
+            ShowSelectedBar = false,
         };
         _button.FlatAppearance.BorderColor = Theme.Accent;
         _button.Click += (_, _) => Open();
@@ -84,16 +85,7 @@ internal sealed class ClaimAllBanner : Control
         var g = e.Graphics;
         g.SmoothingMode = SmoothingMode.AntiAlias;
         g.Clear(Theme.Bg);
-        var card = new RectangleF(0.5f, 0.5f, Width - 1.5f, Height - 1.5f);
-        using (var path = Shape.Rounded(card, 16))
-        {
-            using var fill = new LinearGradientBrush(card, Color.FromArgb(46, 16, 44), Color.FromArgb(24, 14, 32), LinearGradientMode.Horizontal);
-            g.FillPath(fill, path);
-            using var glow = new LinearGradientBrush(card, Color.FromArgb(70, 208, 0, 128), Color.FromArgb(0, 208, 0, 128), LinearGradientMode.Horizontal);
-            g.FillPath(glow, path);
-            using var edge = new Pen(Theme.CardEdge, 1f);
-            g.DrawPath(edge, path);
-        }
+        PaintSurface(g);
 
         if (_icon != null)
         {
@@ -112,6 +104,24 @@ internal sealed class ClaimAllBanner : Control
         TextRenderer.DrawText(g, Title, _title, new Rectangle(x, y, w, titleH), Theme.Ink, Wrap);
         y += titleH + 4;
         TextRenderer.DrawText(g, Sub, _sub, new Rectangle(x, y, w, subH), Theme.Muted, Wrap);
+    }
+
+    /// <summary>The card itself, without the icon or text. The button paints this behind its rounded corners.</summary>
+    public void PaintSurface(Graphics g)
+    {
+        var smoothing = g.SmoothingMode;
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        var card = new RectangleF(0.5f, 0.5f, Width - 1.5f, Height - 1.5f);
+        using (var path = Shape.Rounded(card, 16))
+        {
+            using var fill = new LinearGradientBrush(card, Color.FromArgb(46, 16, 44), Color.FromArgb(24, 14, 32), LinearGradientMode.Horizontal);
+            g.FillPath(fill, path);
+            using var glow = new LinearGradientBrush(card, Color.FromArgb(70, 208, 0, 128), Color.FromArgb(0, 208, 0, 128), LinearGradientMode.Horizontal);
+            g.FillPath(glow, path);
+            using var edge = new Pen(Theme.CardEdge, 1f);
+            g.DrawPath(edge, path);
+        }
+        g.SmoothingMode = smoothing;
     }
 
     private void Open()

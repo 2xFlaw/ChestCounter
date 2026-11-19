@@ -20,6 +20,12 @@ internal static class Fx
     }
 }
 
+/// <summary>A custom-drawn control that can repaint just its background surface (no text) behind a child.</summary>
+public interface IPaintsBehindChildren
+{
+    void PaintSurface(Graphics g);
+}
+
 /// <summary>
 /// Modern rounded button: soft gradient, smooth hover fade, pressed feel and an accent bar when "selected".
 /// It is a normal Button, so existing code that sets BackColor, ForeColor and FlatAppearance.BorderColor keeps working:
@@ -61,6 +67,29 @@ public sealed class GlowButton : Button
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public int Radius { get; set; } = 12;
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool ShowSelectedBar { get; set; } = true;
+
+    private void PaintBehind(Graphics g)
+    {
+        g.Clear(Parent?.BackColor ?? Theme.Bg);
+        // Custom-drawn parents (gradients) paint their own surface behind the rounded corners,
+        // otherwise a flat fill shows up as a box around the button.
+        if (Parent is IPaintsBehindChildren surface)
+        {
+            var state = g.Save();
+            try
+            {
+                g.TranslateTransform(-Left, -Top);
+                surface.PaintSurface(g);
+            }
+            finally
+            {
+                g.Restore(state);
+            }
+        }
+    }
+
     private void FadeTo(float target)
     {
         _target = target;
@@ -97,7 +126,7 @@ public sealed class GlowButton : Button
         base.OnMouseUp(mevent);
     }
 
-    protected override void OnPaintBackground(PaintEventArgs pevent) => pevent.Graphics.Clear(Parent?.BackColor ?? Theme.Bg);
+    protected override void OnPaintBackground(PaintEventArgs pevent) => PaintBehind(pevent.Graphics);
 
     protected override void OnPaint(PaintEventArgs e)
     {
@@ -106,10 +135,10 @@ public sealed class GlowButton : Button
             return;
         }
         var g = e.Graphics;
-        g.Clear(Parent?.BackColor ?? Theme.Bg);
+        PaintBehind(g);
         g.SmoothingMode = SmoothingMode.AntiAlias;
 
-        var selected = FlatAppearance.BorderColor.ToArgb() == Theme.Accent.ToArgb();
+        var selected = ShowSelectedBar && FlatAppearance.BorderColor.ToArgb() == Theme.Accent.ToArgb();
         var rect = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
         var baseColor = Enabled ? BackColor : Fx.Mix(BackColor, Theme.Bg, 0.5f);
         var fillColor = Fx.Mix(baseColor, Color.White, 0.07f * _hover);
