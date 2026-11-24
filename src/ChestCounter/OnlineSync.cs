@@ -22,6 +22,8 @@ public sealed class OnlineSettings
     public int ExtrasVersion { get; set; }
     /// <summary>Progress of that one-off resend (start time of the last match sent).</summary>
     public DateTime? ExtrasCursorUtc { get; set; }
+    /// <summary>"&lt;linked PC id&gt;:&lt;value&gt;" of the last "Chests before the counter" estimate sent, so it is sent only when it changes.</summary>
+    public string? StartingSent { get; set; }
 }
 
 /// <summary>
@@ -314,6 +316,34 @@ public static class OnlineSync
         }
     }
 
+    /// <summary>
+    /// Sends the app's "Chests before the counter" estimate as the website starting total, so the website shows the
+    /// same total as the app and the overlay. Only when it changed, and never 0 (that would wipe a value typed on the website).
+    /// </summary>
+    private static void SyncStartingTotal(OnlineSettings s, int initial)
+    {
+        if (initial <= 0 || string.IsNullOrEmpty(s.Token))
+        {
+            return;
+        }
+        var mark = s.Token.Split('.')[0] + ":" + Math.Min(initial, 100000).ToString(System.Globalization.CultureInfo.InvariantCulture);
+        if (s.StartingSent == mark)
+        {
+            return;
+        }
+        using var req = new HttpRequestMessage(HttpMethod.Post, s.ApiBase.TrimEnd('/') + "/api/pc/starting-total")
+        {
+            Content = JsonContent.Create(new { total = Math.Min(initial, 100000) }, options: Camel),
+        };
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", s.Token);
+        using var resp = Http.Send(req);
+        // Older websites answer 404: try again on a later sync without bothering the player.
+        if (resp.IsSuccessStatusCode)
+        {
+            Update(x => x.StartingSent = mark);
+        }
+    }
+
     private static TimeSpan SyncOnce(OnlineSettings s)
     {
         var minute = TimeSpan.FromSeconds(60);
@@ -330,6 +360,14 @@ public static class OnlineSync
         }
         var config = (File.Exists(configPath) ? JsonSerializer.Deserialize<Config>(File.ReadAllText(configPath)) : null) ?? new Config();
         var key = Profiles.Current(data, config)?.Key;
+        try
+        {
+            SyncStartingTotal(s, Profiles.InitialChests(config, key));
+        }
+        catch (Exception ex)
+        {
+            ErrorLog.Write("Online starting total", ex);
+        }
         var done = new HashSet<string>(s.Synced);
         var since = s.SinceUtc ?? DateTime.MinValue;
 

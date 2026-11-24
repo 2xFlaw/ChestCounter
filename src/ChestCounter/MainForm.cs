@@ -64,9 +64,10 @@ public sealed class MainForm : Form
     {
         var p=new Panel {Dock=DockStyle.Fill,BackColor=Theme.Bg,Visible=false,AutoScroll=true};pages[name]=p;content.Controls.Add(p);return p;
     }
-    private Panel Metric(string caption,Label number,Color colour)
+    private static readonly Dictionary<string,string> NavEmoji=new(){["Dashboard"]="dash",["Match history"]="history",["Weekly chances"]="chances",["Weekly rewards"]="rewards",["Overlay"]="overlay",["Settings"]="settings",["Performance"]="perf"};
+    private Panel Metric(string caption,Label number,Color colour,string? emoji=null)
     {
-        var p=new GlassCard {Dock=DockStyle.Fill,Radius=16,Padding=new Padding(16,24,14,12),Margin=new Padding(6),AccentColor=colour};
+        var p=new GlassCard {Dock=DockStyle.Fill,Radius=18,Padding=new Padding(16,24,60,12),Margin=new Padding(6),AccentColor=colour,EmojiKey=emoji};
         number.Dock=DockStyle.Fill;number.ForeColor=colour;number.Font=Fonts.Display(28f);number.Text="—";number.TextAlign=ContentAlignment.MiddleLeft;number.BackColor=Color.Transparent;number.Padding=Padding.Empty;
         var cap=TextLabel(caption.ToUpperInvariant(),8.5f,Theme.Muted);cap.AutoSize=false;cap.Height=22;cap.Dock=DockStyle.Top;cap.BackColor=Color.Transparent;cap.Padding=Padding.Empty;
         p.Controls.Add(number);p.Controls.Add(cap);
@@ -108,17 +109,20 @@ public sealed class MainForm : Form
         banner=PersonalBrand.Banner();avatar=PersonalBrand.Avatar();
         Text="2xFlaw's Chest Counter";Size=new Size(1160,850);MinimumSize=new Size(960,720);StartPosition=FormStartPosition.CenterScreen;
         BackColor=Theme.Bg;ForeColor=Theme.Ink;Font=F(10);Icon=AppIcon.Load();AutoScaleMode=AutoScaleMode.Dpi;
-        var shell=new TableLayoutPanel {Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=Padding.Empty};shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,200));shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));Controls.Add(shell);
-        var side=new FlowLayoutPanel {Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,BackColor=Theme.Card,Padding=new Padding(17,25,12,16)};
+        var shell=new TableLayoutPanel {Dock=DockStyle.Fill,ColumnCount=2,RowCount=1,Margin=Padding.Empty};shell.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute,226));shell.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,100));Controls.Add(shell);
+        var side=new SurfacePanel {Dock=DockStyle.Fill,FlowDirection=FlowDirection.TopDown,WrapContents=false,Padding=new Padding(14,25,12,16)};
         shell.Controls.Add(side,0,0);shell.Controls.Add(content,1,0);
         // Removed duplicate sidebar monogram; retain the 2xFlaw name.
-        side.Controls.Add(TextLabel("2xFlaw",22,Theme.Accent));side.Controls.Add(TextLabel("CHEST COUNTER",9,Theme.Muted));
+        var brand=TextLabel("2xFlaw",22,Theme.Accent);brand.BackColor=Color.Transparent;brand.Margin=new Padding(4,0,0,2);side.Controls.Add(brand);
+        var product=TextLabel("CHEST COUNTER",9,Theme.Muted);product.BackColor=Color.Transparent;product.Margin=new Padding(5,0,0,18);side.Controls.Add(product);
         foreach(var n in new[]{"Dashboard","Match history","Weekly chances","Weekly rewards","Overlay","Settings","Performance"})
         {
-            var name=n;var b=ActionButton(n,()=>Navigate(name));b.Width=164;b.Height=44;b.AutoSize=false;b.TextAlign=ContentAlignment.MiddleLeft;b.Padding=new Padding(18,0,8,0);navigation.Add(b);side.Controls.Add(b);
+            var name=n;var b=ActionButton(n,()=>Navigate(name));b.Width=198;b.Height=46;b.AutoSize=false;b.TextAlign=ContentAlignment.MiddleLeft;b.Padding=new Padding(44,0,6,0);b.Margin=new Padding(0,0,0,6);
+            if(b is GlowButton nav){nav.NavStyle=true;nav.Radius=14;nav.EmojiKey=NavEmoji.TryGetValue(name,out var key)?key:null;}
+            navigation.Add(b);side.Controls.Add(b);
         }
-        side.Controls.Add(TextLabel("F8  Weekly tools",9,Theme.Muted));
-        side.Controls.Add(TextLabel("Personal source build\nOriginal parser retained",8,Theme.Muted));
+        var tip=TextLabel("F8  Weekly tools",9,Theme.Muted);tip.BackColor=Color.Transparent;tip.Margin=new Padding(6,14,0,9);side.Controls.Add(tip);
+        var build=TextLabel("Personal source build\nOriginal parser retained",8,Theme.Muted);build.BackColor=Color.Transparent;build.Margin=new Padding(6,0,0,9);side.Controls.Add(build);
         BuildDashboard();BuildHistory();BuildPerformance();
         profiles.BackColor=Theme.Panel;profiles.ForeColor=Theme.Ink;profiles.Font=F(10);
         profiles.SelectedIndexChanged+=(_,_)=> {if(!selecting&&profiles.SelectedItem is Profile p)monitor.SetProfile(p.Key);};
@@ -142,14 +146,14 @@ public sealed class MainForm : Form
         status.AutoSize=true;status.Font=F(10,FontStyle.Bold);status.Margin=new Padding(0,0,0,6);body.Controls.Add(status);profileName.AutoSize=true;profileName.ForeColor=Theme.Muted;body.Controls.Add(profileName);
         var metrics=new TableLayoutPanel {Dock=DockStyle.Top,Height=255,ColumnCount=3,RowCount=2,Margin=new Padding(0,12,0,12)};
         for(int i=0;i<3;i++)metrics.ColumnStyles.Add(new ColumnStyle(SizeType.Percent,33.333f));for(int i=0;i<2;i++)metrics.RowStyles.Add(new RowStyle(SizeType.Percent,50));
-        metrics.Controls.Add(Metric("Total personal / configured",total,Theme.Accent),0,0);metrics.Controls.Add(Metric("Current / previous match",current,Theme.Ink),1,0);metrics.Controls.Add(Metric("Today",today,Theme.AccentSoft),2,0);
-        metrics.Controls.Add(Metric("Average per match",average,Theme.Ink),0,1);metrics.Controls.Add(Metric("Best match",best,Theme.Rose),1,1);metrics.Controls.Add(Metric("Treasures",treasures,Theme.Accent),2,1);body.Controls.Add(metrics);BuildGoalCard();body.Controls.Add(goalCard);
-        var lastPanel=new FlowLayoutPanel {Dock=DockStyle.Top,AutoSize=true,BackColor=Theme.Card,Padding=new Padding(14),FlowDirection=FlowDirection.TopDown,WrapContents=false};
+        metrics.Controls.Add(Metric("Total personal / configured",total,Theme.Accent,"crown"),0,0);metrics.Controls.Add(Metric("Current / previous match",current,Theme.Ink,"fire"),1,0);metrics.Controls.Add(Metric("Today",today,Theme.AccentSoft,"calendar"),2,0);
+        metrics.Controls.Add(Metric("Average per match",average,Theme.Ink,"avg"),0,1);metrics.Controls.Add(Metric("Best match",best,Theme.Rose,"trophy"),1,1);metrics.Controls.Add(Metric("Treasures",treasures,Theme.Accent,"gem"),2,1);body.Controls.Add(metrics);BuildGoalCard();body.Controls.Add(goalCard);
+        var lastPanel=new CardFlow {Dock=DockStyle.Top,AutoSize=true,Padding=new Padding(18,16,18,14),FlowDirection=FlowDirection.TopDown,WrapContents=false,AccentColor=Theme.Accent,Margin=new Padding(6,0,6,12)};
         last.AutoSize=true;last.ForeColor=Theme.Ink;last.Font=F(11,FontStyle.Bold);team.AutoSize=true;team.ForeColor=Theme.Muted;team.MaximumSize=new Size(780,0);lastPanel.Controls.Add(last);lastPanel.Controls.Add(team);body.Controls.Add(lastPanel);
-        body.Controls.Add(TextLabel("LAST 7 DAYS",10,Theme.Muted));body.Controls.Add(new Panel {Dock=DockStyle.Top,Height=155,BackColor=Theme.Card,Controls={chart},Margin=new Padding(0,10,0,10)});
+        body.Controls.Add(TextLabel("LAST 7 DAYS",10,Theme.Muted));body.Controls.Add(new Card {Dock=DockStyle.Top,Height=175,Radius=16,Padding=new Padding(12,10,12,10),Controls={chart},Margin=new Padding(6,10,6,12)});
         var actions=new FlowLayoutPanel {Dock=DockStyle.Top,AutoSize=true};
         var overlayAction=ActionButton("Toggle game overlay",()=>monitor.ToggleOverlay());
-        overlayAction.Name="OverlayAction";actions.Controls.Add(overlayAction);actions.Controls.Add(ActionButton("Compact overlay (Ctrl+Shift+K)",()=>NativeOverlay.ToggleCompact()));
+        overlayAction.Name="OverlayAction";if(overlayAction is GlowButton primary)primary.Primary=true;actions.Controls.Add(overlayAction);actions.Controls.Add(ActionButton("Compact overlay (Ctrl+Shift+K)",()=>NativeOverlay.ToggleCompact()));
         actions.Controls.Add(ActionButton("Weekly / import / manual",OpenTools));
 actions.Controls.Add(ActionButton("Weekly report",()=>WeeklyReport.Open(store,monitor,this)));
         actions.Controls.Add(ActionButton("Open classic report",()=> {try{Process.Start(new ProcessStartInfo(store.ReportPath){UseShellExecute=true});}catch(Exception ex){MessageBox.Show(this,ex.Message);}}));body.Controls.Add(actions);
@@ -160,7 +164,12 @@ actions.Controls.Add(ActionButton("Weekly report",()=>WeeklyReport.Open(store,mo
     {
         var p=Page("Match history");var bar=new FlowLayoutPanel {Dock=DockStyle.Top,Height=60};bar.Controls.Add(TextLabel("Match history",22));bar.Controls.Add(ActionButton("Refresh",()=>_=LoadHistory()));
         history.DefaultCellStyle.BackColor=Theme.Card;history.DefaultCellStyle.ForeColor=Theme.Ink;history.DefaultCellStyle.SelectionBackColor=Theme.PanelHover;history.DefaultCellStyle.SelectionForeColor=Theme.Ink;
-        history.ColumnHeadersDefaultCellStyle.BackColor=Theme.Panel;history.ColumnHeadersDefaultCellStyle.ForeColor=Theme.AccentSoft;history.GridColor=Theme.CardEdge;history.RowTemplate.Height=32;
+        history.ColumnHeadersDefaultCellStyle.BackColor=Theme.Panel;history.ColumnHeadersDefaultCellStyle.ForeColor=Theme.AccentSoft;history.GridColor=Theme.CardEdge;history.RowTemplate.Height=36;
+        history.ColumnHeadersDefaultCellStyle.Font=F(9,FontStyle.Bold);history.ColumnHeadersDefaultCellStyle.SelectionBackColor=Theme.Panel;history.ColumnHeadersDefaultCellStyle.Padding=new Padding(10,0,6,0);
+        history.ColumnHeadersHeightSizeMode=DataGridViewColumnHeadersHeightSizeMode.DisableResizing;history.ColumnHeadersHeight=42;history.ColumnHeadersBorderStyle=DataGridViewHeaderBorderStyle.None;
+        history.CellBorderStyle=DataGridViewCellBorderStyle.SingleHorizontal;history.DefaultCellStyle.Padding=new Padding(10,0,6,0);
+        history.AlternatingRowsDefaultCellStyle.BackColor=Color.FromArgb(30,18,36);history.AlternatingRowsDefaultCellStyle.ForeColor=Theme.Ink;history.AlternatingRowsDefaultCellStyle.SelectionBackColor=Theme.PanelHover;history.AlternatingRowsDefaultCellStyle.SelectionForeColor=Theme.Ink;
+        history.SelectionMode=DataGridViewSelectionMode.FullRowSelect;history.MultiSelect=false;history.ColumnHeadersDefaultCellStyle.SelectionForeColor=Theme.AccentSoft;
         historyEmpty.Font=F(10);p.Controls.Add(history);p.Controls.Add(historyEmpty);p.Controls.Add(bar);
     }
     private void BuildPerformance()
@@ -178,7 +187,7 @@ actions.Controls.Add(ActionButton("Weekly report",()=>WeeklyReport.Open(store,mo
         if(name=="Overlay"){monitor.ToggleOverlay();return;}
         if(name=="Settings"){using var f=new SettingsForm(monitor,store);f.ShowDialog(this);return;}
         active=name;foreach(var p in pages){p.Value.Visible=p.Key==name;if(p.Key==name)p.Value.BringToFront();}
-        foreach(var b in navigation){var on=b.Text==name;b.BackColor=on?Theme.PanelHover:Theme.Panel;b.ForeColor=on?Theme.AccentSoft:Theme.Ink;b.FlatAppearance.BorderColor=on?Theme.Accent:Theme.CardEdge;}
+        foreach(var b in navigation){var on=b.Text==name;b.BackColor=on?Theme.PanelHover:Theme.Panel;b.ForeColor=on?Theme.AccentInk:Theme.Ink;b.FlatAppearance.BorderColor=on?Theme.Accent:Theme.CardEdge;b.Invalidate();}
         if(name=="Match history")_=LoadHistory();Tick();
     }
     private async Task LoadHistory()

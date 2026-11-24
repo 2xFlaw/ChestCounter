@@ -1,6 +1,6 @@
 // Pirate Shop Access over the whole chest history, like the app (PirateShopChances.cs).
 // The other prizes reset every week; Pirate Shop Access does not, so its odds use every chest:
-//  - the profile's starting total (base odds),
+//  - the chests from before the counter (base odds): the app's estimate from the snapshot, or the website starting total,
 //  - every synced match: chests with a time use that time's Treasure Hour boost, the rest base odds,
 //  - for the profile's own view, its personal history snapshot from the app (imports, matches from before
 //    syncing, manual entries and teammate chests, following the app's settings), without counting synced
@@ -30,15 +30,21 @@ export async function pirateAllTime(env, profileId, windows, now = new Date(), w
     chests += n;
   };
 
-  const profile = await env.DB.prepare('SELECT starting_total FROM profiles WHERE id=?').bind(profileId).first();
-  add(null, profile ? profile.starting_total : 0);
-
   let snapshot = null;
   if (withPersonal) {
     try {
       const row = await env.DB.prepare('SELECT payload FROM personal_snapshots WHERE profile_id=?').bind(profileId).first();
       snapshot = row ? JSON.parse(row.payload) : null;
     } catch { snapshot = null; } // table not created yet
+  }
+
+  // Chests from before the counter: with a personal snapshot, the app's own estimate (it already replaces the
+  // website starting total, so adding both would count them twice); otherwise the website starting total.
+  if (snapshot) {
+    add(null, Number.isSafeInteger(snapshot.initial) ? snapshot.initial : 0);
+  } else {
+    const profile = await env.DB.prepare('SELECT starting_total FROM profiles WHERE id=?').bind(profileId).first();
+    add(null, profile ? profile.starting_total : 0);
   }
 
   const rows = (await env.DB.prepare('SELECT session_id, started_at, opened, destroyed, chest_times_json FROM matches WHERE profile_id=?').bind(profileId).all()).results;

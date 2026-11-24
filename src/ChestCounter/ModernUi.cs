@@ -70,6 +70,18 @@ public sealed class GlowButton : Button
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool ShowSelectedBar { get; set; } = true;
 
+    /// <summary>Built-in colour emoji drawn before the text (see <see cref="Emoji"/>), or null for none.</summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public string? EmojiKey { get; set; }
+
+    /// <summary>Sidebar look: no box until hovered, and a glowing accent fill when selected.</summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool NavStyle { get; set; }
+
+    /// <summary>Main call to action: filled with the accent gradient.</summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool Primary { get; set; }
+
     private void PaintBehind(Graphics g)
     {
         g.Clear(Parent?.BackColor ?? Theme.Bg);
@@ -148,24 +160,75 @@ public sealed class GlowButton : Button
         }
 
         using var path = Shape.Rounded(rect, Radius);
-        using (var fill = new LinearGradientBrush(new RectangleF(0, 0, Width, Height), Fx.Mix(fillColor, Color.White, 0.06f), fillColor, 90f))
+        if (NavStyle)
         {
-            g.FillPath(fill, path);
+            // Resting items melt into the sidebar; hover brings up a soft plate, selection a glowing accent plate.
+            var plate = selected
+                ? new LinearGradientBrush(new RectangleF(0, 0, Width, Height), Color.FromArgb(_down ? 150 : 128, Theme.Accent), Color.FromArgb(_down ? 46 : 34, Theme.Accent), 0f)
+                : new LinearGradientBrush(new RectangleF(0, 0, Width, Height), Color.FromArgb((int)(64 * _hover), Theme.PanelHover), Color.FromArgb((int)(26 * _hover), Theme.PanelHover), 0f);
+            using (plate)
+            {
+                g.FillPath(plate, path);
+            }
+            if (selected || _hover > 0.02f)
+            {
+                using var edge = new Pen(selected ? Color.FromArgb(170, Theme.AccentHover) : Color.FromArgb((int)(120 * _hover), Theme.Accent), 1f);
+                g.DrawPath(edge, path);
+            }
+            if (selected)
+            {
+                var bar = new RectangleF(3, Height * 0.22f, 3f, Height * 0.56f);
+                using var barPath = Shape.Rounded(bar, 1.5f);
+                using var barFill = new SolidBrush(Theme.AccentSoft);
+                g.FillPath(barFill, barPath);
+            }
+        }
+        else
+        {
+            if (Primary && Enabled)
+            {
+                fillColor = Fx.Mix(Theme.Accent, Theme.AccentHover, _hover);
+                if (_down)
+                {
+                    fillColor = Fx.Mix(fillColor, Color.Black, 0.16f);
+                }
+            }
+            using (var fill = new LinearGradientBrush(new RectangleF(0, 0, Width, Height), Fx.Mix(fillColor, Color.White, Primary ? 0.14f : 0.06f), fillColor, 90f))
+            {
+                g.FillPath(fill, path);
+            }
+
+            var border = Primary ? Fx.Mix(Theme.AccentHover, Theme.AccentSoft, 0.4f * _hover) : FlatAppearance.BorderColor.IsEmpty ? Theme.CardEdge : FlatAppearance.BorderColor;
+            if (!Primary)
+            {
+                border = Fx.Mix(border, Theme.Accent, 0.65f * _hover);
+            }
+            using (var edge = new Pen(border, 1f))
+            {
+                g.DrawPath(edge, path);
+            }
+            if (Width > Radius * 2 + 4)
+            {
+                using var sheen = new Pen(Color.FromArgb(Primary ? 70 : 26, 255, 255, 255), 1f);
+                g.DrawLine(sheen, Radius, 1.5f, Width - Radius, 1.5f);
+            }
+
+            if (selected)
+            {
+                var bar = new RectangleF(7, Height * 0.25f, 3f, Height * 0.5f);
+                using var barPath = Shape.Rounded(bar, 1.5f);
+                using var barFill = new SolidBrush(Theme.Accent);
+                g.FillPath(barFill, barPath);
+            }
         }
 
-        var border = FlatAppearance.BorderColor.IsEmpty ? Theme.CardEdge : FlatAppearance.BorderColor;
-        border = Fx.Mix(border, Theme.Accent, 0.65f * _hover);
-        using (var edge = new Pen(border, 1f))
+        var emojiWidth = 0;
+        if (EmojiKey != null && Emoji.Get(EmojiKey) != null)
         {
-            g.DrawPath(edge, path);
-        }
-
-        if (selected)
-        {
-            var bar = new RectangleF(7, Height * 0.25f, 3f, Height * 0.5f);
-            using var barPath = Shape.Rounded(bar, 1.5f);
-            using var barFill = new SolidBrush(Theme.Accent);
-            g.FillPath(barFill, barPath);
+            var size = Math.Min(22, Height - 16);
+            var left = Math.Max(10, Padding.Left - size - 10);
+            Emoji.Draw(g, EmojiKey, new RectangleF(left, (Height - size) / 2f + (_down ? 1 : 0), size, size), selected || _hover > 0.5f || !NavStyle ? 1f : 0.85f);
+            emojiWidth = Math.Max(0, left + size + 10 - Padding.Left);
         }
 
         var flags = TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis | TextFormatFlags.VerticalCenter;
@@ -175,9 +238,23 @@ public sealed class GlowButton : Button
             ContentAlignment.TopRight or ContentAlignment.MiddleRight or ContentAlignment.BottomRight => TextFormatFlags.Right,
             _ => TextFormatFlags.HorizontalCenter,
         };
-        var textRect = new Rectangle(Padding.Left + (selected ? 6 : 0), _down ? 1 : 0, Math.Max(1, Width - Padding.Horizontal - (selected ? 6 : 0)), Height);
-        TextRenderer.DrawText(g, Text, Font, textRect, Enabled ? ForeColor : Theme.Muted, flags);
+        var shift = (selected && !NavStyle ? 6 : 0) + emojiWidth;
+        var textRect = new Rectangle(Padding.Left + shift, _down ? 1 : 0, Math.Max(1, Width - Padding.Horizontal - shift), Height);
+        // Long labels (translations, big system fonts) step down in size before they get cut with "...".
+        var font = Font;
+        if (TextRenderer.MeasureText(g, Text, font, Size.Empty, TextFormatFlags.SingleLine | TextFormatFlags.NoPrefix).Width > textRect.Width)
+        {
+            if (_fitFont == null || _fitFont.Name != Font.Name || Math.Abs(_fitFont.Size - Font.Size * 0.86f) > 0.01f)
+            {
+                _fitFont?.Dispose();
+                _fitFont = new Font(Font.FontFamily, Font.Size * 0.86f, Font.Style);
+            }
+            font = _fitFont;
+        }
+        TextRenderer.DrawText(g, Text, font, textRect, !Enabled ? Theme.Muted : Primary ? Theme.AccentInk : ForeColor, flags);
     }
+
+    private Font? _fitFont;
 
     protected override void Dispose(bool disposing)
     {
@@ -185,6 +262,7 @@ public sealed class GlowButton : Button
         {
             _fade.Stop();
             _fade.Dispose();
+            _fitFont?.Dispose();
         }
         base.Dispose(disposing);
     }
@@ -209,6 +287,10 @@ public sealed class GlassCard : Panel
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Color? AccentColor { get; set; }
 
+    /// <summary>Built-in colour emoji drawn in the top-right corner, over a soft glow of the accent colour.</summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public string? EmojiKey { get; set; }
+
     protected override void OnPaintBackground(PaintEventArgs e) => e.Graphics.Clear(Parent?.BackColor ?? Theme.Bg);
 
     protected override void OnPaint(PaintEventArgs e)
@@ -225,7 +307,19 @@ public sealed class GlassCard : Panel
         {
             g.FillPath(fill, path);
         }
-        using (var edge = new Pen(Theme.CardEdge, 1f))
+        if (AccentColor is { } glowColour && Width > 80 && Height > 50)
+        {
+            g.SetClip(path);
+            var glow = new RectangleF(Width - 150, -70, 210, 170);
+            using (var glowPath = new GraphicsPath())
+            {
+                glowPath.AddEllipse(glow);
+                using var glowBrush = new PathGradientBrush(glowPath) { CenterColor = Color.FromArgb(40, glowColour), SurroundColors = new[] { Color.FromArgb(0, glowColour) } };
+                g.FillEllipse(glowBrush, glow);
+            }
+            g.ResetClip();
+        }
+        using (var edge = new Pen(Color.FromArgb(170, Theme.CardEdge), 1f))
         {
             g.DrawPath(edge, path);
         }
@@ -240,6 +334,89 @@ public sealed class GlassCard : Panel
             using var markFill = new SolidBrush(accent);
             g.FillPath(markFill, mark);
         }
+        if (EmojiKey != null && Width > 120 && Height > 60)
+        {
+            var size = Math.Min(38, Height / 3);
+            Emoji.Draw(g, EmojiKey, new RectangleF(Width - 16 - size, 14, size, size), 0.95f);
+        }
+    }
+}
+
+/// <summary>
+/// Sidebar surface: a soft vertical gradient with a thin glowing edge on the right. Child labels should be transparent.
+/// </summary>
+[SupportedOSPlatform("windows")]
+public sealed class SurfacePanel : FlowLayoutPanel, IPaintsBehindChildren
+{
+    public SurfacePanel()
+    {
+        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+        BackColor = Theme.Card;
+    }
+
+    public void PaintSurface(Graphics g)
+    {
+        if (Width < 2 || Height < 2)
+        {
+            return;
+        }
+        var rect = new Rectangle(0, 0, Width, Height);
+        using (var fill = new LinearGradientBrush(rect, Color.FromArgb(30, 17, 36), Color.FromArgb(17, 10, 22), 90f))
+        {
+            g.FillRectangle(fill, rect);
+        }
+        using (var glow = new LinearGradientBrush(new Rectangle(0, 0, Width, 260), Color.FromArgb(34, Theme.Accent), Color.FromArgb(0, Theme.Accent), 90f))
+        {
+            g.FillRectangle(glow, 0, 0, Width, 260);
+        }
+        using var edge = new LinearGradientBrush(rect, Color.FromArgb(150, Theme.Accent), Color.FromArgb(40, Theme.CardEdge), 90f);
+        g.FillRectangle(edge, Width - 1, 0, 1, Height);
+    }
+
+    protected override void OnPaintBackground(PaintEventArgs e) => PaintSurface(e.Graphics);
+}
+
+/// <summary>A flow panel drawn as a rounded card (the corners show the parent colour). Children use the card colour.</summary>
+[SupportedOSPlatform("windows")]
+public sealed class CardFlow : FlowLayoutPanel
+{
+    public CardFlow()
+    {
+        SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
+        BackColor = Theme.Card;
+    }
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public int Radius { get; set; } = 16;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public Color? AccentColor { get; set; }
+
+    protected override void OnPaintBackground(PaintEventArgs e)
+    {
+        var g = e.Graphics;
+        g.Clear(Parent?.BackColor ?? Theme.Bg);
+        if (Width < 6 || Height < 6)
+        {
+            return;
+        }
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        using var path = Shape.Rounded(new RectangleF(0.5f, 0.5f, Width - 1, Height - 1), Radius);
+        using (var fill = new SolidBrush(BackColor))
+        {
+            g.FillPath(fill, path);
+        }
+        if (AccentColor is { } accent)
+        {
+            g.SetClip(path);
+            using (var stripe = new LinearGradientBrush(new Rectangle(0, 0, Width, 3), accent, Color.FromArgb(0, accent), 0f))
+            {
+                g.FillRectangle(stripe, 0, 0, Width, 3);
+            }
+            g.ResetClip();
+        }
+        using var edge = new Pen(Color.FromArgb(170, Theme.CardEdge), 1f);
+        g.DrawPath(edge, path);
     }
 }
 

@@ -48,9 +48,15 @@ public sealed class Card : Panel
         var rect = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
         using var path = Shape.Rounded(rect, Radius);
         using var fill = new SolidBrush(BackColor);
-        using var edge = new Pen(Theme.CardEdge, 1f);
+        using var edge = new Pen(Color.FromArgb(180, Theme.CardEdge), 1f);
         e.Graphics.FillPath(fill, path);
         e.Graphics.DrawPath(edge, path);
+        if (Width > Radius * 2 + 8)
+        {
+            // Thin highlight along the top edge, the same "glass" touch as the dashboard cards.
+            using var sheen = new Pen(Color.FromArgb(34, 255, 255, 255), 1f);
+            e.Graphics.DrawLine(sheen, Radius, 1, Width - Radius, 1);
+        }
     }
 }
 
@@ -122,8 +128,16 @@ public sealed class PillButton : Button
         g.Clear(Parent?.BackColor ?? Theme.Bg);
         var rect = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
         using var path = Shape.Rounded(rect, Radius);
-        using var fill = new SolidBrush(_hover ? HoverColor : BackColor);
-        g.FillPath(fill, path);
+        var colour = _hover ? HoverColor : BackColor;
+        using (var fill = new LinearGradientBrush(new RectangleF(0, 0, Math.Max(1, Width), Math.Max(1, Height)), Fx.Mix(colour, Color.White, 0.07f), colour, 90f))
+        {
+            g.FillPath(fill, path);
+        }
+        if (Width > Radius * 2 + 4)
+        {
+            using var sheen = new Pen(Color.FromArgb(30, 255, 255, 255), 1f);
+            g.DrawLine(sheen, Radius, 1.5f, Width - Radius, 1.5f);
+        }
         if (_indicator is not { } dot)
         {
             TextRenderer.DrawText(g, Text, Font, ClientRectangle, ForeColor,

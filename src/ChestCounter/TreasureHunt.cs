@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Globalization;
@@ -43,6 +43,16 @@ public static partial class TreasureHunt
         Week(2, 8, "Solid Gold Lil Uzi Vert", "Gold Cadillac CT5-V", "Diamond and Gold", "London", "So Kawaii"),
         Week(3, 15, "Solid Gold Miku", "Gold Corvette ZR1", "Miku's Takarabako", "PPPP", "May Fortune Find You"),
         Week(4, 22, "Solid Gold Kasane Teto", "Gold Lamborghini Urus SE", "Rogue Wave and Tidewalker", "Sea Shanty", "Oscar's Wraps"),
+        // The final week (Golden Week). Pictures not released yet use a question-mark picture; weeks.json on the website
+        // can switch them to the real ones later without an app update.
+        new HuntWeek(5, new DateTime(2026, 11, 29, 14, 0, 0, DateTimeKind.Utc), new[]
+        {
+            new HuntItem("gold-outfit", "Solid Gold Captain X", "w5-outfit.png"),
+            new HuntItem("vehicle-decal", "Gold G-Wagon v2", "soon-vehicle.png"),
+            new HuntItem("pickaxe-back-bling", "Roasted Meat", "w5-pickaxe.png"),
+            new HuntItem("jam-track", "I Follow Rivers", "soon-jam.png"),
+            new HuntItem("loading-screen", "Jones and the Straw Hats", "soon-loading.png"),
+        }),
     };
 
     public static string OwnedKey(HuntWeek week, string slot) => $"{slot}@{week.StartUtc:yyyyMMdd}";

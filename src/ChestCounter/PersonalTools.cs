@@ -30,9 +30,11 @@ public sealed class TreasureWindow
 {
     public DateTime StartUtc { get; set; }
     public DateTime EndUtc { get; set; }
-    public double Gold { get; set; } = 7.5;
-    public double Shop { get; set; } = 1.5;
-    public double Vehicle { get; set; } = 10;
+    // Announced boosts (TreasureHours.AnnouncedBoosts) win over the saved numbers.
+    private double _gold = 7.5, _shop = 1.5, _vehicle = 10;
+    public double Gold { get => TreasureHours.AnnouncedBoosts(StartUtc)?.Gold ?? _gold; set => _gold = value; }
+    public double Shop { get => TreasureHours.AnnouncedBoosts(StartUtc)?.Shop ?? _shop; set => _shop = value; }
+    public double Vehicle { get => TreasureHours.AnnouncedBoosts(StartUtc)?.Vehicle ?? _vehicle; set => _vehicle = value; }
 }
 public sealed class PersonalOdds
 {

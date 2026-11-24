@@ -90,7 +90,7 @@ public static class PersonalCloud
                     await Task.Delay(250);
                 }
             }
-            await Send("/api/personal/snapshot",new{source=options.Source,scope=Hash(key),matches,entries},s.Token,s.ApiBase);
+            await Send("/api/personal/snapshot",new{source=options.Source,scope=Hash(key),matches,entries,initial=Profiles.InitialChests(config,key)},s.Token,s.ApiBase);
             return null;
         }
         catch(Exception ex){ErrorLog.Write("Personal cloud sync",ex);return ex.Message;}

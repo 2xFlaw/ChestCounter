@@ -18,6 +18,16 @@ export function boostFor(w, key) {
   return w[f] || 1;
 }
 
+// Golden Week (announced, same as the app's TreasureHours.cs): from Nov 28 14:00 UTC until the Chapter 7 end event
+// (Dec 5, 19:00 UTC) every week's treasure rewards are back, Gold Outfit odds are 2x and Gold Vehicle odds 5x.
+export const GOLDEN_WEEK = { start: '2026-11-28T14:00:00.000Z', end: '2026-12-05T19:00:00.000Z', boosts: { 'gold-outfit': 2, 'vehicle-decal': 5 } };
+const GW_START = Date.parse(GOLDEN_WEEK.start), GW_END = Date.parse(GOLDEN_WEEK.end);
+export const isGoldenWeek = (t) => { const ms = t instanceof Date ? t.getTime() : t; return ms != null && Number.isFinite(ms) && ms >= GW_START && ms < GW_END; };
+export const goldenFor = (t, key) => (isGoldenWeek(t) ? GOLDEN_WEEK.boosts[key] || 1 : 1);
+// Multiplier on the normal odds at a moment: a confirmed Treasure Hour's boost (announced against the normal odds,
+// so it already includes Golden Week), otherwise the Golden Week multiplier.
+export const boostAt = (w, t, key) => (w && w.confirmed ? boostFor(w, key) : goldenFor(t, key));
+
 // Weekly reset: every Sunday 14:00 GMT/UTC, same as the app (WeeklyReset.cs).
 export const RESET_HOUR_UTC = 14;
 export function weekStart(now = new Date()) {
@@ -34,14 +44,16 @@ export function computeLuck(events, windows, now = new Date()) {
   return TABLE.map(([key, name, den]) => {
     let noDrop = 1;
     for (const e of events) {
-      const rate = Math.min(1, Math.max(0, boostFor(inWindow(e.time), key) / den));
+      const rate = Math.min(1, Math.max(0, boostAt(inWindow(e.time), e.time, key) / den));
       noDrop *= Math.pow(1 - rate, e.count);
     }
-    const rateNow = Math.min(1, Math.max(0, boostFor(live, key) / den));
+    const rateNow = Math.min(1, Math.max(0, boostAt(live, now, key) / den));
+    // During Golden Week its odds are shown as the normal rate, with any Treasure Hour boost on top of them.
+    const g = goldenFor(now, key);
     return {
-      key, name, den,
+      key, name, den: den / g, baseDen: den,
       chance: 1 - noDrop,
-      boostNow: boostFor(live, key),
+      boostNow: boostAt(live, now, key) / g,
       next50: 1 - noDrop * Math.pow(1 - rateNow, 50),
     };
   });

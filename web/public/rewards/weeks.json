@@ -129,6 +129,37 @@
      "image": "w4-loading.png"
     }
    ]
+  },
+  {
+   "week": 5,
+   "start": "2026-11-29T14:00:00Z",
+   "items": [
+    {
+     "slot": "gold-outfit",
+     "name": "Solid Gold Captain X",
+     "image": "w5-outfit.png"
+    },
+    {
+     "slot": "vehicle-decal",
+     "name": "Gold G-Wagon v2",
+     "image": "soon-vehicle.png"
+    },
+    {
+     "slot": "pickaxe-back-bling",
+     "name": "Roasted Meat",
+     "image": "w5-pickaxe.png"
+    },
+    {
+     "slot": "jam-track",
+     "name": "I Follow Rivers",
+     "image": "soon-jam.png"
+    },
+    {
+     "slot": "loading-screen",
+     "name": "Jones and the Straw Hats",
+     "image": "soon-loading.png"
+    }
+   ]
   }
  ]
 }

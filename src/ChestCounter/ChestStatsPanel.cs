@@ -46,17 +46,15 @@ internal sealed class ChestStatsPanel : Control
     private readonly Font _smallBold = Theme.Text(8.5f, FontStyle.Bold);
     private readonly Font _pill = Theme.Text(8.5f, FontStyle.Bold);
     private readonly Font _title = Fonts.Display(14f);
-    private readonly Font _icon = new("Segoe UI Emoji", 10f);
-    private bool HasEmojiFont => string.Equals(_icon.Name, "Segoe UI Emoji", StringComparison.OrdinalIgnoreCase);
+    private readonly Font _tileLabelTight = Theme.Text(7.5f, FontStyle.Bold);
 
     // Used when there is no ranking yet (rankings off, offline or not enough players).
     private static readonly Color[] TileColours =
     {
         Theme.Accent, Color.FromArgb(176, 92, 160), Theme.AccentSoft, Theme.Amber, Theme.Mint,
     };
-    // Monochrome emoji, drawn in grey next to each tile title.
-    private static readonly string[] Icons = { "\U0001F464", "\U0001F465", "\U0001F3AF", "\U0001F3C6", "\u23F1" };
-    private static readonly Color IconGrey = Color.FromArgb(128, 112, 124);
+    // Full-colour emoji pictures (built in), drawn large in the empty top-right corner of each tile.
+    private static readonly string[] Icons = { "you", "mates", "avg", "best", "pm" };
     private static readonly Color YouBar = Theme.Accent;
     private static readonly Color BrokenBar = Theme.AccentSoft;
     private static readonly Color MateBar = Color.FromArgb(120, 72, 112);
@@ -461,28 +459,32 @@ internal sealed class ChestStatsPanel : Control
         if (hovered && !selected) box.Offset(0, -P(2));
         var baseColour = rank is { } r ? RankColour(r.Top) : TileColours[i];
         var colour = t.Dim ? Color.FromArgb(90, baseColour) : baseColour;
-        using (var path = Round(box, P(10)))
+        using (var path = Round(box, P(16)))
         {
-            using (var card = new SolidBrush(Theme.Card)) g.FillPath(card, path);
+            using (var card = new LinearGradientBrush(box, Color.FromArgb(34, 20, 40), Theme.Card, 90f)) g.FillPath(card, path);
             g.SetClip(path);
-            using (var tint = new LinearGradientBrush(box, Color.FromArgb(t.Dim ? 14 : 44, baseColour), Color.FromArgb(0, baseColour), 90f)) g.FillRectangle(tint, box);
-            using (var stripe = new SolidBrush(colour)) g.FillRectangle(stripe, box.X, box.Y, box.Width, P(3));
+            using (var tint = new LinearGradientBrush(box, Color.FromArgb(t.Dim ? 14 : hovered || selected ? 64 : 44, baseColour), Color.FromArgb(0, baseColour), 90f)) g.FillRectangle(tint, box);
+            // Soft colour glow behind the emoji, and a thin highlight along the top edge.
+            var glow = new Rectangle(box.Right - P(96), box.Y - P(46), P(150), P(130));
+            using (var glowPath = new GraphicsPath())
+            {
+                glowPath.AddEllipse(glow);
+                using var glowBrush = new PathGradientBrush(glowPath) { CenterColor = Color.FromArgb(t.Dim ? 18 : 46, baseColour), SurroundColors = new[] { Color.FromArgb(0, baseColour) } };
+                g.FillEllipse(glowBrush, glow);
+            }
+            using (var stripe = new LinearGradientBrush(new Rectangle(box.X, box.Y, box.Width, P(3)), colour, Color.FromArgb(t.Dim ? 30 : 120, colour), 0f)) g.FillRectangle(stripe, box.X, box.Y, box.Width, P(3));
             g.ResetClip();
-            var edgeColour = selected ? Theme.AccentSoft : rank != null && !t.Dim ? Color.FromArgb(hovered ? 200 : 110, baseColour) : hovered ? Theme.Accent : Theme.CardEdge;
+            var edgeColour = selected ? Theme.AccentSoft : rank != null && !t.Dim ? Color.FromArgb(hovered ? 200 : 110, baseColour) : hovered ? Theme.Accent : Color.FromArgb(150, Theme.CardEdge);
             using var edge = new Pen(edgeColour, selected ? Math.Max(2, P(2)) : 1); g.DrawPath(edge, path);
         }
         int pad = P(14), inner = box.Width - pad * 2;
-        Text(g, t.Value, _tileValue, new Rectangle(box.X + pad, box.Y + P(12), inner, P(42)), t.Dim ? Theme.Muted : colour);
-        // Grey icon, then the title.
-        // (Only when Windows has its emoji font: without it the icons would be empty boxes.)
-        int labelX = box.X + pad;
-        if (HasEmojiFont)
-        {
-            var iconBox = new Rectangle(box.X + pad - P(1), box.Y + P(56), P(20), P(20));
-            TextRenderer.DrawText(g, Icons[i], _icon, iconBox, IconGrey, TextFormatFlags.NoPadding | TextFormatFlags.SingleLine | TextFormatFlags.VerticalCenter | TextFormatFlags.HorizontalCenter);
-            labelX = iconBox.Right + P(5);
-        }
-        Caps(g, t.Label, _tileLabel, new Rectangle(labelX, box.Y + P(56), box.Right - pad - labelX, P(20)), Theme.Ink);
+        int iconSize = Math.Min(P(40), Math.Max(P(26), box.Width / 4));
+        var iconBox = new Rectangle(box.Right - pad - iconSize + P(2), box.Y + P(12), iconSize, iconSize);
+        Emoji.Draw(g, Icons[i], iconBox, t.Dim ? 0.45f : hovered || selected ? 1f : 0.92f);
+        Text(g, t.Value, _tileValue, new Rectangle(box.X + pad, box.Y + P(12), iconBox.X - P(6) - (box.X + pad), P(42)), t.Dim ? Theme.Muted : colour);
+        // Title on its own line under the number. Long titles (other languages, narrow windows) use a tighter font before shortening.
+        var labelBox = new Rectangle(box.X + pad, box.Y + P(58), inner, P(20));
+        Caps(g, t.Label, CapsWidth(g, t.Label, _tileLabel) <= labelBox.Width ? _tileLabel : _tileLabelTight, labelBox, Theme.Ink);
         Text(g, t.Foot, _small, new Rectangle(box.X + pad, box.Y + P(80), inner, P(18)), Theme.Muted);
         // Ranking line
         var rankBox = new Rectangle(box.X + pad, box.Y + P(104), inner, P(18));
@@ -712,7 +714,7 @@ internal sealed class ChestStatsPanel : Control
 
     protected override void Dispose(bool disposing)
     {
-        if (disposing) { _tileValue.Dispose(); _tileLabel.Dispose(); _small.Dispose(); _smallBold.Dispose(); _pill.Dispose(); _title.Dispose(); _icon.Dispose(); _tip.Dispose(); }
+        if (disposing) { _tileValue.Dispose(); _tileLabel.Dispose(); _small.Dispose(); _smallBold.Dispose(); _pill.Dispose(); _title.Dispose(); _tileLabelTight.Dispose(); _tip.Dispose(); }
         base.Dispose(disposing);
     }
 }
