@@ -932,6 +932,8 @@ public sealed class WeeklyChancesForm : Form
     private readonly GoalPanel _goal = new();
     private readonly PlannerPanel _planner = new();
     private readonly OddsTable _table = new();
+    private readonly JackpotPanel _jackpot = new();
+    private JackpotOdds? _jackpotOdds;
     private readonly Label _note;
     private readonly ClaimAllBanner _claim;
     private readonly GlowButton _auto;
@@ -1048,6 +1050,7 @@ public sealed class WeeklyChancesForm : Form
 
         _body = new Panel { Dock = DockStyle.Fill, AutoScroll = true, BackColor = Theme.Bg };
         _body.Controls.Add(_goal);
+        _body.Controls.Add(_jackpot);
         _body.Controls.Add(_planner);
         _body.Controls.Add(_table);
         _body.Controls.Add(_claim);
@@ -1175,6 +1178,7 @@ public sealed class WeeklyChancesForm : Form
         try
         {
             _snap = WeeklyChanceModel.Compute(_store, _monitor, DateTime.UtcNow);
+            _jackpotOdds = JackpotOdds.Compute(TreasureHunt.Load(_store), _monitor.Config.OwnedRewards, _snap.Live, DateTime.UtcNow);
         }
         catch (Exception ex)
         {
@@ -1261,6 +1265,9 @@ public sealed class WeeklyChancesForm : Form
                 _plan);
         }
 
+        _jackpot.Visible = _jackpotOdds != null;
+        _jackpot.SetState(_jackpotOdds, Picture("gold-outfit", 96, 14), Picture("pirate-shop-access", 96, 14));
+
         var hidden = snap.Prizes.Count(p => p.Owned);
         _note.Text =
             "How it works: for each chest you opened since the weekly reset, a prize has a 1-in-N chance. Chests opened inside a Treasure Hour use the boosted rate. " +
@@ -1297,6 +1304,11 @@ public sealed class WeeklyChancesForm : Form
         {
             _planner.SetBounds(margin, y, width, 150);
             y = _planner.Bottom + 12;
+        }
+        if (_jackpot.Visible)
+        {
+            _jackpot.SetBounds(margin, y, width, JackpotPanel.WantedHeight);
+            y = _jackpot.Bottom + 12;
         }
         _table.SetBounds(margin, y, width, _table.WantedHeight);
         _claim.SetBounds(margin, _table.Bottom + 12, width, _claim.HeightFor(width));

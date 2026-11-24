@@ -22,8 +22,9 @@ public sealed class SettingsForm : Form
         L.T("No busca versiones nuevas", "Never checks for new versions"),
     };
 
-    // Misma rejilla que la ventana principal: columna izquierda y derecha.
-    private const int LeftX = 15, LeftW = 267, RightX = 297, RightW = 280;
+    // Two columns of cards under a header, and a footer bar with the author, Reset statistics and Close.
+    private const int Pad = 20, Gap = 14, ColW = 362;
+    private const int LeftX = Pad, RightX = Pad + ColW + Gap, FullW = ColW * 2 + Gap;
     private const int MaxInitial = 1_000_000;
     private const int DefaultUpdateMode = 1; // "auto"
 
@@ -52,22 +53,48 @@ public sealed class SettingsForm : Form
         MinimizeBox = false;
         ShowInTaskbar = false;
         StartPosition = FormStartPosition.CenterParent;
-        ClientSize = new Size(592, 690);
         Icon = AppIcon.Load();
 
-        // Cabecera, como en la ventana principal.
-        Lbl(this, L.T("AJUSTES", "SETTINGS"), 8.5f, FontStyle.Bold, Theme.Cyan, new Point(LeftX, 14), new Size(200, 18));
-        Lbl(this, L.F("Versión {0}", "Version {0}", AppInfo.VersionText), 8.0f, FontStyle.Regular, Theme.Muted,
-            new Point(RightX + 180, 13), new Size(RightW - 180, 18), ContentAlignment.TopRight);
-        AddLanguagePicker(config.Language, new Point(RightX, 9));
+        // ---- Header: big title and version on the left, Online connection and language on the right ----------
+        var title = new Label
+        {
+            Text = L.T("Ajustes", "Settings").ToUpper(L.Culture),
+            Font = Fonts.Display(22f),
+            ForeColor = Theme.Ink,
+            BackColor = Theme.Bg,
+            Location = new Point(Pad - 2, 12),
+            Size = new Size(360, 42),
+            TextAlign = ContentAlignment.MiddleLeft,
+            UseMnemonic = false,
+        };
+        Controls.Add(title);
+        Lbl(this, L.F("Versión {0}", "Version {0}", AppInfo.VersionText), 9f, FontStyle.Regular, Theme.Muted,
+            new Point(Pad, 54), new Size(300, 20));
 
-        // ---- Columna izquierda ---------------------------------------------------------------
+        var language = AddLanguagePicker(config.Language, new Point(Pad + FullW - 190, 22), new Size(190, 34));
+        var online = new PillButton
+        {
+            Text = L.T("Conexión online", "Online connection"),
+            Size = new Size(190, 34),
+            Location = new Point(language.Left - 10 - 190, 22),
+            Radius = 11,
+            Font = Fonts.Semi(9.5f),
+            Indicator = OnlineSync.Load() is { } link && !string.IsNullOrEmpty(link.Token) ? Theme.Mint : null,
+        };
+        online.Click += (_, _) =>
+        {
+            OnlineForm.ShowFor(this);
+            online.Indicator = !string.IsNullOrEmpty(OnlineSync.Load().Token) ? Theme.Mint : null;
+        };
+        Controls.Add(online);
 
-        // Opciones: dos interruptores.
-        var start = AddCard(LeftX, 40, LeftW, 170, 16);
+        // ---- Left column ------------------------------------------------------------------------------------
+        var y = 86;
+
+        var start = AddCard(LeftX, y, ColW, 226);
         CardTitle(start, L.T("Opciones", "Options"));
         _fortnite = AddToggleRow(start, L.T("Abrir con Fortnite", "Open with Fortnite"),
-            L.T("Cuenta tus partidas sin pensar en ello", "Counts your matches on its own"), 24, config.StartWithFortnite);
+            L.T("Cuenta tus partidas sin pensar en ello", "Counts your matches on its own"), 44, config.StartWithFortnite);
         _fortnite.CheckedChanged += (_, _) =>
         {
             if (_loading)
@@ -84,10 +111,10 @@ public sealed class SettingsForm : Form
                     L.T("Ajustes", "Settings"), MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
         };
-        _report = AddToggleRow(start, L.T("Abrir el informe al iniciar", "Open the report at startup"), null, 64, config.OpenReportOnStart);
+        _report = AddToggleRow(start, L.T("Abrir el informe al iniciar", "Open the report at startup"), null, 92, config.OpenReportOnStart);
         _report.CheckedChanged += (_, _) => { if (!_loading) _monitor.Change(c => c.OpenReportOnStart = _report.Checked); };
         var mates = AddToggleRow(start, L.T("Compañeros en el informe", "Teammates in the report"),
-            L.T("Sus cofres: a unos 250 m de ti", "Their chests: within about 250 m of you"), 94, config.ShowTeammates);
+            L.T("Sus cofres: a unos 250 m de ti", "Their chests: within about 250 m of you"), 130, config.ShowTeammates);
         mates.CheckedChanged += (_, _) =>
         {
             if (_loading)
@@ -105,7 +132,7 @@ public sealed class SettingsForm : Form
             }
             _monitor.SetShowTeammates(mates.Checked);
         };
-        var addMates = AddToggleRow(start, L.T("Sumar sus cofres a tu total", "Add their chests to your total"), null, 134, config.CountTeammateChests);
+        var addMates = AddToggleRow(start, L.T("Sumar sus cofres a tu total", "Add their chests to your total"), null, 178, config.CountTeammateChests);
         addMates.CheckedChanged += (_, _) =>
         {
             if (_loading)
@@ -128,62 +155,53 @@ public sealed class SettingsForm : Form
             }
             _monitor.SetCountTeammates(addMates.Checked);
         };
+        y = start.Bottom + Gap;
 
-        // Contar también como cofre: cajas de munición, de comida y cañones de botín (los cofres rotos cuentan siempre).
-        var extras = AddCard(LeftX, 219, LeftW, 116, 16);
+        // Also count as a chest: ammo boxes, food boxes and loot cannons (broken chests always count).
+        var extras = AddCard(LeftX, y, ColW, 158);
         CardTitle(extras, L.T("Contar también como cofre", "Also count as a chest"));
-        var ammo = AddToggleRow(extras, L.T("Cajas de munición", "Ammo boxes"), null, 26, config.CountAmmoBoxes);
+        var ammo = AddToggleRow(extras, L.T("Cajas de munición", "Ammo boxes"), null, 44, config.CountAmmoBoxes);
         ammo.CheckedChanged += (_, _) => { if (!_loading) _monitor.SetCountExtra(c => c.CountAmmoBoxes = ammo.Checked); };
-        var food = AddToggleRow(extras, L.T("Cajas de comida", "Food boxes"), null, 56, config.CountFoodBoxes);
+        var food = AddToggleRow(extras, L.T("Cajas de comida", "Food boxes"), null, 82, config.CountFoodBoxes);
         food.CheckedChanged += (_, _) => { if (!_loading) _monitor.SetCountExtra(c => c.CountFoodBoxes = food.Checked); };
-        var cannons = AddToggleRow(extras, L.T("Cañones de botín", "Loot cannons"), null, 86, config.CountLootCannons);
+        var cannons = AddToggleRow(extras, L.T("Cañones de botín", "Loot cannons"), null, 120, config.CountLootCannons);
         cannons.CheckedChanged += (_, _) => { if (!_loading) _monitor.SetCountExtra(c => c.CountLootCannons = cannons.Checked); };
+        y = extras.Bottom + Gap;
 
-        // Actualizaciones: tres píldoras y una línea que explica la opción elegida.
-        var updates = AddCard(RightX, 169, RightW, 94, 14);
-        CardTitle(updates, L.T("Actualizaciones", "Updates"));
-        var pillW = (RightW - 26 - 2 * 6) / 3;
-        for (var i = 0; i < UpdateModes.Length; i++)
-        {
-            var index = i;
-            var pill = new PillButton { Text = UpdateLabels[i], Location = new Point(13 + i * (pillW + 6), 38), Size = new Size(pillW, 32), Radius = 10, Font = Theme.Text(8.5f, FontStyle.Bold) };
-            pill.Click += (_, _) => SelectUpdateMode(index, save: true);
-            updates.Controls.Add(pill);
-            _updates[i] = pill;
-        }
-        _updateHint = Lbl(updates, UpdateHints[DefaultUpdateMode], 7.5f, FontStyle.Regular, Theme.Muted, new Point(13, 74), new Size(RightW - 26, 16));
-        var mode = Array.IndexOf(UpdateModes, config.UpdateMode);
-        SelectUpdateMode(mode < 0 ? DefaultUpdateMode : mode, save: false);
-
-        // Carpeta de replays y datos.
-        var folderCard = AddCard(LeftX, 344, LeftW, 94, 14);
+        // Replays folder, and where the data is saved.
+        var folderCard = AddCard(LeftX, y, ColW, 136);
         CardTitle(folderCard, L.T("Carpeta de replays", "Replays folder"));
-        _folder = AddField(folderCard, new Point(13, 26), LeftW - 26 - 72, config.DemosFolder);
-        var browse = new PillButton { Text = L.T("Cambiar", "Change"), Location = new Point(LeftW - 13 - 66, 26), Size = new Size(66, 30), Radius = 10, Font = Theme.Text(8.5f, FontStyle.Bold) };
+        _folder = AddField(folderCard, new Point(16, 42), ColW - 32 - 96, config.DemosFolder);
+        var browse = new PillButton { Text = L.T("Cambiar", "Change"), Location = new Point(ColW - 16 - 88, 42), Size = new Size(88, 34), Radius = 11, Font = Fonts.Semi(9.5f) };
         browse.Click += (_, _) => ChooseFolder();
         folderCard.Controls.Add(browse);
-        Lbl(folderCard, L.T("Tus datos se guardan en ", "Your data is saved in ") + store.Folder,
-            7.5f, FontStyle.Regular, Theme.Muted, new Point(13, 62), new Size(LeftW - 26, 28));
+        var saved = Lbl(folderCard, L.T("Tus datos se guardan en ", "Your data is saved in ") + store.Folder,
+            8.5f, FontStyle.Regular, Theme.Muted, new Point(16, 86), new Size(ColW - 32, 38));
+        saved.AutoEllipsis = false; // two lines: a long path wraps instead of being cut
+        var leftBottom = folderCard.Bottom;
 
-        // ---- Columna derecha -----------------------------------------------------------------
+        // ---- Right column -----------------------------------------------------------------------------------
+        y = 86;
 
-        // Cofres de antes del contador: cifra grande en ámbar, editable, con − / +.
-        var initial = AddCard(RightX, 40, RightW, 120, 16);
+        // Chests before the counter: big editable number with − / +.
+        var initial = AddCard(RightX, y, ColW, 138);
         CardTitle(initial, L.T("Cofres antes del contador", "Chests before the counter"));
+        var numberHolder = new Card { Location = new Point(16, 40), Size = new Size(ColW - 32 - 92, 52), Radius = 12, BackColor = Theme.Panel };
         _initial = new TextBox
         {
             BorderStyle = BorderStyle.None,
-            BackColor = Theme.Card,
+            BackColor = Theme.Panel,
             ForeColor = Theme.Amber,
-            Font = Theme.Text(24f, FontStyle.Bold),
-            Location = new Point(15, 36),
-            Width = 160,
+            Font = Fonts.Display(22f),
+            Width = numberHolder.Width - 28,
             MaxLength = 7,
             Text = Math.Min(MaxInitial, monitor.InitialChests).ToString(L.Culture),
         };
-        initial.Controls.Add(_initial);
-        var plus = new PillButton { Text = "+", Location = new Point(RightW - 13 - 34, 32), Size = new Size(34, 28), Radius = 9, Font = Theme.Text(11f, FontStyle.Bold) };
-        var minus = new PillButton { Text = "−", Location = new Point(RightW - 13 - 34, 64), Size = new Size(34, 28), Radius = 9, Font = Theme.Text(11f, FontStyle.Bold) };
+        _initial.Location = new Point(14, (numberHolder.Height - _initial.Height) / 2);
+        numberHolder.Controls.Add(_initial);
+        initial.Controls.Add(numberHolder);
+        var minus = new PillButton { Text = "−", Location = new Point(ColW - 16 - 84, 49), Size = new Size(40, 34), Radius = 11, Font = Theme.Text(12f, FontStyle.Bold) };
+        var plus = new PillButton { Text = "+", Location = new Point(ColW - 16 - 40, 49), Size = new Size(40, 34), Radius = 11, Font = Theme.Text(12f, FontStyle.Bold) };
         plus.Click += (_, _) => StepInitial(10);
         minus.Click += (_, _) => StepInitial(-10);
         initial.Controls.Add(plus);
@@ -200,19 +218,38 @@ public sealed class SettingsForm : Form
         Lbl(initial, profileName != null
                 ? L.F("estimado · se suma al total de {0}", "estimate · added to {0}'s total", profileName)
                 : L.T("estimado · se suma a tu total", "estimate · added to your total"),
-            8.0f, FontStyle.Regular, Theme.Muted, new Point(16, 88), new Size(RightW - 70, 16));
+            8.5f, FontStyle.Regular, Theme.Muted, new Point(16, 102), new Size(ColW - 32, 22));
+        y = initial.Bottom + Gap;
 
-        // OBS: dirección y estado.
-        var obsCard = AddCard(RightX, 272, RightW, 94, 14);
+        // Updates: three pills and a line explaining the chosen one.
+        var updates = AddCard(RightX, y, ColW, 122);
+        CardTitle(updates, L.T("Actualizaciones", "Updates"));
+        var pillW = (ColW - 32 - 2 * 8) / 3;
+        for (var i = 0; i < UpdateModes.Length; i++)
+        {
+            var index = i;
+            var pill = new PillButton { Text = UpdateLabels[i], Location = new Point(16 + i * (pillW + 8), 42), Size = new Size(pillW, 34), Radius = 11, Font = Fonts.Semi(9.5f) };
+            pill.Click += (_, _) => SelectUpdateMode(index, save: true);
+            updates.Controls.Add(pill);
+            _updates[i] = pill;
+        }
+        _updateHint = Lbl(updates, UpdateHints[DefaultUpdateMode], 8.5f, FontStyle.Regular, Theme.Muted, new Point(16, 86), new Size(ColW - 32, 22));
+        var mode = Array.IndexOf(UpdateModes, config.UpdateMode);
+        SelectUpdateMode(mode < 0 ? DefaultUpdateMode : mode, save: false);
+        y = updates.Bottom + Gap;
+
+        // Overlay for OBS: address, state and Copy.
+        var obsCard = AddCard(RightX, y, ColW, 96);
         CardTitle(obsCard, L.T("Overlay para OBS", "Overlay for OBS"));
         var obsUrl = ObsServer.Url;
-        var stateCard = new Card { Location = new Point(RightW - 13 - 70, 6), Size = new Size(70, 18), Radius = 9, BackColor = Theme.Panel };
-        Lbl(stateCard, obsUrl != null ? L.T("● ACTIVO", "● ON") : L.T("● NO", "● OFF"), 7.0f, FontStyle.Bold,
-            obsUrl != null ? Theme.Mint : Theme.Red, new Point(0, 0), new Size(70, 18), ContentAlignment.MiddleCenter)
-            .BackColor = Color.Transparent; // la píldora redondeada se ve por detrás
+        var stateText = obsUrl != null ? L.T("● ACTIVO", "● ON") : L.T("● NO", "● OFF");
+        var stateCard = new Card { Location = new Point(ColW - 16 - 78, 12), Size = new Size(78, 22), Radius = 11, BackColor = Color.FromArgb(36, obsUrl != null ? Theme.Mint : Theme.Red) };
+        stateCard.BackColor = Fx.Mix(Theme.Card, obsUrl != null ? Theme.Mint : Theme.Red, 0.16f);
+        Lbl(stateCard, stateText, 8f, FontStyle.Bold, obsUrl != null ? Theme.Mint : Theme.Red, new Point(0, 0), new Size(78, 22), ContentAlignment.MiddleCenter)
+            .BackColor = Color.Transparent;
         obsCard.Controls.Add(stateCard);
-        var obs = AddField(obsCard, new Point(13, 41), RightW - 26 - 72, obsUrl ?? L.T("Puerto ocupado", "Port in use"));
-        var copy = new PillButton { Text = L.T("Copiar", "Copy"), Location = new Point(RightW - 13 - 66, 41), Size = new Size(66, 30), Radius = 10, Font = Theme.Text(8.5f, FontStyle.Bold), Enabled = obsUrl != null };
+        var obs = AddField(obsCard, new Point(16, 44), ColW - 32 - 96, obsUrl ?? L.T("Puerto ocupado", "Port in use"));
+        var copy = new PillButton { Text = L.T("Copiar", "Copy"), Location = new Point(ColW - 16 - 88, 44), Size = new Size(88, 34), Radius = 11, Font = Fonts.Semi(9.5f), Enabled = obsUrl != null };
         copy.Click += (_, _) =>
         {
             try
@@ -227,69 +264,37 @@ public sealed class SettingsForm : Form
             }
         };
         obsCard.Controls.Add(copy);
+        y = obsCard.Bottom + Gap;
 
-        // Atajos del overlay.
-        var keys = AddCard(RightX, 375, RightW, 55, 12);
-        Lbl(keys, L.T("Atajos del overlay", "Overlay shortcuts"), 7.5f, FontStyle.Regular, Theme.Muted, new Point(13, 7), new Size(RightW - 26, 17));
-        Lbl(keys, L.T("Ctrl+Mayús+O mostrar, L fijar, K compacto", "Ctrl+Shift+O show, L lock, K compact"),
-            8.0f, FontStyle.Bold, Theme.Ink, new Point(13, 27), new Size(RightW - 26, 18));
-
-        // Restablecer estadísticas: borra el historial (con confirmación y copia de seguridad).
-        var reset = new PillButton
-        {
-            Text = L.T("Restablecer estadísticas…", "Reset statistics…"),
-            Location = new Point(LeftX, 447),
-            Size = new Size(LeftW, 32),
-            Radius = 10,
-            Font = Theme.Text(8.5f, FontStyle.Bold),
-            ForeColor = Theme.Red,
-        };
-        reset.Click += (_, _) => ResetStats();
-        Controls.Add(reset);
-
-        // Cerrar, en el sitio de los botones de la ventana principal.
-        var close = new PillButton
-        {
-            Text = L.T("Cerrar", "Close"),
-            Location = new Point(RightX, 439),
-            Size = new Size(RightW, 40),
-            Radius = 12,
-            BackColor = Theme.Accent,
-            HoverColor = Theme.AccentHover,
-            ForeColor = Theme.AccentInk,
-            DialogResult = DialogResult.OK,
-        };
-        Controls.Add(close);
-
-        // Aspecto del overlay y objetivo personal de cofres.
-        var look = AddCard(LeftX, 490, RightX + RightW - LeftX, 136, 14);
+        // Overlay look, personal chest goal and the overlay shortcuts.
+        var look = AddCard(RightX, y, ColW, Math.Max(leftBottom - y, 226));
         CardTitle(look, L.T("Overlay y objetivo", "Overlay & goal"));
         var apOpacity = Math.Clamp(config.OverlayOpacity, 40, 100);
         var apGoal = Math.Max(0, config.ChestGoal);
-        void ApStepRow(string title, int top, Func<string> text, Action<int> step)
+        void ApStepRow(string text, int top, Func<string> value, Action<int> step)
         {
-            Lbl(look, title, 9.5f, FontStyle.Bold, Theme.Ink, new Point(13, top + 4), new Size(200, 18));
-            var apValue = Lbl(look, text(), 9.5f, FontStyle.Bold, Theme.Cyan, new Point(345, top + 4), new Size(120, 18), ContentAlignment.MiddleRight);
-            var apDown = new PillButton { Text = "−", Location = new Point(475, top), Size = new Size(34, 28), Radius = 9, Font = Theme.Text(11f, FontStyle.Bold) };
-            var apUp = new PillButton { Text = "+", Location = new Point(515, top), Size = new Size(34, 28), Radius = 9, Font = Theme.Text(11f, FontStyle.Bold) };
-            apDown.Click += (_, _) => { step(-1); apValue.Text = text(); };
-            apUp.Click += (_, _) => { step(1); apValue.Text = text(); };
+            LblF(look, text, Fonts.Semi(10f), Theme.Ink, new Point(16, top), new Size(ColW - 32 - 84 - 72, 34), ContentAlignment.MiddleLeft);
+            var apValue = LblF(look, value(), Fonts.Semi(10f), Theme.Amber, new Point(ColW - 16 - 84 - 68, top), new Size(60, 34), ContentAlignment.MiddleRight);
+            var apDown = new PillButton { Text = "−", Location = new Point(ColW - 16 - 84, top), Size = new Size(40, 34), Radius = 11, Font = Theme.Text(12f, FontStyle.Bold) };
+            var apUp = new PillButton { Text = "+", Location = new Point(ColW - 16 - 40, top), Size = new Size(40, 34), Radius = 11, Font = Theme.Text(12f, FontStyle.Bold) };
+            apDown.Click += (_, _) => { step(-1); apValue.Text = value(); };
+            apUp.Click += (_, _) => { step(1); apValue.Text = value(); };
             look.Controls.Add(apDown);
             look.Controls.Add(apUp);
         }
-        ApStepRow(L.T("Opacidad del overlay", "Overlay opacity"), 30, () => apOpacity + "%", d =>
+        ApStepRow(L.T("Opacidad del overlay", "Overlay opacity"), 40, () => apOpacity + "%", d =>
         {
             apOpacity = Math.Clamp(apOpacity + d * 10, 40, 100);
             _monitor.Change(c => c.OverlayOpacity = apOpacity);
             NativeOverlay.SetOpacity(apOpacity);
         });
-        ApStepRow(L.T("Objetivo de cofres", "Chest goal"), 62, () => apGoal == 0 ? L.T("Sin objetivo", "Off") : apGoal.ToString("N0", L.Culture), d =>
+        ApStepRow(L.T("Objetivo de cofres", "Chest goal"), 80, () => apGoal == 0 ? L.T("Sin objetivo", "Off") : apGoal.ToString("N0", L.Culture), d =>
         {
             apGoal = Math.Clamp(apGoal + d * 100, 0, 100000);
             _monitor.Change(c => c.ChestGoal = apGoal);
         });
         var apCompact = AddToggleRow(look, L.T("Overlay compacto", "Compact overlay"),
-            L.T("Solo total y partida actual", "Total and match counter only"), 94, config.OverlayCompact);
+            L.T("Solo total y partida actual", "Total and match counter only"), 126, config.OverlayCompact);
         apCompact.CheckedChanged += (_, _) =>
         {
             if (_loading)
@@ -299,26 +304,62 @@ public sealed class SettingsForm : Form
             _monitor.Change(c => c.OverlayCompact = apCompact.Checked);
             NativeOverlay.SetCompact(apCompact.Checked);
         };
-        var apReset = new PillButton { Text = L.T("Restablecer posición", "Reset position"), Location = new Point(335, 94), Size = new Size(150, 28), Radius = 9, Font = Theme.Text(8.5f, FontStyle.Bold) };
+        var shortcutsTop = 176;
+        Lbl(look, L.T("Atajos del overlay", "Overlay shortcuts"), 8.5f, FontStyle.Regular, Theme.Muted, new Point(16, shortcutsTop), new Size(ColW - 32, 18));
+        LblF(look, L.T("Ctrl+Mayús+O mostrar · L fijar · K compacto", "Ctrl+Shift+O show · L lock · K compact"),
+            Fonts.Semi(9f), Theme.Ink, new Point(16, shortcutsTop + 18), new Size(ColW - 32, 20));
+        var apReset = new PillButton { Text = L.T("Restablecer posición", "Reset position"), Location = new Point(ColW - 16 - 140, 10), Size = new Size(140, 28), Radius = 10, Font = Fonts.Semi(8.5f) };
         apReset.Click += (_, _) => NativeOverlay.ResetPosition();
         look.Controls.Add(apReset);
+        apReset.BringToFront();
 
-        // Pie: autor y enlace al proyecto.
-        var footer = AddCard(LeftX, 636, RightX + RightW - LeftX, 44, 12);
+        // ---- Footer: author on the left, Reset statistics and Close on the right -----------------------------
+        var footerTop = Math.Max(look.Bottom, leftBottom) + Gap + 4;
+        var footer = new Card { Location = new Point(LeftX, footerTop), Size = new Size(FullW, 56), Radius = 14, BackColor = Theme.Card };
+        Controls.Add(footer);
         AddLinks(footer, L.T("Hecho por", "Made by"), "2xFlaw", "https://github.com/2xFlaw/ChestCounter",
             Array.Empty<(string Tip, string Url, string Logo)>());
+
+        var close = new PillButton
+        {
+            Text = L.T("Cerrar", "Close"),
+            Size = new Size(140, 38),
+            Location = new Point(FullW - 10 - 140, 9),
+            Radius = 12,
+            BackColor = Theme.Accent,
+            HoverColor = Theme.AccentHover,
+            ForeColor = Theme.AccentInk,
+            Font = Fonts.Semi(10f),
+            DialogResult = DialogResult.OK,
+        };
+        footer.Controls.Add(close);
+
+        // Reset statistics: deletes the history (with a confirmation and a backup copy).
+        var reset = new PillButton
+        {
+            Text = L.T("Restablecer estadísticas…", "Reset statistics…"),
+            Size = new Size(190, 38),
+            Location = new Point(close.Left - 10 - 190, 9),
+            Radius = 12,
+            Font = Fonts.Semi(9.5f),
+            ForeColor = Theme.Red,
+        };
+        reset.Click += (_, _) => ResetStats();
+        footer.Controls.Add(reset);
+
+        ClientSize = new Size(Pad * 2 + FullW, footer.Bottom + Pad);
 
         FitTexts(this);
         AcceptButton = close;
         CancelButton = close;
-        ActiveControl = close; // sin anillo de foco en el primer interruptor al abrir
+        ActiveControl = close; // no focus ring on the first switch when it opens
     }
 
     /// <summary>
     /// Selector de idioma: «Sistema» (el de Windows, por defecto) o uno de los idiomas, con su nombre en ese idioma.
     /// El cambio se guarda al momento y se aplica al reiniciar el contador (se ofrece hacerlo ya).
     /// </summary>
-    private void AddLanguagePicker(string? current, Point at)
+    private PillButton AddLanguagePicker(string? current, Point at, Size size)
     {
         var chosen = current != null && L.Languages.Any(l => l.Code == current) ? current : null;
         string NameOf(string? code) => code == null
@@ -328,11 +369,11 @@ public sealed class SettingsForm : Form
         // Botón píldora como los de la ventana; al pulsarlo, un menú oscuro con los idiomas.
         var button = new PillButton
         {
-            Text = NameOf(chosen) + "  ▾",
+            Text = NameOf(chosen) ,
             Location = at,
-            Size = new Size(172, 26),
-            Radius = 9,
-            Font = Theme.Text(8.5f, FontStyle.Bold),
+            Size = size,
+            Radius = 11,
+            Font = Fonts.Semi(9.5f),
         };
         var menu = new ContextMenuStrip
         {
@@ -370,7 +411,7 @@ public sealed class SettingsForm : Form
                 return;
             }
             chosen = code;
-            button.Text = NameOf(code) + "  ▾";
+            button.Text = NameOf(code) ;
             foreach (var item in menu.Items.OfType<ToolStripMenuItem>())
             {
                 var mine = item.Text?.TrimStart('✓', ' ') == NameOf(code);
@@ -388,6 +429,7 @@ public sealed class SettingsForm : Form
                 _monitor.Restart();
             }
         }
+        return button;
     }
 
     /// <summary>
@@ -491,9 +533,9 @@ public sealed class SettingsForm : Form
 
     // ---- Piezas de la ventana ----------------------------------------------------------------
 
-    private Card AddCard(int x, int y, int w, int h, int radius)
+    private Card AddCard(int x, int y, int w, int h)
     {
-        var card = new Card { Location = new Point(x, y), Size = new Size(w, h), Radius = radius, BackColor = Theme.Card };
+        var card = new Card { Location = new Point(x, y), Size = new Size(w, h), Radius = 16, BackColor = Theme.Card };
         Controls.Add(card);
         return card;
     }
@@ -505,22 +547,22 @@ public sealed class SettingsForm : Form
     private static void AddLinks(Card footer, string title, string webText, string webUrl, (string Tip, string Url, string Logo)[] networks)
     {
         // Textos medidos y centrados en vertical: así no se tapan entre sí ni se cortan en ningún idioma.
-        var titleFont = Theme.Text(8.0f);
+        var titleFont = Theme.Text(9.5f);
         var titleW = TextRenderer.MeasureText(title, titleFont).Width;
-        Lbl(footer, title, 8.0f, FontStyle.Regular, Theme.Muted, new Point(13, 2), new Size(titleW, footer.Height - 4), ContentAlignment.MiddleLeft);
+        Lbl(footer, title, 9.5f, FontStyle.Regular, Theme.Muted, new Point(16, 2), new Size(titleW, footer.Height - 4), ContentAlignment.MiddleLeft);
 
-        var webFont = Theme.Text(9.0f, FontStyle.Bold);
+        var webFont = Fonts.Semi(10.5f);
         var webLabel = webText + "  ↗";
         var web = new LinkLabel
         {
             Text = webLabel,
             Font = webFont,
-            LinkColor = Theme.Cyan,
-            ActiveLinkColor = Theme.AccentHover,
-            VisitedLinkColor = Theme.Cyan,
+            LinkColor = Theme.Amber,
+            ActiveLinkColor = Theme.AccentSoft,
+            VisitedLinkColor = Theme.Amber,
             LinkBehavior = LinkBehavior.HoverUnderline,
             BackColor = footer.BackColor,
-            Location = new Point(13 + titleW + 4, 2),
+            Location = new Point(16 + titleW + 4, 2),
             Size = new Size(TextRenderer.MeasureText(webLabel, webFont).Width + 4, footer.Height - 4),
             TextAlign = ContentAlignment.MiddleLeft,
             LinkArea = new LinkArea(0, webLabel.Length),
@@ -575,9 +617,9 @@ public sealed class SettingsForm : Form
         }
     }
 
-    /// <summary>Título pequeño en gris, como "Hoy" o "Mejor día" en la ventana principal.</summary>
+    /// <summary>Card title: small wide-spaced capitals, like the section labels on the dashboard and the website.</summary>
     private static void CardTitle(Card card, string text) =>
-        Lbl(card, text, 8.0f, FontStyle.Regular, Theme.Muted, new Point(13, 7), new Size(card.Width - 100, 15));
+        LblF(card, Fonts.Track(text.ToUpper(L.Culture)), Fonts.Body(8f, FontStyle.Bold), Theme.AccentSoft, new Point(16, 14), new Size(card.Width - 120, 18));
 
     /// <summary>Pide confirmación y borra todo el historial (se guarda una copia de data.json antes).</summary>
     private void ResetStats()
@@ -598,17 +640,17 @@ public sealed class SettingsForm : Form
             L.T("Restablecer estadísticas", "Reset statistics"), MessageBoxButtons.OK, MessageBoxIcon.Information);
     }
 
-    /// <summary>Texto (y una línea gris opcional) a la izquierda y un interruptor a la derecha; clicar el texto también lo cambia.</summary>
+    /// <summary>A title (and an optional grey line) on the left and a switch on the right; clicking the text toggles it too.</summary>
     private static ToggleSwitch AddToggleRow(Card card, string text, string? hint, int top, bool value)
     {
-        // Centrado con lo que tiene a la izquierda: solo el título (una línea) o título y línea gris (dos).
-        var toggle = new ToggleSwitch { Location = new Point(card.Width - 13 - 40, hint != null ? top + 5 : top - 2), Checked = value };
-        var label = Lbl(card, text, 9.5f, FontStyle.Bold, Theme.Ink, new Point(13, top), new Size(card.Width - 26 - 48, 18));
+        var height = hint != null ? 40 : 28;
+        var toggle = new ToggleSwitch { Size = new Size(44, 24), Location = new Point(card.Width - 16 - 44, top + (height - 24) / 2), Checked = value };
+        var label = LblF(card, text, Fonts.Semi(10f), Theme.Ink, new Point(16, top + (hint != null ? 0 : 3)), new Size(card.Width - 32 - 56, 21));
         label.Cursor = Cursors.Hand;
         label.Click += (_, _) => toggle.Checked = !toggle.Checked;
         if (hint != null)
         {
-            var small = Lbl(card, hint, 7.5f, FontStyle.Regular, Theme.Muted, new Point(13, top + 18), new Size(card.Width - 26 - 48, 14));
+            var small = Lbl(card, hint, 8.5f, FontStyle.Regular, Theme.Muted, new Point(16, top + 21), new Size(card.Width - 32 - 56, 18));
             small.Cursor = Cursors.Hand;
             small.Click += (_, _) => toggle.Checked = !toggle.Checked;
         }
@@ -619,29 +661,33 @@ public sealed class SettingsForm : Form
     /// <summary>Campo de solo lectura sin borde dentro de un fondo redondeado.</summary>
     private static TextBox AddField(Card card, Point at, int width, string text)
     {
-        var holder = new Card { Location = at, Size = new Size(width, 30), Radius = 10, BackColor = Theme.Panel };
+        var holder = new Card { Location = at, Size = new Size(width, 34), Radius = 11, BackColor = Theme.Panel };
         var box = new TextBox
         {
             BorderStyle = BorderStyle.None,
             BackColor = Theme.Panel,
             ForeColor = Theme.Ink,
-            Font = Theme.Text(9f),
+            Font = Theme.Text(9.5f),
             ReadOnly = true,
             Text = text,
-            Width = width - 20,
+            Width = width - 24,
         };
-        box.Location = new Point(10, (holder.Height - box.Height) / 2);
+        box.Location = new Point(12, (holder.Height - box.Height) / 2);
         holder.Controls.Add(box);
         card.Controls.Add(holder);
         return box;
     }
 
-    private static Label Lbl(Control parent, string text, float size, FontStyle style, Color color, Point at, Size sz, ContentAlignment align = ContentAlignment.TopLeft)
+    private static Label Lbl(Control parent, string text, float size, FontStyle style, Color color, Point at, Size sz, ContentAlignment align = ContentAlignment.TopLeft) =>
+        LblF(parent, text, Theme.Text(size, style), color, at, sz, align);
+
+    private static Label LblF(Control parent, string text, Font font, Color color, Point at, Size sz, ContentAlignment align = ContentAlignment.TopLeft)
     {
         var label = new Label
         {
             Text = text,
-            Font = Theme.Text(size, style),
+            Font = font,
+            UseMnemonic = false,
             ForeColor = color,
             BackColor = parent.BackColor,
             Location = at,

@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
 
@@ -36,7 +36,7 @@ public sealed class InfoDialog : Form
         icon.Controls.Add(new Label
         {
             Text = "i",
-            Font = new Font("Georgia", 15f, FontStyle.Bold | FontStyle.Italic),
+            Font = Theme.Text(15f, FontStyle.Bold),
             ForeColor = Theme.Cyan,
             BackColor = Color.Transparent, // deja ver el círculo de la tarjeta
             Location = new Point(0, 0),

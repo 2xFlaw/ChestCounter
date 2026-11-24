@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -39,8 +39,8 @@ public sealed class DailyChart : Control
         }
 
         // La fuente del control se escala con la ventana; la negrita es solo para las cifras.
-        using var fontValue = new Font(Font, FontStyle.Bold);
-        using var fontDay = new Font(Font, FontStyle.Regular);
+        using var fontValue = Fonts.WithStyle(Font, FontStyle.Bold);
+        using var fontDay = Fonts.WithStyle(Font, FontStyle.Regular);
 
         // Las franjas de texto y las barras salen del alto de la fuente: con medidas fijas, al maximizar las cifras se cortaban.
         // A 9 pt y 96 ppp equivalen a las de siempre (cifra 18, día 16, barra 28).

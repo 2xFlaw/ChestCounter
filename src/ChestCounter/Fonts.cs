@@ -7,7 +7,9 @@ namespace ChestCounter;
 
 /// <summary>
 /// The app's typefaces, embedded in the exe (Assets\fonts\*.ttf) so every player sees the same text:
-/// Inter for body text and Anton for big titles and numbers. If a font cannot be loaded, Segoe UI is used instead.
+/// Onest for body text (Medium for normal text, Bold for emphasis) and Anton for big titles and numbers. Onest is a
+/// friendly, modern UI typeface with a tall x-height, so small text stays easy to read; it also covers Cyrillic and
+/// the accented Latin letters every app language needs. If a font cannot be loaded, Segoe UI is used instead.
 /// Both embedded fonts are open source (SIL Open Font License).
 /// On a PC that already has Burbank installed, big titles use it instead; it is never embedded or shipped.
 /// </summary>
@@ -18,7 +20,9 @@ internal static class Fonts
     private static extern IntPtr AddFontMemResourceEx(IntPtr pbFont, uint cbFont, IntPtr pdv, ref uint pcFonts);
 
     private static readonly PrivateFontCollection Names = new();
-    private static string? _body;
+    private static string? _body;      // normal text (Onest Medium)
+    private static string? _bodyBold;  // bold text (Onest, Bold style)
+    private static string? _bodySemi;  // semi-bold text (Onest SemiBold)
     private static string? _display;
     private static FontStyle _displayStyle = FontStyle.Regular;
     private static bool _loaded;
@@ -53,27 +57,34 @@ internal static class Fonts
                 Names.AddMemoryFont(pointer, data.Length);
             }
 
-            _body = Check(Names.Families.FirstOrDefault(f => f.Name.StartsWith("Inter", StringComparison.OrdinalIgnoreCase))?.Name, FontStyle.Regular);
-            _display = Check(Names.Families.FirstOrDefault(f => f.Name.StartsWith("Anton", StringComparison.OrdinalIgnoreCase))?.Name, FontStyle.Regular);
-var burbank = Names.Families.FirstOrDefault(f => f.Name.StartsWith("Burbank", StringComparison.OrdinalIgnoreCase));
-if (burbank != null)
-{
-    foreach (var style in new[] { FontStyle.Bold, FontStyle.Regular })
-    {
-        if (Check(burbank.Name, style) is { } found)
-        {
-            _display = found;
-            _displayStyle = style;
-            break;
-        }
-    }
-}
+            var burbank = Names.Families.FirstOrDefault(f => f.Name.StartsWith("Burbank", StringComparison.OrdinalIgnoreCase));
+            if (burbank != null)
+            {
+                foreach (var style in new[] { FontStyle.Bold, FontStyle.Regular })
+                {
+                    if (Check(burbank.Name, style) is { } found)
+                    {
+                        _display = found;
+                        _displayStyle = style;
+                        break;
+                    }
+                }
+            }
         }
         catch
         {
-            _body = null;
-            _display = null;
+            // Embedded fonts could not be loaded: the names below may still resolve (installed fonts), else Segoe UI.
         }
+
+        // Resolved by name, so this works for the embedded copies and for fonts installed on the PC alike.
+        _bodyBold = Check("Onest", FontStyle.Bold);
+        _body = Check("Onest Medium", FontStyle.Regular);
+        _bodySemi = Check("Onest SemiBold", FontStyle.Regular);
+        if (_body == null || _bodyBold == null)
+        {
+            _body = _bodyBold = _bodySemi = null;
+        }
+        _display ??= Check("Anton", FontStyle.Regular);
 
         // Only on a PC that has Burbank installed (nothing is shipped): use it for the big titles.
         foreach (var (name, style) in new[]
@@ -101,6 +112,10 @@ if (burbank != null)
         }
         try
         {
+            if (Private(name) is { } family && family.IsStyleAvailable(style))
+            {
+                return name;
+            }
             using var probe = new Font(name, 10f, style);
             return string.Equals(probe.Name, name, StringComparison.OrdinalIgnoreCase) ? name : null;
         }
@@ -110,17 +125,61 @@ if (burbank != null)
         }
     }
 
+    private static FontFamily? Private(string name)
+    {
+        try
+        {
+            return Names.Families.FirstOrDefault(f => f.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    // Embedded fonts are built from their own family (always the right file); anything else by name.
+    private static Font Make(string name, float size, FontStyle style, GraphicsUnit unit = GraphicsUnit.Point) =>
+        Private(name) is { } family && family.IsStyleAvailable(style)
+            ? new Font(family, size, style, unit)
+            : new Font(name, size, style, unit);
+
     public static bool HasBody => _body != null;
 
     public static bool HasDisplay => _display != null;
 
-    /// <summary>Body text: Inter, or Segoe UI as a fallback.</summary>
-    public static Font Body(float size, FontStyle style = FontStyle.Regular) =>
-        new(_body ?? "Segoe UI", size, style);
+    // Onest is a little wider and taller than the old body font at the same point size, so every size is scaled down
+    // slightly: the text keeps fitting the same boxes, and its larger x-height still makes it read bigger and clearer.
+    private const float BodyScale = 0.95f;
+
+    /// <summary>Body text: Onest Medium (Onest Bold when bold), or Segoe UI as a fallback.</summary>
+    public static Font Body(float size, FontStyle style = FontStyle.Regular)
+    {
+        if (_body == null || _bodyBold == null)
+        {
+            return new Font("Segoe UI", size, style);
+        }
+        return style.HasFlag(FontStyle.Bold)
+            ? Make(_bodyBold, size * BodyScale, style)
+            : Make(_body, size * BodyScale, style);
+    }
+
+    /// <summary>The same font in another style, keeping Onest's real bold face (not a synthesised one).</summary>
+    public static Font WithStyle(Font font, FontStyle style)
+    {
+        if (_body == null || _bodyBold == null || !(font.Name == _body || font.Name == _bodyBold || font.Name == _bodySemi))
+        {
+            return new Font(font, style);
+        }
+        return Make(style.HasFlag(FontStyle.Bold) ? _bodyBold : _body, font.Size, style, font.Unit);
+    }
+
+    /// <summary>Semi-bold body text (row titles, labels): Onest SemiBold, or bold as a fallback.</summary>
+    public static Font Semi(float size) =>
+        _bodySemi != null ? Make(_bodySemi, size * BodyScale, FontStyle.Regular) : Body(size, FontStyle.Bold);
 
     /// <summary>Big titles and numbers: Anton (or Burbank when installed), or bold Segoe UI as a fallback.</summary>
     public static Font Display(float size) =>
-        _display != null ? new Font(_display, size, _displayStyle) : new Font("Segoe UI", size * 0.92f, FontStyle.Bold);
+        _display != null ? Make(_display, size, _displayStyle) : new Font("Segoe UI", size * 0.92f, FontStyle.Bold);
 
     /// <summary>Wide-spaced capitals for small labels (the website style): puts a hair space between the letters.</summary>
     public static string Track(string text)
