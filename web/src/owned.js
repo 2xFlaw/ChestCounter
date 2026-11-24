@@ -35,3 +35,11 @@ export async function handleOwned(req,env,url){
  await env.DB.prepare("INSERT INTO owned_rewards(profile_id,payload) VALUES(?,?) ON CONFLICT(profile_id) DO UPDATE SET payload=excluded.payload,updated_at=datetime('now')").bind(me,JSON.stringify(map)).run();
  return J({owned:plain(map),times:Object.fromEntries(Object.entries(map).map(([k,v])=>[k,v.t]))});
 }
+// Treasure Hunt ticks of a profile ({ key: true } for owned items), for the odds. Empty when there are none yet.
+export async function ownedFor(env,pid){
+ try{
+  const row=await env.DB.prepare('SELECT payload FROM owned_rewards WHERE profile_id=?').bind(pid).first();
+  const map=row?JSON.parse(row.payload):{};
+  return Object.fromEntries(Object.entries(map).filter(([,v])=>v&&v.v===true).map(([k])=>[k,true]));
+ }catch{return {};}
+}

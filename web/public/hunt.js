@@ -78,6 +78,13 @@ const ymd = ms => { const d = new Date(ms); return `${d.getUTCFullYear()}${Strin
 const locale = () => { const l = (document.documentElement.lang || 'en').toLowerCase(); return l.startsWith('en') ? 'en-GB' : l; };
 const day = ms => { try { return new Date(ms).toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }); } catch { return new Date(ms).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }); } };
 
+// Other parts of the page (the Drop rates table) follow the ticks through this: 'change' fires whenever they change
+// (with detail.saved once the website has them too), and a 'toggle' event with detail.key flips one.
+export const huntBus = new EventTarget();
+let shared = null;
+export const huntOwned = () => Object.fromEntries(Object.entries(shared || load()).filter(([, v]) => v && v.v === true).map(([k]) => [k, true]));
+const emit = saved => { huntBus.dispatchEvent(new CustomEvent('change', { detail: { saved } })); };
+
 function load() { try { const v = JSON.parse(localStorage.getItem(STORE) || '{}'); return v && typeof v === 'object' ? v : {}; } catch { return {}; } }
 function save(map) { try { localStorage.setItem(STORE, JSON.stringify(map)); } catch { /* storage blocked */ } }
 
@@ -100,6 +107,7 @@ export async function initHunt(root) {
   if (!weeks.length) { root.closest('section')?.remove(); return; }
 
   let map = load();
+  shared = map;
   let synced = false;
   const owned = key => !!map[key]?.v;
 
@@ -118,17 +126,18 @@ export async function initHunt(root) {
       const merged = {};
       for (const [k, v] of Object.entries(server.owned || {})) merged[k] = { v, t: server.times?.[k] ?? 0 };
       for (const [k, v] of Object.entries(push)) merged[k] = v;
-      map = merged; save(map); synced = true;
+      map = merged; shared = map; save(map); synced = true; emit(false);
       const keys = Object.keys(push);
       for (let i = 0; i < keys.length; i += 200) await api('/api/owned', { method: 'POST', body: { set: Object.fromEntries(keys.slice(i, i + 200).map(k => [k, push[k]])) } });
     } catch { synced = false; }
   }
 
   async function setOwned(key, value) {
-    map[key] = { v: value, t: Date.now() }; save(map);
+    map[key] = { v: value, t: Date.now() }; save(map); emit(false);
     try { await api('/api/owned', { method: 'POST', body: { set: { [key]: map[key] } } }); synced = true; } catch { synced = false; }
-    status();
+    status(); emit(true);
   }
+  huntBus.addEventListener('toggle', e => { const key = e.detail?.key; if (typeof key !== 'string') return; setOwned(key, !owned(key)); render(); });
 
   function burst(box) {
     if (reduced.matches) return;
@@ -149,7 +158,8 @@ export async function initHunt(root) {
 
   function counts() {
     const now = Date.now();
-    const open = weeks.filter(w => w.s <= now);
+    const golden = now >= Date.parse('2026-11-28T14:00:00Z') && now < Date.parse('2026-12-05T19:00:00Z');
+    const open = weeks.filter(w => w.s <= now || golden);
     const total = open.reduce((n, w) => n + w.items.length, 0);
     const found = open.reduce((n, w) => n + w.items.filter(it => owned(`${it.slot}@${ymd(w.s)}`)).length, 0);
     root.querySelector('.hcount b').textContent = String(found);
@@ -175,7 +185,7 @@ export async function initHunt(root) {
       (golden ? `<div class='hgold'><b>Golden Week</b> <span>Every treasure reward is back, so items from earlier weeks can still drop.</span></div>` : '') +
       `<button type='button' class='pirate${owned(PIRATE) ? ' is-found' : ''}' aria-pressed='${owned(PIRATE)}'><img src='/rewards/${esc(pirate.image)}' alt='' width='50' height='50'><span><span class='pt'>Pirate Shop Token</span><br><span class='ps'>14 days of free item shops - found any week</span></span><span class='pst'>${owned(PIRATE) ? 'Found it' : 'Not found'}</span></button>` +
       weeks.map((w, i) => {
-        const future = w.s > now, isCur = w === cur;
+        const future = w.s > now && !golden, isCur = w === cur;
         return `<div class='hweek${isCur ? ' cur' : ''}${future ? ' future' : ''}' data-i='${i}'><div class='wl'><h3>Week ${w.week}</h3>` +
           `<div class='hsub'>${future ? esc(`Starts ${day(w.s)}`) : `<span class='fc'>0/${w.items.length} found</span>`}</div>${isCur ? "<span class='hnow'>This week</span>" : ''}</div>` +
           `<div class='tiles'>${w.items.map(it => {

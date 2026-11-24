@@ -89,5 +89,6 @@ export async function pirateAllTime(env, profileId, windows, now = new Date(), w
 // Replaces the weekly Pirate Shop Access entry with the all-time one.
 export async function withAllTimePirate(prizes, env, profileId, windows, now, withPersonal) {
   const all = await pirateAllTime(env, profileId, windows, now, withPersonal);
-  return prizes.map((p) => (p.key === KEY ? { ...p, chance: all.chance, next50: all.next50, allTime: true, allTimeChests: all.chests } : p));
+  // Once you have it (Treasure Hunt tick), it cannot drop again, so the chance is shown as found instead.
+  return prizes.map((p) => (p.key === KEY ? { ...p, chance: p.pool?.left === 0 ? 0 : all.chance, next50: p.pool?.left === 0 ? 0 : all.next50, allTime: true, allTimeChests: all.chests } : p));
 }

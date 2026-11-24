@@ -1,6 +1,7 @@
 import { TABLE, computeLuck, weekStart, GOLDEN_WEEK, isGoldenWeek } from "./odds.js";
 import { MATCH_EXTRAS } from "./benchmarks.js";
 import { withAllTimePirate } from "./alltime.js";
+import { ownedFor } from "./owned.js";
 
 const J = (d, s = 200, h = {}) => new Response(JSON.stringify(d), { status: s, headers: { "content-type": "application/json", "cache-control": "no-store", ...h } });
 const bad = (m, s = 400) => J({ error: m }, s);
@@ -103,7 +104,8 @@ export default {
         const win = await windows(env);
         const ev = await weekEvents(env, pid, start, end);
         // Pirate Shop Access is not a weekly prize: it uses the whole history (personal snapshot only for your own view).
-        const prizes = await withAllTimePirate(computeLuck(ev, win, now), env, pid, win, now, pid === me);
+        const owned = await ownedFor(env, pid);
+        const prizes = await withAllTimePirate(computeLuck(ev, win, now, owned), env, pid, win, now, pid === me);
         return J({ profile: pid, weekStart: iso(start), chests: ev.reduce((a, e) => a + e.count, 0), prizes, windows: win, goldenWeek: { ...GOLDEN_WEEK, active: isGoldenWeek(now) } });
       }
 

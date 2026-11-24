@@ -64,5 +64,16 @@ export const STATS_PATTERNS=[
  pl:"Start $1",
  tr:"$1 başlar",
  ja:"$1開始"
+}],
+[/^(\d+) of (\d+) left$/,{
+ es:"$1 de $2 restantes",
+ pt:"$1 de $2 restantes",
+ ru:"Осталось $1 из $2",
+ fr:"$1 sur $2 restants",
+ de:"$1 von $2 übrig",
+ it:"$1 di $2 rimasti",
+ pl:"Zostało $1 z $2",
+ tr:"$2 içinden $1 kaldı",
+ ja:"残り$1/$2"
 }]
 ];
