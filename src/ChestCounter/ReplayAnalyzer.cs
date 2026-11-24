@@ -81,6 +81,16 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     private readonly Dictionary<uint, uint> _pawnToPlayerState = new();
     private readonly Dictionary<uint, int> _playerStateToPlayerId = new();
 
+    // Where each pawn was while the replay could see it (one point every half second at most).
+    private readonly Dictionary<uint, List<(float T, float X, float Y)>> _pawnTrack = new();
+
+    /// <summary>
+    /// Measured in real replays: a chest opening is recorded when the player opening it is within about 250 m of the
+    /// recording player (a few up to ~300 m, never further). Beyond that the chest is not in the replay at all, and
+    /// when it comes into view later it is already open, with nobody named as the opener.
+    /// </summary>
+    internal const float ChestViewDistance = 25_000f; // Unreal units (cm)
+
     // Treasure prize handler abilities ("GA_TreasureHandler_*"): class netguid -> name.
     private readonly Dictionary<uint, string> _treasureHandlerGuids = new();
 
@@ -89,7 +99,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
     private readonly List<GrantEvent> _grants = new();
 
     /// <summary>Bump when the analysis changes so that existing replays are re-analyzed.</summary>
-    public const int CurrentVersion = 13;
+    public const int CurrentVersion = 14;
 
     private static readonly bool ProbeDebug = Environment.GetEnvironmentVariable("CHESTCOUNTER_DEBUG") == "4";
 
@@ -356,6 +366,13 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
 
     protected override void OnExportRead(uint channelIndex, INetFieldExportGroup? exportGroup)
     {
+        // Pawn positions are kept here, thinned out, instead of in the replay builder's list (every single update).
+        if (exportGroup is PlayerPawn moving && moving.ReplicatedMovement is { Location: { } at })
+        {
+            TrackPawn(channelIndex, at);
+            moving.ReplicatedMovement = null;
+        }
+
         base.OnExportRead(channelIndex, exportGroup);
 
         switch (exportGroup)
@@ -451,6 +468,84 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                 }
                 break;
         }
+    }
+
+    private void TrackPawn(uint channelIndex, FVector at)
+    {
+        if (Channels[channelIndex]?.ActorId is not uint pawn || pawn == 0)
+        {
+            return;
+        }
+        // Garbage guard: the whole map fits well inside ±10 km.
+        if (!double.IsFinite(at.X) || !double.IsFinite(at.Y) || Math.Abs(at.X) > 1e6 || Math.Abs(at.Y) > 1e6)
+        {
+            return;
+        }
+        if (!_pawnTrack.TryGetValue(pawn, out var track))
+        {
+            _pawnTrack[pawn] = track = new List<(float T, float X, float Y)>();
+        }
+        var now = Now;
+        if (track.Count > 0 && now - track[^1].T < 0.5f)
+        {
+            return;
+        }
+        track.Add((now, (float)at.X, (float)at.Y));
+    }
+
+    /// <summary>Closest point of <paramref name="track"/> to <paramref name="time"/> (within 2 s), if the replay had one.</summary>
+    private static (float X, float Y)? PositionAt(List<(float T, float X, float Y)> track, float time)
+    {
+        if (track.Count == 0)
+        {
+            return null;
+        }
+        int lo = 0, hi = track.Count - 1;
+        while (lo < hi)
+        {
+            var mid = (lo + hi) / 2;
+            if (track[mid].T < time) lo = mid + 1; else hi = mid;
+        }
+        var best = lo;
+        if (lo > 0 && Math.Abs(track[lo - 1].T - time) < Math.Abs(track[lo].T - time))
+        {
+            best = lo - 1;
+        }
+        return Math.Abs(track[best].T - time) <= 2f ? (track[best].X, track[best].Y) : null;
+    }
+
+    private List<(float T, float X, float Y)> TrackOf(HashSet<uint> pawns) =>
+        pawns.Where(_pawnTrack.ContainsKey).SelectMany(p => _pawnTrack[p]).OrderBy(p => p.T).ToList();
+
+    /// <summary>
+    /// Share of the target's match (each second they were in the replay) during which the teammate was close enough
+    /// for their chest openings to be recorded. Null when there is not enough position data to tell.
+    /// </summary>
+    private static int? NearShare(List<(float T, float X, float Y)> me, List<(float T, float X, float Y)> mate)
+    {
+        if (me.Count < 2)
+        {
+            return null;
+        }
+        int known = 0, near = 0;
+        for (var t = me[0].T; t <= me[^1].T; t += 1f)
+        {
+            if (PositionAt(me, t) is not { } a)
+            {
+                continue;
+            }
+            known++;
+            if (PositionAt(mate, t) is { } b)
+            {
+                var dx = a.X - b.X;
+                var dy = a.Y - b.Y;
+                if (dx * dx + dy * dy <= ChestViewDistance * ChestViewDistance)
+                {
+                    near++;
+                }
+            }
+        }
+        return known >= 30 ? (int)Math.Round(100.0 * near / known) : null;
     }
 
     /// <summary>
@@ -555,6 +650,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
         var teammates = new List<TeammateRecord>();
         if (target?.TeamIndex is int team)
         {
+            var myTrack = TrackOf(targetPawns);
             var mates = players
                 .Where(p => p.TeamIndex == team && p.Id != target.Id && p.IsBot != true)
                 .GroupBy(p => p.EpicId ?? p.PlayerName ?? $"pid{p.Id}")
@@ -574,6 +670,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
                     EpicId = mate.EpicId,
                     ChestsSeen = kinds.Where(k => ChestKinds.IsChest(k.Key)).Sum(k => k.Value),
                     Kinds = kinds,
+                    NearPercent = NearShare(myTrack, TrackOf(pawns)),
                 });
             }
             teammates.Sort((a, b) => b.ChestsSeen.CompareTo(a.ChestsSeen));
@@ -583,7 +680,7 @@ public sealed class ReplayAnalyzer : FortniteReplayReader.ReplayReader
         {
             foreach (var t in teammates)
             {
-                Console.Error.WriteLine($"DBG teammate {t.Name} chests={t.ChestsSeen}");
+                Console.Error.WriteLine($"DBG teammate {t.Name} chests={t.ChestsSeen} near={t.NearPercent?.ToString() ?? "?"}%");
             }
             string NameOfPawn(uint pawn) =>
                 _pawnToPlayerState.TryGetValue(pawn, out var ps) && _playerStateToPlayerId.TryGetValue(ps, out var pid)

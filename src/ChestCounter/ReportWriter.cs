@@ -319,6 +319,7 @@ public static class ReportWriter
         .matches .chip{padding-left:9px}
         .chip .cn{color:var(--muted);overflow:hidden;text-overflow:ellipsis;max-width:130px}
         .chip b{font-variant-numeric:tabular-nums}
+        .chip .nr{color:var(--muted);font-size:11px}.chip .nr::before{content:"· "}.chip .nr.lo{color:var(--amber)}
         .chip .sm-av{width:20px;height:20px;font-size:10.5px}
         .mini-kpi b small{font-size:13px;font-weight:600;color:var(--muted);margin-right:2px}
         .teambar{display:flex;align-items:center;justify-content:flex-end;gap:10px}
@@ -711,7 +712,8 @@ public static class ReportWriter
                     Best: g.Max(r => Seen(r.t)),
                     Wins: together.Count(m => m.Placement == 1),
                     Last: When(latest.m),
-                    Team: together.Sum(m => m.OwnChests + m.TeammatesSeen(extraKinds)));
+                    Team: together.Sum(m => m.OwnChests + m.TeammatesSeen(extraKinds)),
+                    Near: g.Where(r => r.t.NearPercent != null).Select(r => (double)r.t.NearPercent!.Value).DefaultIfEmpty(-1).Average());
             })
             .OrderByDescending(r => r.Matches).ThenByDescending(r => r.Chests)
             .ToList();
@@ -722,10 +724,16 @@ public static class ReportWriter
         string Tone(string key) => tones[(int)((uint)StringComparer.OrdinalIgnoreCase.GetHashCode(key) % tones.Length)];
         string Initial(string name) => H(name.Trim().Length > 0 ? char.ToUpperInvariant(name.Trim()[0]).ToString() : "?");
         string Pct(int part, int whole) => whole > 0 ? (100.0 * part / whole).ToString("0", Loc) + " %" : "—";
+        // How much of the match a teammate spent within chest-recording range of you (the rest of their chests are unseen).
+        string NearText(double near) => L.F("cerca {0}", "near {0}", near.ToString("0", Loc) + " %");
+        string NearTitle(int? near) => near is int n
+            ? $" title=\"{H(L.F("Cerca de ti (a menos de unos 250 m) el {0} de tu partida", "Within about 250 m of you for {0} of your match", n.ToString("0", Loc) + " %"))}\""
+            : "";
+        string NearTag(int? near) => near is int n ? $"<span class=\"nr{(n < 70 ? " lo" : "")}\">{H(NearText(n))}</span>" : "";
         sb.Append($"""
             <div class="callout"><span class="ic">i</span><div>{L.Big("teammatesNote",
-                "Los cofres de tus compañeros no son exactos: salen de tu replay, y Fortnite solo graba lo que pasa a menos de 1.087 m de ti. Si un compañero se aleja más, sus cofres no se cuentan. Son un mínimo, no su total. «Tus cofres» son los tuyos en esas mismas partidas, para comparar.",
-                "Your teammates' chests are not exact: they come from your replay, and Fortnite only records what happens within 1,087 m of you. If a teammate goes further, their chests are not counted. They are a minimum, not their total. \"Your chests\" are yours in those same matches, for comparison.")}</div></div>
+                "Los cofres de tus compañeros no son exactos: salen de tu replay, y Fortnite solo graba que se abre un cofre cuando pasa a menos de unos 250 m de ti. Los que un compañero abre más lejos no están en el replay, así que son un mínimo, no su total. «Cerca» indica cuánto de la partida pasó cada compañero a esa distancia. «Tus cofres» son los tuyos en esas mismas partidas, para comparar.",
+                "Your teammates' chests are not exact: they come from your replay, and Fortnite only records a chest being opened when it happens within about 250 m of you. Chests a teammate opens further away are not in the replay at all, so they are a minimum, not their total. \"Near\" shows how much of the match each teammate spent in that range. \"Your chests\" are yours in those same matches, for comparison.")}</div></div>
             """);
         if (all.Count == 0)
         {
@@ -805,7 +813,7 @@ public static class ReportWriter
             foreach (var m in recentTeam)
             {
                 var mates = string.Concat(m.Teammates!.OrderByDescending(t => Seen(t)).Select(t =>
-                    $"<span class=\"chip\"><span class=\"av sm-av\" style=\"background:{Tone(t.EpicId ?? t.Name)}\">{Initial(t.Name)}</span><span class=\"cn\">{H(t.Name)}</span> <b>≥ {N(Seen(t))}</b></span>"));
+                    $"<span class=\"chip\"{NearTitle(t.NearPercent)}><span class=\"av sm-av\" style=\"background:{Tone(t.EpicId ?? t.Name)}\">{Initial(t.Name)}</span><span class=\"cn\">{H(t.Name)}</span> <b>≥ {N(Seen(t))}</b>{NearTag(t.NearPercent)}</span>"));
                 var total = m.OwnChests + m.TeammatesSeen(extraKinds);
                 var placeClass = m.Placement switch { 1 => " win", > 0 and <= 10 => " top", _ => "" };
                 var place = m.Placement == 1 ? "🏆 " + H(Pretty.Placement(m)) : H(Pretty.Placement(m));
@@ -836,7 +844,7 @@ public static class ReportWriter
             sb.Append($"""
                 <div class="mate">
                   <div class="who"><div class="av" style="background:{Tone(r.Key)}">{Initial(r.Name)}</div>
-                    <div class="grow"><div class="nm" title="{H(r.Name)}">{H(r.Name)}</div><div class="sm">{L.Count(r.Matches, "partida juntos", "partidas juntos", "match together", "matches together")} · {L.F("aporta ≥ {0} del equipo", "brings ≥ {0} of the team", Pct(r.Chests, r.Team))}</div></div></div>
+                    <div class="grow"><div class="nm" title="{H(r.Name)}">{H(r.Name)}</div><div class="sm">{L.Count(r.Matches, "partida juntos", "partidas juntos", "match together", "matches together")} · {L.F("aporta ≥ {0} del equipo", "brings ≥ {0} of the team", Pct(r.Chests, r.Team))}{(r.Near >= 0 ? " · " + H(NearText(r.Near)) : "")}</div></div></div>
                   <div class="st">
                     <div><b class="acc">{N(r.Wins)}</b><span>{L.T("victorias", "wins")} · {Pct(r.Wins, r.Matches)}</span></div>
                     <div><b><small>≥</small>{avg.ToString("0.0", Loc)}</b><span>{L.T("cofres por partida", "chests per match")}</span></div>

@@ -116,7 +116,7 @@ Everything is saved in `%APPDATA%\ChestCounter`.
 
 **Nothing is counted.** Check that replays are on in Fortnite. The window tells you if the replays folder is missing or empty.
 
-**Why are my teammates' chests low?** Fortnite only records what happens within about 1,087 m of you, so teammate counts are a minimum, not a total.
+**Why are my teammates' chests low?** Fortnite only records a chest being opened when it happens within about 250 m of you (measured in real replays). Chests a teammate opens further away are not in your replay at all, so teammate counts are a minimum, not a total. The report shows how much of each match every teammate spent near you, so you can tell which counts are complete.
 
 **How do I start over?** Settings > Reset statistics. It asks first and saves a backup.
 
