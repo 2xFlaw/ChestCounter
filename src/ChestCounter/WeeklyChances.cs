@@ -90,19 +90,22 @@ public static class WeeklyChanceModel
 
         var owned = monitor.Config.OwnedRewards;
         var prizes = new List<PrizeChance>();
-        foreach (var (prizeKey, name, den) in Table)
+        foreach (var (prizeKey, name, baseDen) in Table)
         {
             double noDrop = 1;
             foreach (var e in events)
             {
                 var w = e.time is { } t ? windows.FirstOrDefault(x => t >= x.StartUtc && t < x.EndUtc) : null;
-                noDrop *= Math.Pow(1 - Math.Clamp(BoostFor(w, prizeKey) / den, 0, 1), e.count);
+                noDrop *= Math.Pow(1 - Math.Clamp(TreasureHours.BoostAt(w, e.time, prizeKey) / baseDen, 0, 1), e.count);
             }
             var chance = 1 - noDrop;
-            var rateNow = Math.Clamp(BoostFor(live, prizeKey) / den, 0, 1);
+            var rateNow = Math.Clamp(TreasureHours.BoostAt(live, now, prizeKey) / baseDen, 0, 1);
             var next50 = 1 - noDrop * Math.Pow(1 - rateNow, Lookahead);
             var isOwned = prizeKey != "gizmo" && owned.TryGetValue(WeeklyReset.OwnedKey(prizeKey, now), out var v) && v;
-            prizes.Add(new PrizeChance(prizeKey, name, den, BoostFor(live, prizeKey), chance, next50, isOwned));
+            // During Golden Week its odds are the normal rate shown ("1 in 781,250"), and a Treasure Hour boost is
+            // shown on top of them, so every "1 in N" and "x now" on screen multiplies out to the real rate.
+            var golden = TreasureHours.Golden(now, prizeKey);
+            prizes.Add(new PrizeChance(prizeKey, name, baseDen / golden, TreasureHours.BoostAt(live, now, prizeKey) / golden, chance, next50, isOwned));
         }
 
         return new ChanceSnapshot(
@@ -334,7 +337,10 @@ internal sealed class GoalPanel : Control
         var lookahead = vm.Boost > 1
             ? $"If you open {vm.Ahead:N0} more chests: +{ChanceText.Pct(vm.GainNow)} now (Treasure Hour) vs +{ChanceText.Pct(vm.GainNormal)} normally"
             : $"If you open {vm.Ahead:N0} more chests: +{ChanceText.Pct(vm.GainNormal)}";
-        ChanceText.Draw(g, lookahead, _sub, new Rectangle(x0, 138, xr - x0, 18), vm.Boost > 1 ? Theme.Amber : Theme.Muted, TextFormatFlags.Right);
+        if (vm.Ahead > 0)
+        {
+            ChanceText.Draw(g, lookahead, _sub, new Rectangle(x0, 138, xr - x0, 18), vm.Boost > 1 ? Theme.Amber : Theme.Muted, TextFormatFlags.Right);
+        }
 
         // The path shows only what you have really earned this week (empty at 0%).
         var left = x0 + 7;
@@ -439,14 +445,14 @@ internal sealed class PlannerPanel : Control
     private readonly Font _sub = Theme.Text(9f);
     private readonly Font _arrow = Theme.Text(16f, FontStyle.Bold);
     private Vm? _vm;
-    private int _n = 100;
+    private int _n;
     private int _hover = -1;
     private double _normalShown, _normalTarget, _boostShown, _boostTarget;
 
     public PlannerPanel()
     {
         SetStyle(ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer | ControlStyles.UserPaint | ControlStyles.ResizeRedraw, true);
-        Height = 134;
+        Height = 150;
     }
 
     public event Action<int>? Chosen;
@@ -554,6 +560,7 @@ internal sealed class PlannerPanel : Control
         ChanceText.ChipAt(g, vm.Status, _label, 20, 14, accent);
         ChanceText.Draw(g, vm.WindowText, _sub, new Rectangle(20, 14, Width - 44, 28), Theme.Muted, TextFormatFlags.Right);
         ChanceText.Draw(g, Fonts.Track("IF YOU OPEN THIS MANY CHESTS"), _label, new Rectangle(20, 60, 340, 22), Theme.Muted);
+        ChanceText.Draw(g, _n > 0 ? WeeklyChanceMore.T("Click again to go back to your current odds") : WeeklyChanceMore.T("Off: showing your current odds"), _sub, new Rectangle(20, 124, Options.Length * (ChipW + ChipGap) + 260, 18), _n > 0 ? accent : Theme.Muted);
 
         for (var i = 0; i < Options.Length; i++)
         {
@@ -572,6 +579,22 @@ internal sealed class PlannerPanel : Control
         var x1 = x2 - block - 26;
         if (x1 < 20 + Options.Length * (ChipW + ChipGap) + 10)
         {
+            return;
+        }
+
+        if (_n <= 0)
+        {
+            // Planner off: just today's real odds, nothing projected.
+            ChanceText.Draw(g, Fonts.Track(WeeklyChanceMore.T("YOUR CHANCE NOW")), _label, new Rectangle(x1, 52, block, 18), Theme.Muted);
+            ChanceText.Draw(g, ChanceText.Pct(vm.Chance), _value, new Rectangle(x1, 70, block, 32), Theme.Ink);
+            ChanceText.Draw(g, WeeklyChanceMore.T("Pick a number to see what it adds"), _sub, new Rectangle(x1, 102, block * 2 + 26, 18), Theme.Muted);
+            if (vm.Boost > 1)
+            {
+                ChanceText.Draw(g, Fonts.Track(WeeklyChanceMore.F("TREASURE HOUR {0:0.#}\u00d7", vm.Boost)), _label, new Rectangle(x2, 52, block, 18), Theme.Amber);
+                // Two lines allowed: long in most languages.
+                TextRenderer.DrawText(g, WeeklyChanceMore.T("Boosted chests count automatically"), _sub, new Rectangle(x2, 72, block, 44), Theme.Amber,
+                    TextFormatFlags.Left | TextFormatFlags.Top | TextFormatFlags.WordBreak | TextFormatFlags.NoPrefix | TextFormatFlags.EndEllipsis | TextFormatFlags.NoPadding);
+            }
             return;
         }
 
@@ -643,7 +666,7 @@ internal sealed class OddsTable : Control
     private List<OddsRow> _rows = new();
     private string? _selected;
     private int _hover = -1;
-    private int _ahead = 100;
+    private int _ahead;
 
     public OddsTable()
     {
@@ -745,7 +768,7 @@ internal sealed class OddsTable : Control
         var barLeft = 310;
         var barRight = Width - 150;
         ChanceText.Draw(g, Fonts.Track("PRIZE"), _head, new Rectangle(20, 0, 200, HeaderH), Theme.Muted);
-        ChanceText.Draw(g, Fonts.Track($"CUMULATIVE ODDS THIS WEEK  \u00b7  DASHED = IF YOU OPEN {_ahead:N0} CHESTS"), _head, new Rectangle(barLeft, 0, Math.Max(40, barRight - barLeft), HeaderH), Theme.Muted);
+        ChanceText.Draw(g, _ahead <= 0 ? Fonts.Track(WeeklyChanceMore.T("CUMULATIVE ODDS THIS WEEK")) : Fonts.Track($"CUMULATIVE ODDS THIS WEEK  \u00b7  DASHED = IF YOU OPEN {_ahead:N0} CHESTS"), _head, new Rectangle(barLeft, 0, Math.Max(40, barRight - barLeft), HeaderH), Theme.Muted);
         ChanceText.Draw(g, Fonts.Track("CHANCE"), _head, new Rectangle(Width - 130, 0, 112, HeaderH), Theme.Muted, TextFormatFlags.Right);
 
         for (var i = 0; i < _rows.Count; i++)
@@ -795,7 +818,7 @@ internal sealed class OddsTable : Control
 
             // Projection: shown only for the selected or hovered row, as a dashed outline that follows the planner.
             var ghostEnd = Math.Clamp(row.Fill + (row.Ahead - row.Prize.Chance), 0, 1);
-            if (detail && ghostEnd > row.Fill + 0.0005)
+            if (detail && _ahead > 0 && ghostEnd > row.Fill + 0.0005)
             {
                 var gx = track.X + (float)(track.Width * row.Fill);
                 var gw = (float)(track.Width * (ghostEnd - row.Fill));
@@ -820,9 +843,9 @@ internal sealed class OddsTable : Control
                 g.FillPath(gradient, fillPath);
             }
 
-            var pctBox = detail ? new Rectangle(Width - 130, top + 8, 112, 28) : new Rectangle(Width - 130, top, 112, RowH);
+            var pctBox = detail && _ahead > 0 ? new Rectangle(Width - 130, top + 8, 112, 28) : new Rectangle(Width - 130, top, 112, RowH);
             ChanceText.Draw(g, ChanceText.Pct(row.Fill), _pct, pctBox, selected ? Theme.Cyan : Theme.Ink, TextFormatFlags.Right);
-            if (detail)
+            if (detail && _ahead > 0)
             {
                 ChanceText.Draw(g, $"\u2192 {ChanceText.Pct(row.Ahead)}", _sub, new Rectangle(Width - 130, top + 36, 112, 16), boosted ? Theme.Amber : Theme.Muted, TextFormatFlags.Right);
             }
@@ -872,7 +895,8 @@ public sealed class WeeklyChancesForm : Form
     private readonly GlowButton _auto;
     private DateTime _weekStart;
     private string? _pick;
-    private int _plan = 100;
+    // 0 = planner off (the default): every view shows your real odds right now. Click a chip to project, click it again to clear.
+    private int _plan;
     private ChanceSnapshot? _snap;
 
     public WeeklyChancesForm(Monitor monitor, Store store)
@@ -998,7 +1022,7 @@ public sealed class WeeklyChancesForm : Form
         };
         _planner.Chosen += n =>
         {
-            _plan = n;
+            _plan = _plan == n ? 0 : n;
             Apply();
         };
 
@@ -1191,7 +1215,7 @@ public sealed class WeeklyChancesForm : Form
             var text = window == null ? "" : Range(window);
             _planner.Visible = true;
             _planner.SetState(
-                new PlannerPanel.Vm(status, snap.Live != null, text, goal.Name, goal.Chance, goal.Den, WeeklyChanceModel.BoostFor(window, goal.Key), unknown),
+                new PlannerPanel.Vm(status, snap.Live != null, text, goal.Name, goal.Chance, goal.Den, WeeklyChanceModel.BoostFor(window, goal.Key) / (window == null ? 1 : TreasureHours.Golden(window.StartUtc, goal.Key)), unknown),
                 _plan);
         }
 
@@ -1229,7 +1253,7 @@ public sealed class WeeklyChancesForm : Form
         var y = _goal.Bottom + 12;
         if (_planner.Visible)
         {
-            _planner.SetBounds(margin, y, width, 134);
+            _planner.SetBounds(margin, y, width, 150);
             y = _planner.Bottom + 12;
         }
         _table.SetBounds(margin, y, width, _table.WantedHeight);

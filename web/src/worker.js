@@ -1,4 +1,4 @@
-import { TABLE, computeLuck, weekStart } from "./odds.js";
+import { TABLE, computeLuck, weekStart, GOLDEN_WEEK, isGoldenWeek } from "./odds.js";
 import { MATCH_EXTRAS } from "./benchmarks.js";
 import { withAllTimePirate } from "./alltime.js";
 
@@ -104,7 +104,7 @@ export default {
         const ev = await weekEvents(env, pid, start, end);
         // Pirate Shop Access is not a weekly prize: it uses the whole history (personal snapshot only for your own view).
         const prizes = await withAllTimePirate(computeLuck(ev, win, now), env, pid, win, now, pid === me);
-        return J({ profile: pid, weekStart: iso(start), chests: ev.reduce((a, e) => a + e.count, 0), prizes, windows: win });
+        return J({ profile: pid, weekStart: iso(start), chests: ev.reduce((a, e) => a + e.count, 0), prizes, windows: win, goldenWeek: { ...GOLDEN_WEEK, active: isGoldenWeek(now) } });
       }
 
       if (route === "POST /api/link/claim") {
@@ -118,6 +118,16 @@ export default {
           env.DB.prepare("INSERT INTO linked_pcs (id, profile_id, token_hash) VALUES (?,?,?)").bind(id, c.profile_id, await sha(secret)),
         ]);
         return J({ token: `${id}.${secret}` });
+      }
+
+      // The app's "Chests before the counter" estimate (app 2.5.3+), so the website total matches the app and overlay.
+      if (route === "POST /api/pc/starting-total") {
+        const pid = await pcAuth(req, env);
+        if (!pid) return bad("Unauthorized", 401);
+        const st = Math.round(Number((await body(req)).total));
+        if (!(st >= 0 && st <= 100000)) return bad("Starting total must be 0-100000");
+        await env.DB.prepare("UPDATE profiles SET starting_total=? WHERE id=?").bind(st, pid).run();
+        return J({ startingTotal: st });
       }
 
       if (route === "POST /api/matches") {
@@ -181,7 +191,7 @@ export default {
       if (route === "PUT /api/settings") {
         const b = await body(req);
         const st = Math.round(Number(b.startingTotal ?? 0));
-        if (!(st >= 0 && st <= 15000)) return bad("Starting total must be 0-15000");
+        if (!(st >= 0 && st <= 100000)) return bad("Starting total must be 0-100000");
         await env.DB.prepare("UPDATE profiles SET is_private=?, starting_total=? WHERE id=?").bind(b.isPrivate ? 1 : 0, st, me).run();
         return J({ isPrivate: !!b.isPrivate, startingTotal: st });
       }

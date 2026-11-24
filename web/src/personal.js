@@ -23,7 +23,9 @@ export async function handlePersonal(req,env,url){
   const seen=new Set(),ids=new Set(),matches=[],entries=[];
   for(const m of b.matches){if(!id(m.id)||seen.has(m.id)||!['replay','imported'].includes(m.origin)||!(m.startedAt===null||date(m.startedAt))||!count(m.opened)||!count(m.destroyed)||!count(m.team)||typeof m.mode!=='string'||m.mode.length>100)return J({error:'Invalid or duplicate match'},400);seen.add(m.id);matches.push({id:m.id,origin:m.origin,startedAt:m.startedAt,mode:m.mode,opened:m.opened,destroyed:m.destroyed,team:m.team});}
   for(const e of b.entries){if(!id(e.id)||ids.has(e.id)||!date(e.at)||!count(e.amount))return J({error:'Invalid or duplicate manual entry'},400);ids.add(e.id);entries.push({id:e.id,at:e.at,amount:e.amount});}
-  const payload=JSON.stringify({matches,entries}),revision=await hash(payload);
+  // Optional (app 2.5.3+): the app's "Chests before the counter" estimate for this profile.
+  const initial=b.initial===undefined||b.initial===null?0:b.initial;if(!count(initial))return J({error:'Invalid starting estimate'},400);
+  const payload=JSON.stringify({matches,entries,initial}),revision=await hash(payload);
   const r=await env.DB.prepare("INSERT INTO personal_snapshots(profile_id,source,scope,payload,revision) VALUES(?,?,?,?,?) ON CONFLICT(profile_id) DO UPDATE SET payload=excluded.payload,revision=excluded.revision,updated_at=datetime('now') WHERE personal_snapshots.source=excluded.source AND personal_snapshots.scope=excluded.scope").bind(pc.profile_id,b.source,b.scope,payload,revision).run();
   if(!r.meta.changes)return J({error:'Another PC or app profile is the personal-history source. Clear the personal snapshot in My stats before changing source. Competitive data is unaffected.'},409);
   return J({saved:true,revision});
@@ -41,7 +43,8 @@ export async function handlePersonal(req,env,url){
   const day=(at,n)=>{if(at){const d=new Date(at).toISOString().slice(0,10);daily[d]=(daily[d]||0)+n;}};
   for(const m of data.matches){const n=m.opened+m.destroyed;if(m.origin==='replay')replay+=n;else imported+=n;team+=m.team;day(m.startedAt,n+m.team);}
   for(const e of data.entries){manual+=e.amount;day(e.at,e.amount);}
-  return J({available:true,revision:row.revision,updatedAt:row.updated_at,replay,imported,team,manual,total:replay+imported+team+manual,matches:data.matches.length,daily});
+  const initial=count(data.initial)?data.initial:0;
+  return J({available:true,revision:row.revision,updatedAt:row.updated_at,replay,imported,team,manual,initial,total:replay+imported+team+manual+initial,matches:data.matches.length,daily});
  }
  if(url.pathname==='/api/personal/matches'){
   const offset=Number(url.searchParams.get('offset')||0);if(!Number.isSafeInteger(offset)||offset<0)return J({error:'Invalid page'},400);

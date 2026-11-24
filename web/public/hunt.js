@@ -31,6 +31,8 @@ const CSS = `
 .hunt .wl h3{font-size:30px;line-height:1}
 .hunt .wl .hsub{color:var(--muted);font-size:12.5px;font-weight:700;margin-top:4px}
 .hunt .wl .hnow{display:inline-block;margin-top:8px;padding:2px 9px;border-radius:999px;border:1px solid rgba(246,190,70,.6);background:rgba(246,190,70,.18);color:#f6be46;font-size:10.5px;font-weight:800;letter-spacing:.12em}
+.hunt .hgold{margin:0 0 14px;padding:10px 14px;border-radius:14px;border:1px solid rgba(246,190,70,.55);background:linear-gradient(90deg,rgba(246,190,70,.2),rgba(246,190,70,.05));color:#f6d68a;font-size:13px;font-weight:700}
+.hunt .hgold b{color:#f6be46;text-transform:uppercase;letter-spacing:.06em;margin-right:6px}
 .hunt .hweek.cur .wl h3{color:#f6be46}
 .hunt .hweek.future{opacity:.55}
 .hunt .tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
@@ -164,10 +166,13 @@ export async function initHunt(root) {
     const cur = weeks.findLast(w => w.s <= now && now < w.s + WEEK_MS) || null;
     const end = cur ? cur.s + WEEK_MS : null;
     const pirate = data.pirate || { name: 'Pirate Shop Token', image: 'pirate-shop-access.png' };
+    // Golden Week (Nov 28 14:00 UTC to the Dec 5 end event): every week's rewards can drop again.
+    const golden = now >= Date.parse('2026-11-28T14:00:00Z') && now < Date.parse('2026-12-05T19:00:00Z');
     root.innerHTML =
       `<div class='hhead'><div><div class='lbl eyebrow'>Treasure Hunt</div><h2 class='ht'>Weekly rewards</h2>` +
       `<div class='muted' style='font-size:12.5px;font-weight:700'>${cur ? `<span>${esc(`Week ${cur.week} ends ${day(end)}`)}</span> · <span>Resets in</span> <span class='num hcd'></span>` : '<span>No Treasure Hunt week is live right now.</span>'}</div></div>` +
       `<div class='hcount'><div class='lbl'>Found</div><div class='hbig num'><b>0</b><i>/</i><span class='tot'>0</span></div></div></div>` +
+      (golden ? `<div class='hgold'><b>Golden Week</b> <span>Every treasure reward is back, so items from earlier weeks can still drop.</span></div>` : '') +
       `<button type='button' class='pirate${owned(PIRATE) ? ' is-found' : ''}' aria-pressed='${owned(PIRATE)}'><img src='/rewards/${esc(pirate.image)}' alt='' width='50' height='50'><span><span class='pt'>Pirate Shop Token</span><br><span class='ps'>14 days of free item shops - found any week</span></span><span class='pst'>${owned(PIRATE) ? 'Found it' : 'Not found'}</span></button>` +
       weeks.map((w, i) => {
         const future = w.s > now, isCur = w === cur;

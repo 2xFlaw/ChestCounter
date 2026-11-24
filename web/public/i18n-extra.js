@@ -1241,5 +1241,104 @@ export const EXTRA=[
  pl:"Kliknij, aby oznaczyć jako nieznalezione",
  tr:"Bulunmadı olarak işaretlemek için tıkla",
  ja:"クリックで未発見に戻す"
+}],
+["Golden Week",{
+ es:"Semana Dorada",
+ pt:"Semana Dourada",
+ ru:"Золотая неделя",
+ fr:"Semaine dorée",
+ de:"Goldene Woche",
+ it:"Settimana d'oro",
+ pl:"Złoty tydzień",
+ tr:"Altın Hafta",
+ ja:"ゴールデンウィーク"
+}],
+["Live now",{
+ es:"En curso",
+ pt:"Ao vivo agora",
+ ru:"Идёт сейчас",
+ fr:"En cours",
+ de:"Jetzt live",
+ it:"In corso",
+ pl:"Trwa teraz",
+ tr:"Şu an aktif",
+ ja:"開催中"
+}],
+["Starts 28 November",{
+ es:"Empieza el 28 de noviembre",
+ pt:"Começa em 28 de novembro",
+ ru:"Начнётся 28 ноября",
+ fr:"Commence le 28 novembre",
+ de:"Startet am 28. November",
+ it:"Inizia il 28 novembre",
+ pl:"Startuje 28 listopada",
+ tr:"28 Kasım'da başlıyor",
+ ja:"11月28日開始"
+}],
+["Every treasure reward is back",{
+ es:"Vuelven todas las recompensas del tesoro",
+ pt:"Todas as recompensas do tesouro voltaram",
+ ru:"Все награды сокровищ вернулись",
+ fr:"Toutes les récompenses au trésor sont de retour",
+ de:"Alle Schatzbelohnungen sind zurück",
+ it:"Tornano tutte le ricompense del tesoro",
+ pl:"Wracają wszystkie nagrody ze skarbów",
+ tr:"Tüm hazine ödülleri geri döndü",
+ ja:"すべての宝の報酬が復活"
+}],
+["Gold Outfit 2x (1 in 781,250)",{
+ es:"Atuendo de oro x2 (1 de 781.250)",
+ pt:"Traje de ouro 2x (1 em 781.250)",
+ ru:"Золотой костюм x2 (1 из 781 250)",
+ fr:"Tenue en or x2 (1 sur 781 250)",
+ de:"Gold-Outfit 2x (1 zu 781.250)",
+ it:"Costume d'oro 2x (1 su 781.250)",
+ pl:"Złoty strój 2x (1 na 781 250)",
+ tr:"Altın Kıyafet 2x (781.250'de 1)",
+ ja:"ゴールドコスチューム 2倍 (781,250分の1)"
+}],
+["Gold Vehicle 5x (1 in 1,563)",{
+ es:"Vehículo de oro x5 (1 de 1.563)",
+ pt:"Veículo de ouro 5x (1 em 1.563)",
+ ru:"Золотой транспорт x5 (1 из 1 563)",
+ fr:"Véhicule en or x5 (1 sur 1 563)",
+ de:"Gold-Fahrzeug 5x (1 zu 1.563)",
+ it:"Veicolo d'oro 5x (1 su 1.563)",
+ pl:"Złoty pojazd 5x (1 na 1563)",
+ tr:"Altın Araç 5x (1.563'te 1)",
+ ja:"ゴールドビークル 5倍 (1,563分の1)"
+}],
+["2x Sprite Dust and Sprite XP",{
+ es:"Polvo de sprite y PE de sprite x2",
+ pt:"Pó de Sprite e XP de Sprite em dobro",
+ ru:"x2 пыль и опыт спрайтов",
+ fr:"Poussière et XP de sprite x2",
+ de:"2x Sprite-Staub und Sprite-EP",
+ it:"Polvere e PE degli sprite 2x",
+ pl:"2x pył i PD sprite'ów",
+ tr:"2x Sprite Tozu ve Sprite TP",
+ ja:"スプライトダスト&スプライトXP 2倍"
+}],
+["The Golden Week Treasure Hour on 28 November makes the Gold Outfit 15x (1 in 104,167) and vehicles 10x (1 in 781). These are already counted in your odds.",{
+ es:"La Hora del Tesoro de la Semana Dorada del 28 de noviembre hace el atuendo de oro x15 (1 de 104.167) y los vehículos x10 (1 de 781). Ya se incluye en tus probabilidades.",
+ pt:"A Hora do Tesouro da Semana Dourada em 28 de novembro deixa o traje de ouro 15x (1 em 104.167) e os veículos 10x (1 em 781). Isso já está nas suas chances.",
+ ru:"Час сокровищ Золотой недели 28 ноября даёт золотой костюм x15 (1 из 104 167) и транспорт x10 (1 из 781). Это уже учтено в ваших шансах.",
+ fr:"L'Heure du trésor de la Semaine dorée du 28 novembre rend la tenue en or x15 (1 sur 104 167) et les véhicules x10 (1 sur 781). C'est déjà compté dans vos chances.",
+ de:"Die Schatzstunde der Goldenen Woche am 28. November macht das Gold-Outfit 15x (1 zu 104.167) und Fahrzeuge 10x (1 zu 781). Das ist in deinen Chancen schon eingerechnet.",
+ it:"L'Ora del tesoro della Settimana d'oro del 28 novembre rende il costume d'oro 15x (1 su 104.167) e i veicoli 10x (1 su 781). È già incluso nelle tue probabilità.",
+ pl:"Godzina skarbów Złotego tygodnia 28 listopada daje złoty strój 15x (1 na 104 167) i pojazdy 10x (1 na 781). Jest to już wliczone w twoje szanse.",
+ tr:"28 Kasım'daki Altın Hafta Hazine Saati Altın Kıyafeti 15x (104.167'de 1), araçları 10x (781'de 1) yapar. Bu, şanslarına zaten dahil.",
+ ja:"11月28日のゴールデンウィークのトレジャーアワーではゴールドコスチュームが15倍 (104,167分の1)、ビークルが10倍 (781分の1) になります。これはすでに確率に含まれています。"
+}],
+["Every treasure reward is back, so items from earlier weeks can still drop.",{
+ es:"Vuelven todas las recompensas del tesoro, así que los objetos de semanas anteriores aún pueden salir.",
+ pt:"Todas as recompensas do tesouro voltaram, então itens de semanas anteriores ainda podem cair.",
+ ru:"Все награды сокровищ вернулись, так что предметы прошлых недель снова могут выпасть.",
+ fr:"Toutes les récompenses au trésor sont de retour : les objets des semaines précédentes peuvent encore tomber.",
+ de:"Alle Schatzbelohnungen sind zurück, also können Gegenstände aus früheren Wochen wieder droppen.",
+ it:"Tornano tutte le ricompense del tesoro, quindi gli oggetti delle settimane precedenti possono ancora uscire.",
+ pl:"Wracają wszystkie nagrody ze skarbów, więc przedmioty z wcześniejszych tygodni wciąż mogą wypaść.",
+ tr:"Tüm hazine ödülleri geri döndü, yani önceki haftaların eşyaları hâlâ düşebilir.",
+ ja:"すべての宝の報酬が復活したので、前の週のアイテムもまだ手に入ります。"
 }]
 ];

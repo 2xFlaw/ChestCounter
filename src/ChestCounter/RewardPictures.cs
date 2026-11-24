@@ -41,6 +41,20 @@ public static class RewardPictures
             }
         }
 
+        // This week's Treasure Hunt picture for the slot (the rewards folder sits inside the app's data folder).
+        try
+        {
+            var parent = Path.GetDirectoryName(Path.GetFullPath(folder));
+            if (parent != null && TreasureHunt.CurrentBytes(parent, key) is { } current)
+            {
+                return Render(current, size, radius);
+            }
+        }
+        catch
+        {
+            // fall back to the built-in slot picture
+        }
+
         try
         {
             var assembly = typeof(RewardPictures).Assembly;

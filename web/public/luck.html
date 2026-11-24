@@ -30,6 +30,9 @@
 @keyframes draw{to{stroke-dashoffset:0}}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 @media(prefers-reduced-motion:reduce){.proj .line,.proj .line.hot,.card.goal,#planner,#rows{animation:none;stroke-dashoffset:0}.fill,.bar i{transition:none}}
+#gw .gwb{border-color:rgba(246,190,70,.5);background:linear-gradient(120deg,rgba(246,190,70,.16),rgba(246,190,70,.03) 60%)}
+#gw .gwt{display:flex;align-items:center;gap:10px;margin-bottom:10px}#gw .gwt .lbl{color:#f6be46;font-size:13px}
+#gw .gwl{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}#gw .gwl span{padding:5px 11px;border-radius:999px;background:rgba(246,190,70,.12);border:1px solid rgba(246,190,70,.35);color:#f6d68a;font-weight:700;font-size:12.5px}
 </style>
 </head>
 <body>
@@ -39,6 +42,7 @@
   <div class='resetbox'><div class='lbl'>Weekly reset in</div><div class='big num' id='resetCd'>--</div><div class='muted' style='font-size:12.5px'>Every Sunday at 14:00 GMT</div></div>
 </div></header>
 
+<div id='gw'></div>
 <section><div class='sh'><h2>Your goal</h2><span class='meta'>Defaults to the prize you are closest to. Click a prize below to aim for it.</span></div><div class='card goal' id='goal'></div></section>
 <section><div class='sh'><h2>Projection</h2><span class='meta' id='planMeta'>What more chests are worth for your goal.</span></div><div class='card' id='planner'></div></section>
 <section><div class='sh'><h2>Odds this week</h2><span class='meta' id='oddsMeta'></span></div><div class='card' id='rows' style='padding:8px'></div></section>
@@ -53,7 +57,8 @@ nav('luck');
 startResetClock($('#resetCd'));
 const OPTIONS = [25, 50, 100, 200, 400];
 let pick = localStorage.getItem('cc.pick') || null;
-let plan = Number(localStorage.getItem('cc.plan')) || 100;
+// 0 = projection off (the default), so the page opens on your real odds. Click a number to project, click it again to clear.
+let plan = OPTIONS.includes(Number(localStorage.getItem('cc.plan2'))) ? Number(localStorage.getItem('cc.plan2')) : 0;
 
 await api('/api/profile', { method: 'POST' });
 const L = await api('/api/luck');
@@ -62,8 +67,20 @@ const W = L.windows.map(w => ({ ...w, s: Date.parse(w.start_utc), e: Date.parse(
 const live = W.find(w => now >= w.s && now < w.e) || null;
 const next = W.find(w => w.s > now) || null;
 const FIELD = { 'gold-outfit': 'gold', 'pirate-shop-access': 'shop', 'vehicle-decal': 'vehicle' };
-const boostOf = (w, k) => (!w || !w.confirmed || !FIELD[k]) ? 1 : (w[FIELD[k]] || 1);
+// Golden Week multiplies the normal odds (Gold Outfit 2x, Gold Vehicle 5x). The server already shows its odds as the
+// normal rate during it, so a Treasure Hour boost (announced against the old normal odds) is shown relative to that.
+const GW = L.goldenWeek || null;
+const gwS = GW ? Date.parse(GW.start) : NaN, gwE = GW ? Date.parse(GW.end) : NaN;
+const goldenAt = (t, k) => (GW && t >= gwS && t < gwE ? GW.boosts?.[k] || 1 : 1);
+const thBoost = (w, k) => (!w || !w.confirmed || !FIELD[k]) ? 1 : (w[FIELD[k]] || 1);
+const boostOf = (w, k) => { const g = goldenAt(now, k); const b = w && w.confirmed ? thBoost(w, k) : g; return Math.round(b / g * 100) / 100; };
 
+if (GW && now < gwE && now >= gwS - 14 * 864e5) {
+  const on = now >= gwS;
+  $('#gw').innerHTML = `<section><div class='card gwb'><div class='gwt'><span class='lbl'>Golden Week</span><span class='chip amber'>${on ? 'Live now' : 'Starts 28 November'}</span></div>` +
+    `<div class='gwl'><span>Every treasure reward is back</span><span>Gold Outfit 2x (1 in 781,250)</span><span>Gold Vehicle 5x (1 in 1,563)</span><span>2x Sprite Dust and Sprite XP</span></div>` +
+    `<div class='muted'>The Golden Week Treasure Hour on 28 November makes the Gold Outfit 15x (1 in 104,167) and vehicles 10x (1 in 781). These are already counted in your odds.</div></div></section>`;
+}
 $('#chips').innerHTML = `<span class='chip'>Profile ${esc(L.profile)}</span><span class='chip mute'>${n0(L.chests)} chests this week</span>` + (live ? `<span class='chip amber'>Treasure Hour live</span>` : '') + (W.length ? '' : `<span class='chip mute'>No Treasure Hour schedule loaded</span>`);
 
 function chart(goal, b) {
@@ -106,11 +123,15 @@ function render() {
   const b = boostOf(projectionWindow, goal.key);
   const nn = after(goal.chance, goal.den, 1, plan);
   const bb = after(goal.chance, goal.den, b, plan);
-  $('#planMeta').textContent = live ? 'Projection for the live Treasure Hour window.' : next ? `Projection including the next Treasure Hour window, starting ${new Date(next.s).toLocaleString()}.` : W.length ? 'No upcoming Treasure Hour window. Projection at normal odds.' : 'No Treasure Hour schedule has been loaded on the website yet. Projection at normal odds.';
-  $('#planner').innerHTML = `<div class='lbl'>If you open this many chests</div><div class='chests'>${OPTIONS.map(n => `<button class='btn ${n === plan ? 'on' : ''}' data-n='${n}' type='button'>${n}</button>`).join('')}</div>` +
-    `<div style='display:flex;flex-wrap:wrap;gap:40px'><div><div class='lbl'>Normal rate</div><div class='pv num'>${pct(nn)}</div><div class='muted'>+${pct(nn - goal.chance)}</div></div>` +
-    (b > 1 ? `<div><div class='lbl' style='color:var(--amber)'>Treasure Hour ${b}x</div><div class='pv hot num'>${pct(bb)}</div><div style='color:var(--amber)'>+${pct(bb - goal.chance)}</div></div>` : `<div class='muted' style='align-self:center'>${next || live ? 'No confirmed boost for this prize in the current or next window.' : 'No Treasure Hour boost to apply.'}</div>`) + `</div>` + chart(goal, b);
-  document.querySelectorAll('#planner [data-n]').forEach(el => { el.onclick = () => { plan = Number(el.dataset.n); localStorage.setItem('cc.plan', plan); render(); }; });
+  $('#planMeta').textContent = !plan ? 'Pick a number of chests to see what they would add. Click it again to go back to your current odds.' : live ? 'Projection for the live Treasure Hour window.' : next ? `Projection including the next Treasure Hour window, starting ${new Date(next.s).toLocaleString()}.` : W.length ? 'No upcoming Treasure Hour window. Projection at normal odds.' : 'No Treasure Hour schedule has been loaded on the website yet. Projection at normal odds.';
+  const chips = `<div class='lbl'>If you open this many chests</div><div class='chests'>${OPTIONS.map(n => `<button class='btn ${n === plan ? 'on' : ''}' data-n='${n}' type='button' aria-pressed='${n === plan}'>${n}</button>`).join('')}</div>`;
+  $('#planner').innerHTML = chips + (!plan
+    ? `<div style='display:flex;flex-wrap:wrap;gap:40px;align-items:flex-end'><div><div class='lbl'>Your chance now</div><div class='pv num'>${pct(goal.chance)}</div><div class='muted'>Off: showing your current odds</div></div>` +
+      (b > 1 ? `<div class='muted' style='align-self:center;color:var(--amber)'>Treasure Hour ${b}x: boosted chests count automatically</div>` : '') + `</div>`
+    : `<div style='display:flex;flex-wrap:wrap;gap:40px'><div><div class='lbl'>Normal rate</div><div class='pv num'>${pct(nn)}</div><div class='muted'>+${pct(nn - goal.chance)}</div></div>` +
+      (b > 1 ? `<div><div class='lbl' style='color:var(--amber)'>Treasure Hour ${b}x</div><div class='pv hot num'>${pct(bb)}</div><div style='color:var(--amber)'>+${pct(bb - goal.chance)}</div></div>` : `<div class='muted' style='align-self:center'>${next || live ? 'No confirmed boost for this prize in the current or next window.' : 'No Treasure Hour boost to apply.'}</div>`) + `</div>` + chart(goal, b) +
+      `<div class='muted' style='margin-top:10px;font-size:12.5px'>Click ${plan} again to go back to your current odds.</div>`);
+  document.querySelectorAll('#planner [data-n]').forEach(el => { el.onclick = () => { const n = Number(el.dataset.n); plan = plan === n ? 0 : n; if (plan) localStorage.setItem('cc.plan2', plan); else localStorage.removeItem('cc.plan2'); render(); }; });
 
   $('#oddsMeta').textContent = `${n0(L.chests)} chests since the last reset`;
   $('#rows').innerHTML = prizes.map(p => `<div class='prow ${p.key === goal.key ? 'sel' : ''}' data-k='${esc(p.key)}'><div><div class='nm'>${esc(p.name)}</div><div class='sb'>1 in ${n0(p.den)} per chest${p.allTime ? ` &middot; <span>${n0(p.allTimeChests)} chests all time</span>` : ''}${p.boost > 1 ? ` &middot; <span style='color:var(--amber)'>${p.boost}x now</span>` : ''}</div></div><div class='bar'><i data-w='${Math.max(p.chance > 0 ? 2 : 0, Math.min(100, p.chance * 100))}%'></i></div><div class='pc num'>${pct(p.chance)}</div></div>`).join('');

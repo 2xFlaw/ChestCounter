@@ -76,6 +76,29 @@ public sealed class Monitor
     private DateTime _nextScan = DateTime.UtcNow;
     private volatile bool _fortniteRunning;
     private DateTime _nextFortniteCheck;
+    private DateTime _nextHeartbeat;
+    private (DateTime Stamp, long Bytes) _ledgerSeen = (DateTime.MinValue, -1);
+
+    /// <summary>True when 2xflaw-ledger.json (manual additions, imported replays) changed since the last look.</summary>
+    private bool LedgerChanged()
+    {
+        try
+        {
+            var info = new FileInfo(Path.Combine(_store.Folder, "2xflaw-ledger.json"));
+            var now = info.Exists ? (info.LastWriteTimeUtc, info.Length) : (DateTime.MinValue, -1L);
+            if (now == _ledgerSeen)
+            {
+                return false;
+            }
+            var first = _ledgerSeen.Bytes == -1 && _ledgerSeen.Stamp == DateTime.MinValue;
+            _ledgerSeen = now;
+            return !first;
+        }
+        catch
+        {
+            return false;
+        }
+    }
     private volatile UpdateInfo? _update;
     private bool _updateAnnounced;
     private volatile bool _installing;
@@ -460,26 +483,44 @@ public sealed class Monitor
                 ErrorLog.Write("Vigilancia", ex);
             }
 
-            if (DateTime.UtcNow >= _nextFortniteCheck)
+            // Everything below is guarded too: one failure (a locked file, a bad update check) must never stop
+            // this thread, or the overlay and the app would freeze on old numbers until a restart.
+            try
             {
-                _nextFortniteCheck = DateTime.UtcNow.AddSeconds(5);
-                var running = FortniteWatch.IsFortniteRunning();
-                if (running != _fortniteRunning)
+                if (DateTime.UtcNow >= _nextFortniteCheck)
                 {
-                    _fortniteRunning = running;
+                    _nextFortniteCheck = DateTime.UtcNow.AddSeconds(5);
+                    var running = FortniteWatch.IsFortniteRunning();
+                    if (running != _fortniteRunning)
+                    {
+                        _fortniteRunning = running;
+                        changed = true;
+                    }
+                }
+                changed |= CheckUpdate();
+                // Manual additions and imports live in their own file: refresh when it changes.
+                changed |= LedgerChanged();
+                // Safety net: refresh every 30 s anyway (day and week rollovers, edits made outside the app).
+                if (DateTime.UtcNow >= _nextHeartbeat)
+                {
                     changed = true;
                 }
+                if (_reportRequested)
+                {
+                    _reportRequested = false;
+                    ReportWriter.WriteAll(_store, _config, _data);
+                }
+                if (changed || _publishRequested)
+                {
+                    _publishRequested = false;
+                    _nextHeartbeat = DateTime.UtcNow.AddSeconds(30);
+                    Publish();
+                }
             }
-            changed |= CheckUpdate();
-            if (_reportRequested)
+            catch (Exception ex)
             {
-                _reportRequested = false;
-                ReportWriter.WriteAll(_store, _config, _data);
-            }
-            if (changed || _publishRequested)
-            {
-                _publishRequested = false;
-                Publish();
+                ErrorLog.Write("Overlay update", ex);
+                _nextHeartbeat = DateTime.UtcNow.AddSeconds(5);
             }
 
             // Espera a que pase algo (cambio de archivo, ajuste) o un segundo.

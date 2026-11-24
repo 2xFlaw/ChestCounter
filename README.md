@@ -143,6 +143,8 @@ The website lives in [`web/`](web/README.md): Cloudflare Workers, D1 and static 
 
 [MIT](LICENSE). Replay parsing is based on [FortniteReplayDecompressor](https://github.com/Shiqan/FortniteReplayDecompressor) by Shiqan (MIT), lightly modified: see [`lib/PATCHES.md`](lib/PATCHES.md).
 
+The colour emoji in the app come from [Noto Emoji](https://github.com/googlefonts/noto-emoji) by Google ([Apache License 2.0](https://www.apache.org/licenses/LICENSE-2.0)).
+
 Not affiliated with Epic Games, content is not official or endorsed by Epic Games in any way.
 
 Made by 2xFlaw.

@@ -96,6 +96,13 @@ internal sealed class TreasureHourStrip : UserControl
         }
         else if(next!=null)text=ToolText.F("Next Treasure Hour: {0:ddd dd MMM HH:mm} local",next.StartUtc.ToLocalTime())+"\n"+ToolText.T("Notifications are optional. Uses your local odds schedule.");
         else text=odds==null?ToolText.T("Treasure Hour schedule unavailable")+"\n"+ToolText.T("Check your local 2xflaw-odds.json file."):ToolText.T("No upcoming Treasure Hours")+"\n"+ToolText.T("Notifications are optional. Uses your local odds schedule.");
+        // Golden Week (announced): replaces the second line while no Treasure Hour is live.
+        if(live==null)
+        {
+            var first=text.Split('\n')[0];
+            if(TreasureHours.IsGoldenWeek(now))text=first+"\n"+ToolText.T("GOLDEN WEEK - every treasure reward is back \u00b7 Gold Outfit 2x \u00b7 Gold Vehicle 5x \u00b7 2x Sprite Dust & XP");
+            else if(now<TreasureHours.GoldenWeekStartUtc&&TreasureHours.GoldenWeekStartUtc-now<TimeSpan.FromDays(14))text=first+"\n"+ToolText.F("Golden Week starts {0:ddd dd MMM HH:mm} local: every treasure reward returns, Gold Outfit 2x, Gold Vehicle 5x",TreasureHours.GoldenWeekStartUtc.ToLocalTime());
+        }
         if(status.Text!=text)status.Text=text;
         pulse=!pulse;dot.ForeColor=confirmed?(animations()&&pulse?Color.FromArgb(170,119,55):Theme.Amber):Theme.Muted;
         status.ForeColor=confirmed?Theme.Amber:Theme.Muted;

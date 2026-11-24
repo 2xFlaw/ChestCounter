@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Drawing.Imaging;
 using System.Drawing.Text;
@@ -390,7 +390,26 @@ internal sealed class HuntBoard : Control
     }
 
     private float RowHeight(float tile) => tile + 52 * S;
-    private float BannerTop => 128 * S;
+    // Header layout comes from the real font heights: Anton (or Burbank, when installed) is much taller than its point size,
+    // so fixed boxes clipped the bottom of "Weekly rewards" and of the found count on some PCs.
+    private float _titleTop, _titleH, _subTop, _subH, _countTop, _countH, _weekH = 36, _bannerTop = 128;
+
+    private void MeasureHeader()
+    {
+        var s = S;
+        const TextFormatFlags flags = TextFormatFlags.NoPadding | TextFormatFlags.SingleLine;
+        float H(string text, Font font) => TextRenderer.MeasureText(text, font, new Size(int.MaxValue, int.MaxValue), flags).Height;
+        _titleTop = 40 * s;
+        _titleH = Math.Max(44 * s, H(AppText.T("Weekly rewards") + "gy", _title)) + 4 * s;
+        _subTop = _titleTop + _titleH + 2 * s;
+        _subH = Math.Max(18 * s, H("Wg", _smallBold) + 2 * s);
+        _countTop = 42 * s;
+        _countH = Math.Max(52 * s, H("0123456789/", _countBig)) + 4 * s;
+        _weekH = Math.Max(30 * s, H("WEEK 5", _weekFont) + 2 * s);
+        _bannerTop = Math.Max(128 * s, Math.Max(_subTop + _subH, _countTop + _countH) + 14 * s);
+    }
+
+    private float BannerTop => _bannerTop;
     private float BannerHeight => 76 * S;
     private float RowsTop => BannerTop + BannerHeight + 26 * S;
 
@@ -401,6 +420,7 @@ internal sealed class HuntBoard : Control
         {
             return 0;
         }
+        MeasureHeader();
         var tile = TileSize(width);
         var left = Pad + LabelWidth(width);
         var y = RowsTop;
@@ -623,7 +643,7 @@ internal sealed class HuntBoard : Control
         // header
         var found = _tiles.Count(t => t.Owned);
         Text(g, HuntText.T("TREASURE HUNT"), _eyebrow, Gold, new RectangleF(Pad, 22 * s, 400 * s, 18 * s), TextFormatFlags.Left);
-        Text(g, AppText.T("Weekly rewards"), _title, Theme.Ink, new RectangleF(Pad, 40 * s, Width - Pad * 2 - 200 * s, 52 * s), TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+        Text(g, AppText.T("Weekly rewards"), _title, Theme.Ink, new RectangleF(Pad, _titleTop, Width - Pad * 2 - 260 * s, _titleH), TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
         var current = Weeks.LastOrDefault(w => w.StartUtc <= now && now < w.EndUtc);
         var left = WeeklyReset.Remaining(now);
         if (left < TimeSpan.Zero)
@@ -632,14 +652,20 @@ internal sealed class HuntBoard : Control
         }
         var reset = ToolText.F("Resets in {0}d {1:00}h {2:00}m {3:00}s", left.Days, left.Hours, left.Minutes, left.Seconds);
         var line = current != null ? HuntText.F("Week {0} ends {1:ddd d MMM}", current.Number, current.EndUtc.ToLocalTime()) + "   \u00b7   " + reset : reset;
-        Text(g, line, _smallBold, Theme.Muted, new RectangleF(Pad, 96 * s, Width - Pad * 2 - 200 * s, 20 * s), TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+        // Golden Week brings back every week's rewards, so say so in gold in front of the week line.
+        var golden = TreasureHours.IsGoldenWeek(now);
+        if (golden)
+        {
+            line = HuntText.T("GOLDEN WEEK: every treasure reward is back") + "   \u00b7   " + line;
+        }
+        Text(g, line, _smallBold, golden ? Gold : Theme.Muted, new RectangleF(Pad, _subTop, Width - Pad * 2 - 260 * s, _subH), TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
 
         var total = _tiles.Count;
         var right = new RectangleF(Width - Pad - 220 * s, 24 * s, 220 * s, 18 * s);
         Text(g, HuntText.T("FOUND"), _eyebrow, Theme.Muted, right, TextFormatFlags.Right);
         var totalText = " / " + total.ToString(L.Culture);
         var totalSize = TextRenderer.MeasureText(g, totalText, _countBig, Size.Empty, TextFormatFlags.NoPadding);
-        var countBox = new RectangleF(Width - Pad - 300 * s, 42 * s, 300 * s, 60 * s);
+        var countBox = new RectangleF(Width - Pad - 300 * s, _countTop, 300 * s, _countH);
         Text(g, totalText, _countBig, Theme.Ink, countBox, TextFormatFlags.Right);
         Text(g, found.ToString(L.Culture), _countBig, Theme.Mint, new RectangleF(countBox.X, countBox.Y, countBox.Width - totalSize.Width, countBox.Height), TextFormatFlags.Right);
 
@@ -657,15 +683,15 @@ internal sealed class HuntBoard : Control
             var isCurrent = week == current;
             var future = week.StartUtc > now;
             var labelColour = isCurrent ? Gold : future ? Theme.Muted : Theme.Ink;
-            var labelTop = top + row[0].Box.Height / 2 - 30 * s;
-            Text(g, HuntText.F("WEEK {0}", week.Number), _weekFont, labelColour, new RectangleF(Pad, labelTop, LabelWidth(Width) - 8 * s, 36 * s), TextFormatFlags.Left);
+            var labelTop = top + row[0].Box.Height / 2 - (_weekH + 18 * s) / 2 - 6 * s;
+            Text(g, HuntText.F("WEEK {0}", week.Number), _weekFont, labelColour, new RectangleF(Pad, labelTop, LabelWidth(Width) - 8 * s, _weekH), TextFormatFlags.Left);
             var sub = future ? HuntText.F("Starts {0:ddd d MMM}", week.StartUtc.ToLocalTime()) : HuntText.F("{0}/{1} found", row.Count(t => t.Owned), row.Count);
-            Text(g, sub, _smallBold, Theme.Muted, new RectangleF(Pad, labelTop + 36 * s, LabelWidth(Width) - 8 * s, 18 * s), TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+            Text(g, sub, _smallBold, Theme.Muted, new RectangleF(Pad, labelTop + _weekH, LabelWidth(Width) - 8 * s, 18 * s), TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
             if (isCurrent)
             {
                 var chip = HuntText.T("THIS WEEK");
                 var size = TextRenderer.MeasureText(g, chip, _chip, Size.Empty, TextFormatFlags.NoPadding);
-                var r = new RectangleF(Pad, labelTop + 58 * s, size.Width + 14 * s, 18 * s);
+                var r = new RectangleF(Pad, labelTop + _weekH + 22 * s, size.Width + 14 * s, 18 * s);
                 using (var path = Shape.Rounded(r, 9 * s))
                 using (var fill = new SolidBrush(Color.FromArgb(46, Gold)))
                 using (var pen = new Pen(Color.FromArgb(150, Gold), 1f))
