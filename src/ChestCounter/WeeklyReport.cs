@@ -128,7 +128,7 @@ public static class WeeklyReport
         }
     }
 
-    /// <summary>Anton and Inter (the fonts embedded in the exe) as web fonts, so the page looks like the app.</summary>
+    /// <summary>Anton and Onest (the fonts embedded in the exe) as web fonts, so the page looks like the app.</summary>
     internal static string FontFaces()
     {
         var assembly = typeof(WeeklyReport).Assembly;
@@ -143,10 +143,12 @@ public static class WeeklyReport
                 family = "CC Display";
                 weight = 400;
             }
-            else if (name.Contains("Inter", StringComparison.OrdinalIgnoreCase))
+            else if (name.Contains("Onest", StringComparison.OrdinalIgnoreCase))
             {
+                // Onest Medium is the normal text weight (easier to read on the dark background).
                 family = "CC Inter";
-                weight = name.Contains("Bold", StringComparison.OrdinalIgnoreCase) ? 700 : 400;
+                weight = name.Contains("SemiBold", StringComparison.OrdinalIgnoreCase) ? 600
+                    : name.Contains("Bold", StringComparison.OrdinalIgnoreCase) ? 700 : 400;
             }
             else
             {

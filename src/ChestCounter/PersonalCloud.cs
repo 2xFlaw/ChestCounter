@@ -3,7 +3,6 @@ using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
-using System.Windows.Forms;
 namespace ChestCounter;
 
 // Separate, explicitly enabled personal snapshots. They never enter the leaderboard tables.
@@ -16,7 +15,6 @@ public static class PersonalCloud
     private static readonly HttpClient Http=new(){Timeout=TimeSpan.FromSeconds(30)};
     private static readonly JsonSerializerOptions Json=new(){PropertyNamingPolicy=JsonNamingPolicy.CamelCase};
     private static System.Threading.Timer? timer;
-    private static bool installed;
     private static string Hash(string value)=>Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value))).ToLowerInvariant();
     public static void Start(string path)
     {
@@ -24,33 +22,23 @@ public static class PersonalCloud
         folder=path;
         try {options=System.Text.Json.JsonSerializer.Deserialize<Options>(File.ReadAllText(Path.Combine(folder,"2xflaw-personal-cloud.json")))??new();}catch{options=new();}
         timer=new System.Threading.Timer(async _=>{await Sync(false);},null,TimeSpan.FromSeconds(15),TimeSpan.FromMinutes(1));
-        if(installed||!OperatingSystem.IsWindows())return;
-        installed=true;
-        Application.Idle+=(_,_)=>
-        {
-            foreach(var form in Application.OpenForms.OfType<OnlineForm>().ToArray())
-            {
-                var panel=form.Controls.OfType<FlowLayoutPanel>().FirstOrDefault();
-                if(panel==null||panel.Controls.OfType<Button>().Any(b=>Equals(b.Tag,"personal-cloud")))continue;
-                panel.AutoScroll=true;
-                var button=new Button{AutoSize=true,Tag="personal-cloud",Text="Sync my full personal history (including manual additions)"};
-                var stop=new Button{AutoSize=true,Text="Stop syncing personal history"};
-                var status=new Label{AutoSize=false,Width=440,Height=60,Text="Optional. Manual entries and imported replays are kept out of leaderboard rankings. Syncing makes this PC the source of your personal history."};
-                panel.Controls.Add(button);panel.Controls.Add(stop);panel.Controls.Add(status);
-                panel.Controls.SetChildIndex(button,0);panel.Controls.SetChildIndex(stop,1);panel.Controls.SetChildIndex(status,2);
-                button.Click+=async(_,_)=>
-                {
-                    var s=OnlineSync.Load();
-                    if(string.IsNullOrEmpty(s.Token)||!s.Enabled){status.Text="Link this PC and turn on sync first.";return;}
-                    if(MessageBox.Show(form,"Upload all your eligible replay history, imported replay statistics and manual chest amounts? Notes, names, Epic IDs and replay files are not uploaded. This replaces your starting total on the website rather than adding to it. Future edits and deletions sync while this is on.","Sync personal history",MessageBoxButtons.YesNo)!=DialogResult.Yes)return;
-                    options.Consent=Hash(s.Token);Save();button.Enabled=false;status.Text="Syncing history…";
-                    var error=await Sync(true);
-                    if(!form.IsDisposed){button.Enabled=true;status.Text=error??"History synced. Refresh My stats on the website. Changes now sync every minute while sync is on.";}
-                };
-                stop.Click+=(_,_)=>{options.Consent=null;Save();status.Text="Personal-history uploads have stopped. The last snapshot stays on the website until you clear it there.";};
-            }
-        };
     }
+
+    /// <summary>True when the personal-history upload is approved for the PC's current link.</summary>
+    public static bool Approved{get{var s=OnlineSync.Load();return !string.IsNullOrEmpty(s.Token)&&options.Consent==Hash(s.Token);}}
+
+    /// <summary>Approves the personal-history upload for the current link and uploads it now. Returns an error, or null.</summary>
+    public static async Task<string?> ApproveAndSyncAsync()
+    {
+        var s=OnlineSync.Load();
+        if(string.IsNullOrEmpty(s.Token)||!s.Enabled)return L.T("Vincula este PC y activa la subida primero.","Link this PC and turn on uploading first.");
+        options.Consent=Hash(s.Token);Save();
+        return await Sync(true);
+    }
+
+    /// <summary>Stops the personal-history uploads (the last snapshot stays on the website until cleared there).</summary>
+    public static void Stop(){options.Consent=null;Save();}
+
     private static void Save(){Directory.CreateDirectory(folder);var p=Path.Combine(folder,"2xflaw-personal-cloud.json");File.WriteAllText(p+".tmp",JsonSerializer.Serialize(options));File.Move(p+".tmp",p,true);}
     private static T? Read<T>(string name)=>JsonSerializer.Deserialize<T>(File.ReadAllText(Path.Combine(folder,name)));
     private static async Task Send(string route,object payload,string token,string api)

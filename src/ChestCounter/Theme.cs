@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Windows.Forms;
@@ -16,7 +16,7 @@ internal static class Theme
     public static readonly Color PanelHover = Color.FromArgb(70, 28, 61);
     public static readonly Color Line = Color.FromArgb(83, 39, 72);
     public static readonly Color Ink = Color.FromArgb(249, 236, 246);
-    public static readonly Color Muted = Color.FromArgb(183, 155, 178);
+    public static readonly Color Muted = Color.FromArgb(203, 182, 199);   // secondary text: brighter, so it stays easy to read
     public static readonly Color Cyan = Color.FromArgb(208, 0, 128);    // cofres en total
     public static readonly Color Amber = Color.FromArgb(255, 127, 180);   // partida actual, cofres
     public static readonly Color Mint = Color.FromArgb(61, 220, 151);    // en directo

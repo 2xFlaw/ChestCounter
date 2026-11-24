@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Runtime.Versioning;
@@ -128,7 +128,7 @@ public sealed class PillButton : Button
         g.Clear(Parent?.BackColor ?? Theme.Bg);
         var rect = new RectangleF(0.5f, 0.5f, Width - 1, Height - 1);
         using var path = Shape.Rounded(rect, Radius);
-        var colour = _hover ? HoverColor : BackColor;
+        var colour = _hover && Enabled ? HoverColor : BackColor;
         using (var fill = new LinearGradientBrush(new RectangleF(0, 0, Math.Max(1, Width), Math.Max(1, Height)), Fx.Mix(colour, Color.White, 0.07f), colour, 90f))
         {
             g.FillPath(fill, path);
@@ -140,7 +140,8 @@ public sealed class PillButton : Button
         }
         if (_indicator is not { } dot)
         {
-            TextRenderer.DrawText(g, Text, Font, ClientRectangle, ForeColor,
+            // Disabled: the text fades towards the button colour, but stays readable.
+            TextRenderer.DrawText(g, Text, Font, ClientRectangle, Enabled ? ForeColor : Fx.Mix(ForeColor, colour, 0.55f),
                 TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter | TextFormatFlags.SingleLine | TextFormatFlags.EndEllipsis);
             return;
         }
