@@ -59,6 +59,5 @@ return true;
   </UsingTask>
   <Target Name="IntegrateWeeklyMoreTranslations" AfterTargets="IntegrateWeeklyTranslations" Condition="'$(DesignTimeBuild)' != 'true'">
     <PrepareWeeklyMoreTranslations SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/WeeklyChances241.g.cs" />
-    <PrepareRewardsTranslations SourcePath="$(MSBuildProjectDirectory)/$(IntermediateOutputPath)TreasureHour241/RewardsForm241.g.cs" />
   </Target>
 </Project>
