@@ -211,11 +211,42 @@ public static partial class TreasureHunt
     private static bool HasEmbedded(string image) =>
         typeof(TreasureHunt).Assembly.GetManifestResourceNames().Contains("ChestCounter.Assets.rewards." + image, StringComparer.OrdinalIgnoreCase);
 
-    private static byte[]? Bytes(Store store, string image)
+    /// <summary>
+    /// Picture bytes of this week's item in a slot (the latest Treasure Hunt week that has started), so Weekly chances
+    /// and the overlay show the current rewards instead of the generic slot pictures. Null when there is none.
+    /// </summary>
+    public static byte[]? CurrentBytes(string storeFolder, string slot)
     {
         try
         {
-            var cached = Path.Combine(store.Folder, "rewards", "hunt", image);
+            if (!Slots.Contains(slot))
+            {
+                return null;
+            }
+            IReadOnlyList<HuntWeek> weeks = BuiltIn;
+            var path = Path.Combine(storeFolder, CacheFile);
+            if (File.Exists(path) && Parse(File.ReadAllText(path)) is { } cached && cached.Count >= BuiltIn.Count)
+            {
+                weeks = cached;
+            }
+            var now = DateTime.UtcNow;
+            var week = weeks.Where(w => w.StartUtc <= now).OrderBy(w => w.StartUtc).LastOrDefault();
+            var item = week?.Items.FirstOrDefault(i => i.Slot == slot);
+            return item == null ? null : Bytes(storeFolder, item.Image);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static byte[]? Bytes(Store store, string image) => Bytes(store.Folder, image);
+
+    private static byte[]? Bytes(string storeFolder, string image)
+    {
+        try
+        {
+            var cached = Path.Combine(storeFolder, "rewards", "hunt", image);
             if (File.Exists(cached))
             {
                 return File.ReadAllBytes(cached);
