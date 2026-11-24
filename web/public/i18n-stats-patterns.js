@@ -20,5 +20,49 @@ export const STATS_PATTERNS=[
  pl:'Wyświetlono $1 z $2 meczów. Ręczne wpisy skrzyń są uwzględniane w zestawieniu sumy, ale nie są liczone jako mecze.',
  tr:'$2 maçtan $1 tanesi gösteriliyor. Elle girilen sandık kayıtları toplamın dökümüne dahildir, ancak maç olarak sayılmaz.',
  ja:'全$2試合中$1試合を表示しています。手動入力した宝箱は合計の内訳に含まれますが、試合数には含まれません。'
+}],
+[/^Week (\d+) ends (.+)$/,{
+ es:"La semana $1 termina el $2",
+ pt:"A semana $1 termina em $2",
+ ru:"Неделя $1 заканчивается $2",
+ fr:"La semaine $1 se termine le $2",
+ de:"Woche $1 endet am $2",
+ it:"La settimana $1 finisce il $2",
+ pl:"Tydzień $1 kończy się $2",
+ tr:"$1. hafta $2 biter",
+ ja:"第$1週は$2に終了"
+}],
+[/^Week (\d+)$/,{
+ es:"Semana $1",
+ pt:"Semana $1",
+ ru:"Неделя $1",
+ fr:"Semaine $1",
+ de:"Woche $1",
+ it:"Settimana $1",
+ pl:"Tydzień $1",
+ tr:"Hafta $1",
+ ja:"第$1週"
+}],
+[/^(\d+\/\d+) found$/,{
+ es:"$1 encontrados",
+ pt:"$1 encontrados",
+ ru:"Найдено $1",
+ fr:"$1 trouvés",
+ de:"$1 gefunden",
+ it:"$1 trovati",
+ pl:"Znalezione: $1",
+ tr:"$1 bulundu",
+ ja:"$1 発見"
+}],
+[/^Starts (.+)$/,{
+ es:"Empieza el $1",
+ pt:"Começa em $1",
+ ru:"Начало $1",
+ fr:"Débute le $1",
+ de:"Beginnt am $1",
+ it:"Inizia il $1",
+ pl:"Start $1",
+ tr:"$1 başlar",
+ ja:"$1開始"
 }]
 ];

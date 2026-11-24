@@ -227,6 +227,7 @@ export default {
         // Rows keyed by profile that are not tied to it by a foreign key (the tables may not exist yet).
         try { await env.DB.prepare("DELETE FROM match_extras WHERE profile_id=?").bind(me).run(); } catch {}
         try { await env.DB.prepare("DELETE FROM benchmarks WHERE key=?").bind("p:" + me).run(); } catch {}
+        try { await env.DB.prepare("DELETE FROM owned_rewards WHERE profile_id=?").bind(me).run(); } catch {}
         return J({ deleted: true }, 200, { "set-cookie": "cc_profile=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax" });
       }
 

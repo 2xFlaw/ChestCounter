@@ -1,7 +1,7 @@
 const J=(data,status=200)=>new Response(JSON.stringify(data),{status,headers:{'content-type':'application/json','cache-control':'no-store'}});
 const hash=async s=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s))),v=>v.toString(16).padStart(2,'0')).join('');
 const table="CREATE TABLE IF NOT EXISTS personal_snapshots (profile_id TEXT PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE, source TEXT NOT NULL, scope TEXT NOT NULL, payload TEXT NOT NULL, revision TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT (datetime('now')))";
-async function browser(req,env){
+export async function browser(req,env){
  const c=req.headers.get('cookie')||'',s=c.match(/(?:^|;\s*)cc_session=([a-f0-9]+)\.([a-f0-9]+)/),p=c.match(/(?:^|;\s*)cc_profile=([A-F0-9-]+)\.([a-f0-9]+)/);
  if(s){try{const r=await env.DB.prepare("SELECT profile_id FROM web_sessions WHERE id=? AND secret_hash=? AND expires_at>datetime('now')").bind(s[1],await hash(s[2])).first();if(r)return r.profile_id;}catch{}}
  if(p){const r=await env.DB.prepare('SELECT profile_id FROM profile_secrets WHERE profile_id=? AND secret_hash=?').bind(p[1],await hash(p[2])).first();if(r)return r.profile_id;}return null;

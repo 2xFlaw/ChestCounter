@@ -1076,5 +1076,170 @@ export const EXTRA=[
  pl:"Za darmo dla Chrome, Edge, Firefox i Safari. Nigdy nie wydaje V-dolców.",
  tr:"Chrome, Edge, Firefox ve Safari için ücretsiz. Asla V-Papel harcamaz.",
  ja:"Chrome、Edge、Firefox、Safari向けに無料。V-Bucksは一切使いません。"
+}],
+["Treasure Hunt",{
+ es:"Caza del Tesoro",
+ pt:"Caça ao Tesouro",
+ ru:"Охота за сокровищами",
+ fr:"Chasse au trésor",
+ de:"Schatzsuche",
+ it:"Caccia al tesoro",
+ pl:"Poszukiwanie skarbów",
+ tr:"Hazine Avı",
+ ja:"トレジャーハント"
+}],
+["Weekly rewards",{
+ es:"Recompensas semanales",
+ pt:"Recompensas semanais",
+ ru:"Еженедельные награды",
+ fr:"Récompenses hebdomadaires",
+ de:"Wöchentliche Belohnungen",
+ it:"Ricompense settimanali",
+ pl:"Nagrody tygodniowe",
+ tr:"Haftalık ödüller",
+ ja:"毎週の報酬"
+}],
+["Resets in",{
+ es:"Se reinicia en",
+ pt:"Reinicia em",
+ ru:"Сброс через",
+ fr:"Réinitialisation dans",
+ de:"Reset in",
+ it:"Reset tra",
+ pl:"Reset za",
+ tr:"Sıfırlanmaya kalan",
+ ja:"リセットまで"
+}],
+["No Treasure Hunt week is live right now.",{
+ es:"Ahora mismo no hay ninguna semana de la Caza del Tesoro activa.",
+ pt:"Nenhuma semana da Caça ao Tesouro está ativa agora.",
+ ru:"Сейчас нет активной недели «Охоты за сокровищами».",
+ fr:"Aucune semaine de Chasse au trésor n'est en cours.",
+ de:"Gerade läuft keine Schatzsuche-Woche.",
+ it:"Al momento non c'è nessuna settimana della Caccia al tesoro attiva.",
+ pl:"Obecnie nie trwa żaden tydzień Poszukiwania skarbów.",
+ tr:"Şu anda etkin bir Hazine Avı haftası yok.",
+ ja:"現在開催中のトレジャーハントの週はありません。"
+}],
+["Found",{
+ es:"Encontrados",
+ pt:"Encontrados",
+ ru:"Найдено",
+ fr:"Trouvés",
+ de:"Gefunden",
+ it:"Trovati",
+ pl:"Znalezione",
+ tr:"Bulunan",
+ ja:"発見"
+}],
+["Found it",{
+ es:"Encontrado",
+ pt:"Encontrado",
+ ru:"Найдено",
+ fr:"Trouvé",
+ de:"Gefunden",
+ it:"Trovato",
+ pl:"Znaleziono",
+ tr:"Bulundu",
+ ja:"発見済み"
+}],
+["Not found",{
+ es:"No encontrado",
+ pt:"Não encontrado",
+ ru:"Не найдено",
+ fr:"Pas trouvé",
+ de:"Nicht gefunden",
+ it:"Non trovato",
+ pl:"Nieznalezione",
+ tr:"Bulunmadı",
+ ja:"未発見"
+}],
+["Pirate Shop Token",{
+ es:"Ficha de la Tienda Pirata",
+ pt:"Ficha da Loja Pirata",
+ ru:"Жетон пиратского магазина",
+ fr:"Jeton de la boutique pirate",
+ de:"Piratenshop-Marke",
+ it:"Gettone del negozio pirata",
+ pl:"Żeton pirackiego sklepu",
+ tr:"Korsan Dükkânı Jetonu",
+ ja:"海賊ショップトークン"
+}],
+["14 days of free item shops - found any week",{
+ es:"14 días de tienda de objetos gratis - se encuentra cualquier semana",
+ pt:"14 dias de loja de itens grátis - encontrado em qualquer semana",
+ ru:"14 дней бесплатного магазина предметов - можно найти в любую неделю",
+ fr:"14 jours de boutique gratuite - trouvable chaque semaine",
+ de:"14 Tage gratis Item-Shop - jede Woche zu finden",
+ it:"14 giorni di negozio oggetti gratis - trovabile ogni settimana",
+ pl:"14 dni darmowego sklepu z przedmiotami - do znalezienia w każdym tygodniu",
+ tr:"14 gün ücretsiz eşya dükkânı - her hafta bulunabilir",
+ ja:"14日間アイテムショップが無料 - どの週でも見つかる"
+}],
+["Click an item when you find it.",{
+ es:"Haz clic en un objeto cuando lo encuentres.",
+ pt:"Clique em um item quando encontrá-lo.",
+ ru:"Нажмите на предмет, когда найдёте его.",
+ fr:"Cliquez sur un objet quand vous le trouvez.",
+ de:"Klicke auf einen Gegenstand, wenn du ihn findest.",
+ it:"Clicca su un oggetto quando lo trovi.",
+ pl:"Kliknij przedmiot, gdy go znajdziesz.",
+ tr:"Bulduğunda bir eşyaya tıkla.",
+ ja:"見つけたらアイテムをクリックしてください。"
+}],
+["Saved to your profile. Link your PC to see the same ticks in the Chest Counter app.",{
+ es:"Guardado en tu perfil. Vincula tu PC para ver las mismas marcas en la aplicación Chest Counter.",
+ pt:"Salvo no seu perfil. Vincule seu PC para ver as mesmas marcações no aplicativo Chest Counter.",
+ ru:"Сохранено в вашем профиле. Привяжите ПК, чтобы видеть те же отметки в приложении Chest Counter.",
+ fr:"Enregistré dans votre profil. Liez votre PC pour voir les mêmes coches dans l'application Chest Counter.",
+ de:"In deinem Profil gespeichert. Verknüpfe deinen PC, um dieselben Markierungen in der Chest Counter-App zu sehen.",
+ it:"Salvato nel tuo profilo. Collega il PC per vedere le stesse spunte nell'app Chest Counter.",
+ pl:"Zapisano w Twoim profilu. Połącz komputer, aby widzieć te same znaczniki w aplikacji Chest Counter.",
+ tr:"Profiline kaydedildi. Aynı işaretleri Chest Counter uygulamasında görmek için bilgisayarını bağla.",
+ ja:"プロフィールに保存しました。PCを連携すると、Chest Counterアプリでも同じチェックが表示されます。"
+}],
+["Saved in this browser for now. It syncs to your profile next time the website can be reached.",{
+ es:"Guardado en este navegador por ahora. Se sincronizará con tu perfil la próxima vez que se pueda acceder al sitio.",
+ pt:"Salvo neste navegador por enquanto. Será sincronizado com seu perfil na próxima vez que o site estiver acessível.",
+ ru:"Пока сохранено в этом браузере. Синхронизируется с профилем, когда сайт снова будет доступен.",
+ fr:"Enregistré dans ce navigateur pour l'instant. Synchronisé avec votre profil dès que le site sera joignable.",
+ de:"Vorerst in diesem Browser gespeichert. Wird mit deinem Profil synchronisiert, sobald die Website erreichbar ist.",
+ it:"Salvato in questo browser per ora. Verrà sincronizzato con il profilo appena il sito sarà raggiungibile.",
+ pl:"Na razie zapisano w tej przeglądarce. Zsynchronizuje się z profilem, gdy strona będzie dostępna.",
+ tr:"Şimdilik bu tarayıcıya kaydedildi. Siteye ulaşılabildiğinde profilinle eşitlenecek.",
+ ja:"今はこのブラウザーに保存しています。サイトに接続できたときにプロフィールと同期されます。"
+}],
+["Not available yet",{
+ es:"Aún no disponible",
+ pt:"Ainda não disponível",
+ ru:"Пока недоступно",
+ fr:"Pas encore disponible",
+ de:"Noch nicht verfügbar",
+ it:"Non ancora disponibile",
+ pl:"Jeszcze niedostępne",
+ tr:"Henüz mevcut değil",
+ ja:"まだ入手できません"
+}],
+["Click to mark as found",{
+ es:"Clic para marcar como encontrado",
+ pt:"Clique para marcar como encontrado",
+ ru:"Нажмите, чтобы отметить как найденное",
+ fr:"Cliquez pour marquer comme trouvé",
+ de:"Klicken, um als gefunden zu markieren",
+ it:"Clicca per segnare come trovato",
+ pl:"Kliknij, aby oznaczyć jako znalezione",
+ tr:"Bulundu olarak işaretlemek için tıkla",
+ ja:"クリックで発見済みにする"
+}],
+["Click to mark as not found",{
+ es:"Clic para marcar como no encontrado",
+ pt:"Clique para marcar como não encontrado",
+ ru:"Нажмите, чтобы снять отметку",
+ fr:"Cliquez pour marquer comme non trouvé",
+ de:"Klicken, um als nicht gefunden zu markieren",
+ it:"Clicca per segnare come non trovato",
+ pl:"Kliknij, aby oznaczyć jako nieznalezione",
+ tr:"Bulunmadı olarak işaretlemek için tıkla",
+ ja:"クリックで未発見に戻す"
 }]
 ];

@@ -42,6 +42,7 @@
 <section><div class='sh'><h2>Your goal</h2><span class='meta'>Defaults to the prize you are closest to. Click a prize below to aim for it.</span></div><div class='card goal' id='goal'></div></section>
 <section><div class='sh'><h2>Projection</h2><span class='meta' id='planMeta'>What more chests are worth for your goal.</span></div><div class='card' id='planner'></div></section>
 <section><div class='sh'><h2>Odds this week</h2><span class='meta' id='oddsMeta'></span></div><div class='card' id='rows' style='padding:8px'></div></section>
+<section id='hunt-section'><div class='card hunt' id='hunt'></div></section>
 <section><div class='card claimcta'><img src='/rewards/pirate-shop-access.png' width='76' height='76' alt=''><div><div class='lbl'>Pirate Shop Claim All</div><h3>Already own the Pirate Shop Access Token? Claim the whole Item Shop with one button!</h3><div class='muted'>Free for Chrome, Edge, Firefox and Safari. Never spends V-Bucks.</div></div><a class='btn on' href='/claim.html'>Claim All</a></div></section>
 <section><div class='sh'><h2>Treasure Hours</h2></div><div class='card tw'><table><thead><tr><th>When</th><th>Gold outfit</th><th>Pirate shop</th><th>Vehicle &amp; decal</th><th>Status</th></tr></thead><tbody id='hours'></tbody></table></div></section>
 <p class='note'>Chance of at least one drop = 1 - (1 - 1/odds)^chests, counted since the weekly reset. Pirate Shop Access does not reset, so it counts every chest you have opened, all time, like the app. Odds are the per-chest rates used by the app. Confirmed Treasure Hour boosts are included; unannounced boosts count as normal odds. This is a probability, not a promise.</p>
@@ -121,6 +122,10 @@ function render() {
   requestAnimationFrame(() => requestAnimationFrame(() => document.querySelectorAll('[data-w]').forEach(el => { el.style.width = el.dataset.w; })));
 }
 render();
+</script>
+<script type='module'>
+import { initHunt } from '/hunt.js';
+initHunt(document.getElementById('hunt')).catch(error => console.error('Treasure Hunt failed', error));
 </script>
 </body>
 </html>
