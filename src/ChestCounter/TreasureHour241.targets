@@ -34,9 +34,6 @@ form=Once(form,"            var weekChanged =","            _goal.Sparkle=_monit
 form=Once(form,"        if (!_anim.Enabled)","        if (!_monitor.Config.Animations){_goal.Snap();_table.Snap();_planner.Snap();_anim.Stop();}\n        else if (!_anim.Enabled)");
 form=Once(form,"The last two Treasure Hours (28 and 29 Nov) are confirmed, but their boosts are not announced yet, so they count as normal odds until you confirm them.","Confirmed boosts are applied using your local schedule. Unconfirmed windows count as normal odds until their boosts are confirmed. Pirate Shop Access uses all-time configured personal history; other prizes remain weekly. Counts without exact opening times use base odds.");
 string rewards=Read("RewardsForm.cs");
-rewards=Once(rewards,"        _monitor = monitor;","        _monitor = monitor;\n        if (WeeklyReset.MigratePirateOwnership(monitor.Config, DateTime.UtcNow)) store.SaveConfig(monitor.Config);");
-rewards=Once(rewards,"Text = \"Resets every Sunday at 14:00 GMT\",","Text = \"Weekly prizes reset; Pirate Shop is permanent\",");
-rewards=Once(rewards,"                Text = name,","                Text = key == PirateShopChances.Key ? name + \" (all time)\" : name,");
 string main=Read("MainForm.cs");
 main=Once(main,"    private readonly Monitor monitor;","    private readonly Monitor monitor;\n    private readonly TreasureHourStrip treasureHour;");
 main=Once(main,"        this.monitor=monitor;this.store=store;","        this.monitor=monitor;this.store=store;\n        treasureHour=new TreasureHourStrip(store,()=>monitor.Config.Animations);");

@@ -1,0 +1,134 @@
+{
+ "version": 1,
+ "season": "Treasure Hunters",
+ "pirate": {
+  "name": "Pirate Shop Token",
+  "image": "pirate-shop-access.png"
+ },
+ "weeks": [
+  {
+   "week": 1,
+   "start": "2026-11-01T14:00:00Z",
+   "items": [
+    {
+     "slot": "gold-outfit",
+     "name": "Solid Gold Rugahand",
+     "image": "w1-outfit.png"
+    },
+    {
+     "slot": "vehicle-decal",
+     "name": "Gold G-Wagon",
+     "image": "w1-car.png"
+    },
+    {
+     "slot": "pickaxe-back-bling",
+     "name": "Solid Gold Gauntlets",
+     "image": "w1-pickaxe.png"
+    },
+    {
+     "slot": "jam-track",
+     "name": "NO TRESPASSING",
+     "image": "w1-jam.png"
+    },
+    {
+     "slot": "loading-screen",
+     "name": "Plunder in Paradise",
+     "image": "w1-loading.png"
+    }
+   ]
+  },
+  {
+   "week": 2,
+   "start": "2026-11-08T14:00:00Z",
+   "items": [
+    {
+     "slot": "gold-outfit",
+     "name": "Solid Gold Lil Uzi Vert",
+     "image": "w2-outfit.png"
+    },
+    {
+     "slot": "vehicle-decal",
+     "name": "Gold Cadillac CT5-V",
+     "image": "w2-car.png"
+    },
+    {
+     "slot": "pickaxe-back-bling",
+     "name": "Diamond and Gold",
+     "image": "w2-pickaxe.png"
+    },
+    {
+     "slot": "jam-track",
+     "name": "London",
+     "image": "w2-jam.png"
+    },
+    {
+     "slot": "loading-screen",
+     "name": "So Kawaii",
+     "image": "w2-loading.png"
+    }
+   ]
+  },
+  {
+   "week": 3,
+   "start": "2026-11-15T14:00:00Z",
+   "items": [
+    {
+     "slot": "gold-outfit",
+     "name": "Solid Gold Miku",
+     "image": "w3-outfit.png"
+    },
+    {
+     "slot": "vehicle-decal",
+     "name": "Gold Corvette ZR1",
+     "image": "w3-car.png"
+    },
+    {
+     "slot": "pickaxe-back-bling",
+     "name": "Miku's Takarabako",
+     "image": "w3-pickaxe.png"
+    },
+    {
+     "slot": "jam-track",
+     "name": "PPPP",
+     "image": "w3-jam.png"
+    },
+    {
+     "slot": "loading-screen",
+     "name": "May Fortune Find You",
+     "image": "w3-loading.png"
+    }
+   ]
+  },
+  {
+   "week": 4,
+   "start": "2026-11-22T14:00:00Z",
+   "items": [
+    {
+     "slot": "gold-outfit",
+     "name": "Solid Gold Kasane Teto",
+     "image": "w4-outfit.png"
+    },
+    {
+     "slot": "vehicle-decal",
+     "name": "Gold Lamborghini Urus SE",
+     "image": "w4-car.png"
+    },
+    {
+     "slot": "pickaxe-back-bling",
+     "name": "Rogue Wave and Tidewalker",
+     "image": "w4-pickaxe.png"
+    },
+    {
+     "slot": "jam-track",
+     "name": "Sea Shanty",
+     "image": "w4-jam.png"
+    },
+    {
+     "slot": "loading-screen",
+     "name": "Oscar's Wraps",
+     "image": "w4-loading.png"
+    }
+   ]
+  }
+ ]
+}
