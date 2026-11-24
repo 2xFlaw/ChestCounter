@@ -100,8 +100,8 @@ internal sealed class TreasureHourStrip : UserControl
         if(live==null)
         {
             var first=text.Split('\n')[0];
-            if(TreasureHours.IsGoldenWeek(now))text=first+"\n"+ToolText.T("GOLDEN WEEK - every treasure reward is back \u00b7 Gold Outfit 2x \u00b7 Gold Vehicle 5x \u00b7 2x Sprite Dust & XP");
-            else if(now<TreasureHours.GoldenWeekStartUtc&&TreasureHours.GoldenWeekStartUtc-now<TimeSpan.FromDays(14))text=first+"\n"+ToolText.F("Golden Week starts {0:ddd dd MMM HH:mm} local: every treasure reward returns, Gold Outfit 2x, Gold Vehicle 5x",TreasureHours.GoldenWeekStartUtc.ToLocalTime());
+            if(TreasureHours.IsGoldenWeek(now))text=first+"\n"+ToolText.T("GOLDEN WEEK - every treasure reward is back \u00b7 Gold Outfit 2x \u00b7 2x Sprite Dust & XP");
+            else if(now<TreasureHours.GoldenWeekStartUtc&&TreasureHours.GoldenWeekStartUtc-now<TimeSpan.FromDays(14))text=first+"\n"+ToolText.F("Golden Week starts {0:ddd dd MMM HH:mm} local: every treasure reward returns, Gold Outfit 2x",TreasureHours.GoldenWeekStartUtc.ToLocalTime());
         }
         if(status.Text!=text)status.Text=text;
         pulse=!pulse;dot.ForeColor=confirmed?(animations()&&pulse?Color.FromArgb(170,119,55):Theme.Amber):Theme.Muted;

@@ -7,7 +7,7 @@ using System.Windows.Forms;
 
 namespace ChestCounter;
 
-public sealed record PrizeChance(string Key, string Name, double Den, double Boost, double Chance, double Next50, bool Owned);
+public sealed record PrizeChance(string Key, string Name, double Den, double Boost, double Chance, double Next50, bool Owned, int Left = 1, int Total = 1);
 
 public sealed record ChanceSnapshot(
     IReadOnlyList<PrizeChance> Prizes, int Chests, TreasureWindow? Live, TreasureWindow? Next, DateTime WeekStart,
@@ -89,6 +89,7 @@ public static class WeeklyChanceModel
         var next = windows.Where(w => w.StartUtc > now).OrderBy(w => w.StartUtc).FirstOrDefault();
 
         var owned = monitor.Config.OwnedRewards;
+        var weeks = TreasureHunt.Load(store);
         var prizes = new List<PrizeChance>();
         foreach (var (prizeKey, name, baseDen) in Table)
         {
@@ -96,22 +97,38 @@ public static class WeeklyChanceModel
             foreach (var e in events)
             {
                 var w = e.time is { } t ? windows.FirstOrDefault(x => t >= x.StartUtc && t < x.EndUtc) : null;
-                noDrop *= Math.Pow(1 - Math.Clamp(TreasureHours.BoostAt(w, e.time, prizeKey) / baseDen, 0, 1), e.count);
+                var left = TreasureHours.Pool(weeks, owned, prizeKey, e.time).Left;
+                noDrop *= Math.Pow(1 - Math.Clamp(TreasureHours.BoostAt(w, e.time, prizeKey) * left / baseDen, 0, 1), e.count);
             }
             var chance = 1 - noDrop;
-            var rateNow = Math.Clamp(TreasureHours.BoostAt(live, now, prizeKey) / baseDen, 0, 1);
+            var pool = TreasureHours.Pool(weeks, owned, prizeKey, now);
+            var rateNow = Math.Clamp(TreasureHours.BoostAt(live, now, prizeKey) * pool.Left / baseDen, 0, 1);
             var next50 = 1 - noDrop * Math.Pow(1 - rateNow, Lookahead);
-            var isOwned = prizeKey != "gizmo" && owned.TryGetValue(WeeklyReset.OwnedKey(prizeKey, now), out var v) && v;
+            // During Golden Week a kind is only "owned" once you have every week's item of it.
+            var isOwned = prizeKey != "gizmo" && (pool.Total > 1 ? pool.Left == 0 : owned.TryGetValue(WeeklyReset.OwnedKey(prizeKey, now), out var v) && v);
             // During Golden Week its odds are the normal rate shown ("1 in 781,250"), and a Treasure Hour boost is
             // shown on top of them, so every "1 in N" and "x now" on screen multiplies out to the real rate.
+            // During Golden Week the row is "any" item of the kind you still need, so its "1 in N" is the per-item rate
+            // times the items left (Epic: 1 in 1,563 for any of five Gold Vehicles, 1 in 7,813 for a specific one).
             var golden = TreasureHours.Golden(now, prizeKey);
-            prizes.Add(new PrizeChance(prizeKey, name, baseDen / golden, TreasureHours.BoostAt(live, now, prizeKey) / golden, chance, next50, isOwned));
+            var shown = pool.Total > 1 ? AnyName(prizeKey, name) : name;
+            prizes.Add(new PrizeChance(prizeKey, shown, baseDen / golden / Math.Max(1, pool.Left), TreasureHours.BoostAt(live, now, prizeKey) / golden, chance, next50, isOwned, pool.Left, pool.Total));
         }
 
         return new ChanceSnapshot(
             prizes, events.Sum(x => x.count), live, next, start,
             live != null && TreasureHours.IsUnconfirmed(live), next != null && TreasureHours.IsUnconfirmed(next));
     }
+
+    private static string AnyName(string key, string name) => key switch
+    {
+        "gold-outfit" => "Any Gold Outfit",
+        "vehicle-decal" => "Any Vehicle & Decal",
+        "pickaxe-back-bling" => "Any Pickaxe or Back Bling",
+        "jam-track" => "Any Jam Track",
+        "loading-screen" => "Any Loading Screen",
+        _ => name,
+    };
 
     /// <summary>Extra chests (at the normal rate) until the cumulative chance reaches 50%; 0 when already past it.</summary>
     public static double ChestsToHalf(double chance, double den)
@@ -140,6 +157,24 @@ internal static class ChanceText
         }
         return (v >= 10 ? v.ToString("0.0") : v >= 1 ? v.ToString("0.00") : v.ToString("0.0000")) + "%";
     }
+
+    /// <summary>Per-chest odds as a percentage with two significant digits: 0.00064%, 0.064%, 0.88%, 1.28%.</summary>
+    public static string OddsPct(double rate)
+    {
+        var v = rate * 100;
+        if (!(v > 0))
+        {
+            return "0%";
+        }
+        var digits = v >= 10 ? 1 : Math.Clamp(1 - (int)Math.Floor(Math.Log10(v)), 2, 8);
+        return v.ToString("F" + digits, L.Culture) + "%";
+    }
+
+    /// <summary>"1,563 (0.064%)": the N of "1 in N" with the same odds as a percentage, so either way reads.</summary>
+    public static string DenPct(double den) => den > 0 ? $"{den.ToString("N0", L.Culture)} ({OddsPct(1 / den)})" : "-";
+
+    /// <summary>"  ·  4 of 5 left" during Golden Week, when a row stands for several items.</summary>
+    public static string LeftText(PrizeChance p) => p.Total > 1 ? "  \u00b7  " + WeeklyChanceMore.F("{0} of {1} left", p.Left, p.Total) : "";
 
     public static void Draw(Graphics g, string text, Font font, Rectangle box, Color color, TextFormatFlags flags = TextFormatFlags.Left)
     {
@@ -765,7 +800,8 @@ internal sealed class OddsTable : Control
             g.DrawPath(edge, path);
         }
 
-        var barLeft = 310;
+        // Golden Week rows also say how many items are left, so give the text a little more room.
+        var barLeft = _rows.Any(r => r.Prize.Total > 1) ? Math.Max(310, Math.Min(380, Width / 2)) : 310;
         var barRight = Width - 150;
         ChanceText.Draw(g, Fonts.Track("PRIZE"), _head, new Rectangle(20, 0, 200, HeaderH), Theme.Muted);
         ChanceText.Draw(g, _ahead <= 0 ? Fonts.Track(WeeklyChanceMore.T("CUMULATIVE ODDS THIS WEEK")) : Fonts.Track($"CUMULATIVE ODDS THIS WEEK  \u00b7  DASHED = IF YOU OPEN {_ahead:N0} CHESTS"), _head, new Rectangle(barLeft, 0, Math.Max(40, barRight - barLeft), HeaderH), Theme.Muted);
@@ -801,6 +837,12 @@ internal sealed class OddsTable : Control
 
             var textLeft = 74;
             ChanceText.Draw(g, row.Prize.Name, _name, new Rectangle(textLeft, top + 10, barLeft - textLeft - 12, 22), Theme.Ink);
+            if (row.Prize.Total > 1)
+            {
+                var nameWidth = TextRenderer.MeasureText(g, WeeklyChanceText.T(row.Prize.Name), _name, new Size(int.MaxValue, int.MaxValue), TextFormatFlags.NoPadding | TextFormatFlags.SingleLine).Width;
+                var room = barLeft - 12 - (textLeft + nameWidth);
+                if (room > 40) ChanceText.Draw(g, ChanceText.LeftText(row.Prize), _sub, new Rectangle(textLeft + nameWidth, top + 12, room, 20), Theme.Muted);
+            }
             var sub = row.Prize.Key == "gizmo" ? $"1 in {row.Prize.Den:N0} per chest  \u00b7  can repeat" : $"1 in {row.Prize.Den:N0} per chest";
             ChanceText.Draw(g, sub, _sub, new Rectangle(textLeft, top + 32, barLeft - textLeft - 12, 18), Theme.Muted);
             if (boosted)

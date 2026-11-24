@@ -18,7 +18,9 @@ public static class TreasureHours
 
     // ---- Golden Week ---------------------------------------------------------------------------------------------
     // Announced by Epic: from Nov 28 every week's treasure rewards are back in chests and, until the season ends,
-    // Gold Outfit odds are 2x (1 in 1,562,500 -> 1 in 781,250) and Gold Vehicle odds 5x (1 in 7,813 -> 1 in 1,563).
+    // Every earlier week's treasure is back. Each Gold Outfit is 2x (1 in 1,562,500 -> 1 in 781,250); every other item
+    // keeps its own odds (1 in 7,813 for a specific Gold Vehicle). With five of each kind in chests, the chance of any one
+    // you still need adds up: Epic's example is 1 in 1,563 for any of the five Gold Vehicles you don't own (see Pool).
     // Pickaxe/Back Bling, Jam Track, Loading Screen, Gizmo and Pirate Shop Access keep their normal odds.
 
     /// <summary>Golden Week start (the Nov 28 update, 14:00 UTC like the other weekly changes).</summary>
@@ -31,7 +33,24 @@ public static class TreasureHours
 
     /// <summary>Golden Week multiplier on the normal odds of a prize at a moment (1 outside Golden Week).</summary>
     public static double Golden(DateTime? utc, string key) =>
-        utc is { } t && IsGoldenWeek(t) ? key switch { "gold-outfit" => 2, "vehicle-decal" => 5, _ => 1 } : 1;
+        utc is { } t && IsGoldenWeek(t) ? key switch { "gold-outfit" => 2, _ => 1 } : 1;
+
+    /// <summary>
+    /// How many items of a weekly kind can drop at a moment and how many of them you don't own yet. Outside Golden Week
+    /// that is this week's one item (1 of 1, ownership is handled as before). During Golden Week every week's item of
+    /// the kind is back, so the rate of "any one you still need" is the per-item rate times <c>Left</c>.
+    /// </summary>
+    public static (int Left, int Total) Pool(IReadOnlyList<HuntWeek> weeks, IReadOnlyDictionary<string, bool> owned, string key, DateTime? utc)
+    {
+        if (utc is not { } t || !IsGoldenWeek(t) || key is "gizmo" or "pirate-shop-access")
+        {
+            return (1, 1);
+        }
+        var keys = weeks.Where(w => w.StartUtc < GoldenWeekEndUtc)
+            .SelectMany(w => w.Items.Where(i => i.Slot == key).Select(i => TreasureHunt.OwnedKey(w, i.Slot)))
+            .Distinct().ToList();
+        return keys.Count == 0 ? (1, 1) : (keys.Count(k => !(owned.TryGetValue(k, out var v) && v)), keys.Count);
+    }
 
     /// <summary>
     /// Multiplier on the normal odds at a moment: the Treasure Hour boost inside a Treasure Hour (announced against

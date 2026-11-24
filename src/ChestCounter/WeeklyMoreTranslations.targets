@@ -7,7 +7,7 @@
       <Code Type="Fragment" Language="cs"><![CDATA[
 string source=File.ReadAllText(SourcePath).Replace("\r\n","\n");
 string Once(string text,string before,string after){int i=text.IndexOf(before,StringComparison.Ordinal);if(i<0||text.IndexOf(before,i+before.Length,StringComparison.Ordinal)>=0)throw new InvalidOperationException("Weekly translation integration point changed: "+before);return text.Substring(0,i)+after+text.Substring(i+before.Length);}
-source=Once(source,"$\"1 in {vm.Den:N0} per chest   \\u00b7   {vm.Chests:N0} chests {(allTime ? \"all time\" : \"opened this week\")}\"","(allTime ? WeeklyChanceMore.F(\"1 in {0:N0} per chest   \\u00b7   {1:N0} chests all time\", vm.Den, vm.Chests) : WeeklyChanceMore.F(\"1 in {0:N0} per chest   \\u00b7   {1:N0} chests opened this week\", vm.Den, vm.Chests))");
+source=Once(source,"$\"1 in {vm.Den:N0} per chest   \\u00b7   {vm.Chests:N0} chests {(allTime ? \"all time\" : \"opened this week\")}\"","(allTime ? WeeklyChanceMore.F(\"1 in {0:N0} per chest   \\u00b7   {1:N0} chests all time\", ChanceText.DenPct(vm.Den), vm.Chests) : WeeklyChanceMore.F(\"1 in {0:N0} per chest   \\u00b7   {1:N0} chests opened this week\", ChanceText.DenPct(vm.Den), vm.Chests))");
 source=Once(source,"$\"About {Math.Ceiling(vm.ChestsToHalf):N0} more chests to reach 50%\"","WeeklyChanceMore.F(\"About {0:N0} more chests to reach 50%\", Math.Ceiling(vm.ChestsToHalf))");
 source=Once(source,"$\"If you open {vm.Ahead:N0} more chests: +{ChanceText.Pct(vm.GainNow)} now (Treasure Hour) vs +{ChanceText.Pct(vm.GainNormal)} normally\"","WeeklyChanceMore.F(\"If you open {0:N0} more chests: +{1} now (Treasure Hour) vs +{2} normally\", vm.Ahead, ChanceText.Pct(vm.GainNow), ChanceText.Pct(vm.GainNormal))");
 source=Once(source,"$\"If you open {vm.Ahead:N0} more chests: +{ChanceText.Pct(vm.GainNormal)}\"","WeeklyChanceMore.F(\"If you open {0:N0} more chests: +{1}\", vm.Ahead, ChanceText.Pct(vm.GainNormal))");
@@ -15,7 +15,7 @@ source=Once(source,"Fonts.Track($\"TREASURE HOUR {vm.Boost:0.#}\\u00d7\")","Font
 source=Once(source,"Fonts.Track(\"PRIZE\")","Fonts.Track(WeeklyChanceMore.T(\"PRIZE\"))");
 source=Once(source,"Fonts.Track(\"CHANCE\")","Fonts.Track(WeeklyChanceMore.T(\"CHANCE\"))");
 source=Once(source,"Fonts.Track($\"CUMULATIVE ODDS THIS WEEK  \\u00b7  DASHED = IF YOU OPEN {_ahead:N0} CHESTS\")","Fonts.Track(WeeklyChanceMore.F(\"CUMULATIVE ODDS THIS WEEK  \\u00b7  DASHED = IF YOU OPEN {0:N0} CHESTS\", _ahead))");
-source=Once(source,"$\"1 in {row.Prize.Den:N0} per chest  \\u00b7  can repeat\" : $\"1 in {row.Prize.Den:N0} per chest\"","WeeklyChanceMore.F(\"1 in {0:N0} per chest  \\u00b7  can repeat\", row.Prize.Den) : WeeklyChanceMore.F(\"1 in {0:N0} per chest\", row.Prize.Den)");
+source=Once(source,"$\"1 in {row.Prize.Den:N0} per chest  \\u00b7  can repeat\" : $\"1 in {row.Prize.Den:N0} per chest\"","WeeklyChanceMore.F(\"1 in {0:N0} per chest  \\u00b7  can repeat\", ChanceText.DenPct(row.Prize.Den)) : WeeklyChanceMore.F(\"1 in {0:N0} per chest\", ChanceText.DenPct(row.Prize.Den))");
 source=Once(source,"$\"  \\u00b7  {row.Prize.Boost:0.#}\\u00d7 now\"","WeeklyChanceMore.F(\"  \\u00b7  {0:0.#}\\u00d7 now\", row.Prize.Boost)");
 source=Once(source,"Text = \"Weekly chances\";","Text = WeeklyChanceMore.T(\"Weekly chances\");");
 source=Once(source,"Text = \"WEEKLY CHANCES\",","Text = WeeklyChanceMore.T(\"WEEKLY CHANCES\"),");
