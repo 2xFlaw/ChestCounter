@@ -87,7 +87,7 @@ public sealed class SettingsForm : Form
         _report = AddToggleRow(start, L.T("Abrir el informe al iniciar", "Open the report at startup"), null, 64, config.OpenReportOnStart);
         _report.CheckedChanged += (_, _) => { if (!_loading) _monitor.Change(c => c.OpenReportOnStart = _report.Checked); };
         var mates = AddToggleRow(start, L.T("Compañeros en el informe", "Teammates in the report"),
-            L.T("Sus cofres: hasta 1.087 m de ti", "Their chests: up to 1,087 m from you"), 94, config.ShowTeammates);
+            L.T("Sus cofres: a unos 250 m de ti", "Their chests: within about 250 m of you"), 94, config.ShowTeammates);
         mates.CheckedChanged += (_, _) =>
         {
             if (_loading)
@@ -427,8 +427,8 @@ public sealed class SettingsForm : Form
     /// <summary>Lo que no: sus cofres, con la distancia medida en replays reales.</summary>
     private static InfoPoint ApproxPoint() => new("≈", Theme.Amber, L.T("Aproximado: sus cofres", "Approximate: their chests"),
         L.Big("teammatesRange",
-            "Fortnite solo graba lo que pasa a menos de 1.087 m de ti. Si un compañero se aleja más, sus cofres no se cuentan: son un mínimo, no su total.",
-            "Fortnite only records what happens within 1,087 m of you. If a teammate goes further, their chests are not counted: they are a minimum, not their total."));
+            "Fortnite solo graba que se abre un cofre a menos de unos 250 m de ti. Los que un compañero abre más lejos no están en el replay, así que son un mínimo, no su total. El informe muestra cuánto de cada partida pasó cerca de ti.",
+            "Fortnite only records a chest being opened within about 250 m of you. Chests a teammate opens further away are not in the replay, so their count is a minimum, not their total. The report shows how much of each match they spent near you."));
 
     /// <summary>Vuelve a poner el interruptor como estaba (se canceló el diálogo), sin guardar nada.</summary>
     private void Revert(ToggleSwitch toggle)

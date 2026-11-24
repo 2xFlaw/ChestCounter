@@ -57,7 +57,7 @@ internal static class EnglishText
         ["TREASURE HOUR LIVE - ends in {0:00}:{1:00}:{2:00}"] = "TREASURE HOUR LIVE  ·  ends in {0:00}:{1:00}:{2:00}",
         ["The chest counter is already open: look in the taskbar."] = "The chest counter is already open. Check your taskbar.",
         ["The old version (ChestTracker.exe) is still open: close it, otherwise both count at the same time."] = "The old version (ChestTracker.exe) is still open. Close it, or both will count at the same time.",
-        ["Their chests: up to 1,087 m from you"] = "Their chests only count within 1,087 m of you",
+        ["Their chests: within about 250 m of you"] = "Theirs only count within about 250 m",
         ["This page updates by itself: the numbers below grow as the replays are read."] = "This page updates automatically: the numbers below grow as your replays are read.",
         ["Total personal / configured"] = "Your total (with your settings)",
         ["Unexpected error. The details are in errors.log, in the data folder."] = "Something went wrong. The details are in errors.log in your data folder.",

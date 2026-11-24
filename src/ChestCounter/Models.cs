@@ -56,6 +56,11 @@ public sealed class TeammateRecord
     public int ChestsSeen { get; set; }
     /// <summary>Everything they were seen searching, by kind (chests, ammo boxes, food boxes, loot cannons).</summary>
     public Dictionary<string, int> Kinds { get; set; } = new();
+    /// <summary>
+    /// Share of your match (0-100) they spent within about 250 m of you, where their chest openings are recorded.
+    /// Null when unknown (matches analyzed before analyzer version 14, or too little position data).
+    /// </summary>
+    public int? NearPercent { get; set; }
 }
 
 public sealed class MatchRecord
