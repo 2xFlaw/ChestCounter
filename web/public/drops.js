@@ -68,7 +68,32 @@ const CSS = `
 .drops .dall{display:grid;grid-template-columns:minmax(170px,1.1fr) minmax(0,1.5fr) 150px 190px;gap:16px;align-items:center;padding:16px 4px 10px;color:var(--muted)}
 .drops .dall .dnm{font-weight:700;font-size:14px;color:var(--muted)}
 .drops .dfoot{color:var(--muted);font-size:12.5px;padding:6px 4px 10px}
+.drops .djack{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) minmax(0,1.15fr);gap:18px;align-items:center;margin:4px 0 12px;padding:18px 20px;border-radius:18px;border:1px solid rgba(255,199,92,.42);background:radial-gradient(120% 140% at 0% 0%,rgba(255,199,92,.16),rgba(255,199,92,.03) 60%),#160f12;box-shadow:0 10px 40px rgba(255,170,40,.08)}
+.drops .djack .jpics{display:flex;align-items:center}
+.drops .djack .jpics img{width:64px;height:64px;border-radius:14px;object-fit:cover;border:1.5px solid rgba(255,199,92,.5);background:#221829}
+.drops .djack .jpics img+img{margin-left:-14px;box-shadow:-4px 0 12px rgba(0,0,0,.45)}
+.drops .djack .jchip{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(255,199,92,.16);color:#ffc75c;font:800 11px/1.2 var(--body);letter-spacing:.12em;text-transform:uppercase;margin-bottom:6px}
+.drops .djack h4{margin:0 0 6px;font:400 clamp(22px,2.4vw,28px)/1.05 var(--display);letter-spacing:.01em;color:#fff3dc}
+.drops .djack .jdesc{color:var(--muted);font-size:13.5px;line-height:1.45;margin:0}
+.drops .djack .jstat{margin-top:8px;color:#ffd58f;font-size:12.5px;font-weight:700}
+.drops .djack .jstat .sep{opacity:.5;margin:0 6px}
+.drops .djack .jtiles{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.drops .djack .jtile{padding:12px 14px;border-radius:14px;background:rgba(0,0,0,.28);border:1px solid var(--line)}
+.drops .djack .jtile.hot{border-color:rgba(255,199,92,.6);background:rgba(255,199,92,.08)}
+.drops .djack .jtile .jl{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.drops .djack .jtile.hot .jl{color:#ffc75c}
+.drops .djack .jtile .jl svg{width:13px;height:13px}
+.drops .djack .jtile .jo{font:800 clamp(20px,2.2vw,26px)/1.1 var(--body);font-variant-numeric:tabular-nums;white-space:nowrap}
+.drops .djack .jtile.hot .jo{color:#ffd58f}
+.drops .djack .jx{display:inline-block;margin-right:8px;padding:3px 8px;border-radius:7px;background:var(--amber);color:#2a1a02;font:800 12px/1.2 var(--body);vertical-align:4px}
+.drops .djack .jtile .jp{color:var(--muted);font-size:12px;font-weight:600;margin-top:3px;font-variant-numeric:tabular-nums}
+.drops .djack.done .jtiles{display:none}
 @media(max-width:860px){
+ .drops .djack{grid-template-columns:1fr;gap:12px;padding:16px}
+ .drops .djack .jpics img{width:52px;height:52px}
+ .drops .djack .jtile{padding:10px 12px}
+ .drops .djack .jtile .jo{font-size:18px}
+ .drops .djack .jx{display:table;margin:0 0 6px}
  .drops{padding:18px 14px 6px}
  .drops .dhead{display:none}
  .drops .drow,.drops .dall{grid-template-columns:1fr 1fr;gap:10px 12px}
@@ -118,6 +143,7 @@ export async function initDrops(root, windows) {
     const th = W.find(w => now >= w.s && now < w.e) || W.find(w => w.s > now) || null;
     const thBoost = k => (th && th.confirmed && k.th ? Number(th[k.th]) || 1 : 1);
     let sumN = 0, sumT = 0, anyRow = false;
+    const got = {};
 
     const rows = KINDS.map(k => {
       let items;
@@ -133,6 +159,7 @@ export async function initDrops(root, windows) {
       // Treasure Hour boosts are announced against the normal odds and already include Golden Week (15x = 7.5x * 2x).
       const b = thBoost(k), rT = left * Math.max(b, g) / k.den;
       sumN += rN; sumT += b > 1 ? rT : rN;
+      got[k.key] = { rN, rT: b > 1 ? rT : rN, boost: b, left, total, image: (items.find(i => i.key && !owned[i.key]) || items[0])?.image };
       const name = golden ? k.any : k.weekly;
       const sub = k.repeat ? 'Can drop more than once' : k.key === 'pirate-shop-access' ? (left ? 'Found any week' : 'Found') : left ? `${left} of ${total} left` : 'All found';
       const pics = items.map(i => {
@@ -146,12 +173,25 @@ export async function initDrops(root, windows) {
         odd(rN, false, 0) + (b > 1 ? odd(rT, true, b) : `<div class='dodd'>${DH_T}<div class='o na'>-</div></div>`) + `</div>`;
     }).join('');
 
+    // Golden Week headline: one chest giving any Gold Outfit you still need OR the Pirate Shop token (rates add up).
+    const go = got['gold-outfit'], pi = got['pirate-shop-access'];
+    let jack = '';
+    if (golden && go && pi) {
+      const jn = go.rN + pi.rN, jt = go.rT + pi.rT, boost = go.boost > 1 ? go.boost : 0;
+      const done = !go.left && !pi.left;
+      const tile = (label, r, hot, x) => `<div class='jtile${hot ? ' hot' : ''}'><div class='jl'>${hot ? CLOCK : ''}<span>${esc(label)}</span></div><div class='jo'>${x ? `<span class='jx'>${esc(String(x))}x</span>` : ''}<span>1 in ${n0(Math.round(1 / r))}</span></div><div class='jp'>${pctOdds(r)}</div></div>`;
+      const pics = [go, pi].map(x => x.image ? `<img src='/rewards/${esc(x.image)}' alt='' width='64' height='64' loading='lazy' decoding='async'>` : '').join('');
+      jack = `<div class='djack${done ? ' done' : ''}'><div class='jpics'>${pics}</div><div><span class='jchip'>Golden Week</span><h4>Gold Outfit or Pirate Token</h4>` +
+        `<p class='jdesc'>Your chance that one chest gives any Gold Outfit you still need or the Pirate Shop token.</p>` +
+        `<div class='jstat'>${done ? `<span>You have every Gold Outfit and the Pirate token</span>` : `<span>${go.left} of ${go.total} Gold Outfits left</span><span class='sep'>·</span><span>${pi.left ? 'Pirate token still to find' : 'Pirate token found'}</span>`}</div></div>` +
+        (done ? '' : `<div class='jtiles'>${tile('Per chest', jn, false)}${jt > jn * 1.0001 ? tile('Treasure Hour', jt, true, boost) : ''}</div>`) + `</div>`;
+    }
     const wins = W.filter(w => w.e > now && w.s - now < 7 * 864e5).slice(0, 2);
     const meta = golden ? (goldenLive ? "Golden Week odds. Treasure you've found is left out." : "Golden Week odds, from 28 November. Treasure you've found is left out.") : "This week's odds. Treasure you've found is left out.";
     root.innerHTML = `<div class='dth'><h3>${CLOCK}<span>Treasure Hours</span></h3>` +
       (wins.length ? `<div class='dwins'>${wins.map((w, i) => `<div class='dwin${now >= w.s ? ' live' : ''}' data-i='${i}'><div class='lbl'><span>${now >= w.s ? 'Ends in' : 'Starts in'}</span><span>${esc(when(w.s))}</span></div><div class='dcd num'>${['d', 'h', 'm', 's'].map(u => `<span><b>00</b><small>${u}</small></span>`).join('')}</div></div>`).join('')}</div>`
         : `<div class='dnone'>No Treasure Hour in the next 7 days yet.</div>`) + `</div>` +
-      (anyRow ? `<div class='dhead'><span>Treasure</span><span></span><span>Per chest</span><span class='thh'>${CLOCK}<span>Treasure Hour</span></span></div>${rows}` +
+      jack + (anyRow ? `<div class='dhead'><span>Treasure</span><span></span><span>Per chest</span><span class='thh'>${CLOCK}<span>Treasure Hour</span></span></div>${rows}` +
         `<div class='dall'><div class='dnm'>Any treasure</div><div></div>` +
         `<div class='dodd'>${DH_N}<div class='o' style='font-size:16px;color:var(--muted)'><span>1 in ${n0(Math.round(1 / sumN))}</span></div><div class='p'>${pctOdds(sumN)}</div></div>` +
         (sumT > sumN * 1.0001 ? `<div class='dodd hot'>${DH_T}<div class='o' style='font-size:16px'><span>1 in ${n0(Math.round(1 / sumT))}</span></div><div class='p'>${pctOdds(sumT)}</div></div>` : `<div class='dodd'>${DH_T}<div class='o na'>-</div></div>`) + `</div>`

@@ -1615,5 +1615,60 @@ export const EXTRA=[
  pl:"Każdy przedmiot ma własne szanse (złote stroje 2x), ale skoro wraca po pięć przedmiotów każdego rodzaju, szansa na dowolny, którego jeszcze nie masz, się sumuje. Godzina Skarbów Złotego Tygodnia 28 listopada daje każdemu złotemu strojowi 15x (1 na 104 167) i każdemu pojazdowi 10x (1 na 781). To już jest wliczone w twoje szanse.",
  tr:"Her eşya kendi oranını korur (altın kıyafetler 2x), ama her türden beşi geri döndüğü için henüz bulmadığın herhangi birinin şansı toplanır. 28 Kasım'daki Altın Hafta Hazine Saati her altın kıyafeti 15x (104.167'de 1) ve her aracı 10x (781'de 1) yapar. Bunlar oranlarına zaten dahil.",
  ja:"各アイテムの確率はそのまま(ゴールドスキンは2倍)ですが、各種類5つずつ復活するため、まだ持っていないいずれかを引く確率は合算されます。11月28日のゴールデンウィークのトレジャーアワーでは各ゴールドスキンが15倍(104,167分の1)、各乗り物が10倍(781分の1)になります。これはすでに確率に含まれています。"
+}],
+["Gold Outfit or Pirate Token",{
+ es:"Atuendo dorado o ficha pirata",
+ pt:"Traje dourado ou ficha pirata",
+ ru:"Золотой костюм или пиратский жетон",
+ fr:"Tenue dorée ou jeton pirate",
+ de:"Goldoutfit oder Piratenmarke",
+ it:"Outfit dorato o gettone pirata",
+ pl:"Złoty strój lub piracki żeton",
+ tr:"Altın kıyafet veya korsan jetonu",
+ ja:"ゴールドスキンか海賊トークン"
+}],
+["Your chance that one chest gives any Gold Outfit you still need or the Pirate Shop token.",{
+ es:"Tu probabilidad de que un cofre te dé cualquier atuendo dorado que aún te falte o la ficha de la Tienda Pirata.",
+ pt:"Sua chance de um baú dar qualquer traje dourado que ainda falta ou a ficha da Loja Pirata.",
+ ru:"Шанс, что один сундук даст любой ещё не найденный золотой костюм или жетон Пиратской лавки.",
+ fr:"Ta chance qu'un coffre donne une tenue dorée qu'il te manque ou le jeton de la Boutique pirate.",
+ de:"Deine Chance, dass eine Truhe ein Goldoutfit gibt, das dir noch fehlt, oder die Piratenladen-Marke.",
+ it:"La tua probabilità che un forziere dia un outfit dorato che ti manca o il gettone del Negozio pirata.",
+ pl:"Twoja szansa, że jedna skrzynia da dowolny brakujący złoty strój lub żeton Pirackiego Sklepu.",
+ tr:"Bir sandığın henüz bulmadığın herhangi bir altın kıyafeti veya Korsan Dükkânı jetonunu verme şansın.",
+ ja:"1個の宝箱から、まだ持っていないゴールドスキンか海賊ショップのトークンが出る確率です。"
+}],
+["Pirate token still to find",{
+ es:"Ficha pirata por encontrar",
+ pt:"Ficha pirata ainda por achar",
+ ru:"Пиратский жетон ещё не найден",
+ fr:"Jeton pirate encore à trouver",
+ de:"Piratenmarke noch offen",
+ it:"Gettone pirata ancora da trovare",
+ pl:"Piracki żeton jeszcze do znalezienia",
+ tr:"Korsan jetonu henüz bulunmadı",
+ ja:"海賊トークンは未入手"
+}],
+["Pirate token found",{
+ es:"Ficha pirata encontrada",
+ pt:"Ficha pirata encontrada",
+ ru:"Пиратский жетон найден",
+ fr:"Jeton pirate trouvé",
+ de:"Piratenmarke gefunden",
+ it:"Gettone pirata trovato",
+ pl:"Piracki żeton znaleziony",
+ tr:"Korsan jetonu bulundu",
+ ja:"海賊トークン入手済み"
+}],
+["You have every Gold Outfit and the Pirate token",{
+ es:"Tienes todos los atuendos dorados y la ficha pirata",
+ pt:"Você tem todos os trajes dourados e a ficha pirata",
+ ru:"У вас все золотые костюмы и пиратский жетон",
+ fr:"Tu as toutes les tenues dorées et le jeton pirate",
+ de:"Du hast alle Goldoutfits und die Piratenmarke",
+ it:"Hai tutti gli outfit dorati e il gettone pirata",
+ pl:"Masz wszystkie złote stroje i piracki żeton",
+ tr:"Tüm altın kıyafetler ve korsan jetonu sende",
+ ja:"ゴールドスキンも海賊トークンもすべて入手済み"
 }]
 ];

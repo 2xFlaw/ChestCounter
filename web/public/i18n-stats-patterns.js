@@ -75,5 +75,16 @@ export const STATS_PATTERNS=[
  pl:"Zostało $1 z $2",
  tr:"$2 içinden $1 kaldı",
  ja:"残り$1/$2"
+}],
+[/^(\d+) of (\d+) Gold Outfits left$/,{
+ es:"$1 de $2 atuendos dorados restantes",
+ pt:"$1 de $2 trajes dourados restantes",
+ ru:"Осталось золотых костюмов: $1 из $2",
+ fr:"$1 tenues dorées sur $2 restantes",
+ de:"$1 von $2 Goldoutfits übrig",
+ it:"$1 di $2 outfit dorati rimasti",
+ pl:"Zostało $1 z $2 złotych strojów",
+ tr:"$2 altın kıyafetten $1 kaldı",
+ ja:"ゴールドスキン 残り$1/$2"
 }]
 ];
