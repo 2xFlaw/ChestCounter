@@ -230,17 +230,6 @@ export const EXTRA=[
  tr:"Gerçek para teklifleri, hediye etme ve bilet seviyeleri ya da ödülleri hariçtir.",
  ja:"リアルマネーのオファー、ギフト、パスのレベルや報酬は対象外です。"
 }],
-["You can only claim one free sidekick you don't already own.",{
- es:"Solo puedes reclamar un compañero gratis que aún no tengas.",
- pt:"Você só pode resgatar um parceiro grátis que ainda não tenha.",
- ru:"Бесплатно можно забрать только одного компаньона, которого у вас ещё нет.",
- fr:"Vous ne pouvez récupérer qu’un seul acolyte gratuit que vous ne possédez pas encore.",
- de:"Du kannst nur einen Gratis-Begleiter abholen, den du noch nicht besitzt.",
- it:"Puoi riscattare un solo compagno gratis che non hai ancora.",
- pl:"Możesz odebrać tylko jednego darmowego towarzysza, którego jeszcze nie masz.",
- tr:"Sahip olmadığın yalnızca bir yardımcıyı ücretsiz alabilirsin.",
- ja:"無料で入手できる相棒は、まだ持っていない1体だけです。"
-}],
 ["You can activate it once in 2026 and once in 2027. It isn't transferable.",{
  es:"Puedes activarla una vez en 2026 y otra en 2027. No es transferible.",
  pt:"Você pode ativá-la uma vez em 2026 e uma vez em 2027. Não é transferível.",
@@ -351,17 +340,6 @@ export const EXTRA=[
  tr:"Seç",
  ja:"選ぶ"
 }],
-["Press Claim all free next to Buy V-Bucks, then pick your categories and your one free sidekick.",{
- es:"Pulsa Reclamar todo gratis junto a Comprar paVos y luego elige tus categorías y tu único compañero gratis.",
- pt:"Clique em Resgatar tudo grátis ao lado de Comprar V-Bucks e escolha suas categorias e seu único parceiro grátis.",
- ru:"Нажмите «Забрать всё бесплатно» рядом с «Купить В-баксы», затем выберите категории и своего единственного бесплатного компаньона.",
- fr:"Cliquez sur Tout récupérer gratuitement à côté d’Acheter des V-bucks, puis choisissez vos catégories et votre unique acolyte gratuit.",
- de:"Klicke neben V-Bucks kaufen auf Alles gratis abholen und wähle dann deine Kategorien und deinen einen Gratis-Begleiter.",
- it:"Premi Riscatta tutto gratis accanto ad Acquista V-buck, poi scegli le categorie e il tuo unico compagno gratis.",
- pl:"Kliknij Odbierz wszystko za darmo obok Kup V-dolce, a potem wybierz kategorie i swojego jedynego darmowego towarzysza.",
- tr:"V-Papel satın al'ın yanındaki Hepsini ücretsiz al'a bas, sonra kategorilerini ve tek ücretsiz yardımcını seç.",
- ja:"「V-Bucksを購入」の横にある「無料アイテムをまとめて入手」を押して、カテゴリーと無料の相棒1体を選びます。"
-}],
 ["Done",{
  es:"Listo",
  pt:"Pronto",
@@ -383,17 +361,6 @@ export const EXTRA=[
  pl:"Wszystkie darmowe przedmioty trafiają do szafki, a twoje V-dolce zostają nietknięte.",
  tr:"Tüm ücretsiz eşyalar dolabına gelir ve V-Papel'ine dokunulmaz.",
  ja:"無料アイテムはすべてロッカーに入り、V-Bucksはそのまま残ります。"
-}],
-["Pick your one free sidekick.",{
- es:"Elige tu único compañero gratis.",
- pt:"Escolha seu único parceiro grátis.",
- ru:"Выберите своего единственного бесплатного компаньона.",
- fr:"Choisissez votre unique acolyte gratuit.",
- de:"Wähle deinen einen Gratis-Begleiter.",
- it:"Scegli il tuo unico compagno gratis.",
- pl:"Wybierz swojego jedynego darmowego towarzysza.",
- tr:"Tek ücretsiz yardımcını seç.",
- ja:"無料の相棒を1体選びます。"
 }],
 ["Watch it claim. Stop whenever you like.",{
  es:"Mira cómo reclama. Detenlo cuando quieras.",
@@ -592,28 +559,6 @@ export const EXTRA=[
  pl:"Zobacz, ile jest przedmiotów i ile są warte, a potem wybierz kategorie.",
  tr:"Kaç eşya olduğunu ve değerini gör, sonra istediğin kategorileri seç.",
  ja:"アイテムの数と価値を確認してから、欲しいカテゴリーを選べます。"
-}],
-["Your pick of sidekick",{
- es:"Tú eliges el compañero",
- pt:"Você escolhe o parceiro",
- ru:"Компаньон на ваш выбор",
- fr:"L’acolyte de votre choix",
- de:"Begleiter nach Wahl",
- it:"Il compagno lo scegli tu",
- pl:"Towarzysz do wyboru",
- tr:"Yardımcıyı sen seç",
- ja:"相棒は自分で選べる"
-}],
-["Epic only gives one free sidekick, so you choose it. Everything else with a sidekick is left out.",{
- es:"Epic solo da un compañero gratis, así que lo eliges tú. Todo lo demás que incluya un compañero se deja fuera.",
- pt:"A Epic só dá um parceiro grátis, então você escolhe. Todo o resto com parceiro fica de fora.",
- ru:"Epic даёт только одного бесплатного компаньона, поэтому выбираете вы. Всё остальное с компаньоном не забирается.",
- fr:"Epic ne donne qu’un seul acolyte gratuit, c’est donc vous qui choisissez. Tout le reste avec un acolyte est laissé de côté.",
- de:"Epic gibt nur einen Gratis-Begleiter, also wählst du ihn aus. Alles andere mit einem Begleiter bleibt außen vor.",
- it:"Epic dà un solo compagno gratis, quindi lo scegli tu. Tutto il resto con un compagno viene escluso.",
- pl:"Epic daje tylko jednego darmowego towarzysza, więc to ty go wybierasz. Wszystko inne z towarzyszem zostaje pominięte.",
- tr:"Epic yalnızca bir ücretsiz yardımcı verir, bu yüzden onu sen seçersin. Yardımcı içeren diğer her şey dışarıda bırakılır.",
- ja:"Epicが無料でくれる相棒は1体だけなので、自分で選びます。相棒を含むほかのアイテムは除外されます。"
 }],
 ["Safety stop",{
  es:"Parada de seguridad",
@@ -846,17 +791,6 @@ export const EXTRA=[
  tr:"Tüm yardımcıları alabilir miyim?",
  ja:"相棒を全部入手できますか？"
 }],
-["No. Epic only lets you claim one free sidekick you don't already own, and a bundle with a sidekick counts as that one.",{
- es:"No. Epic solo te deja reclamar un compañero gratis que aún no tengas, y un lote con compañero cuenta como ese.",
- pt:"Não. A Epic só deixa resgatar um parceiro grátis que você ainda não tenha, e um pacote com parceiro conta como esse.",
- ru:"Нет. Epic позволяет бесплатно забрать только одного компаньона, которого у вас ещё нет, и набор с компаньоном считается им.",
- fr:"Non. Epic ne permet de récupérer qu’un seul acolyte gratuit que vous ne possédez pas encore, et un lot avec un acolyte compte comme celui-ci.",
- de:"Nein. Epic lässt dich nur einen Gratis-Begleiter abholen, den du noch nicht besitzt, und ein Bundle mit Begleiter zählt als dieser.",
- it:"No. Epic ti fa riscattare un solo compagno gratis che non hai ancora, e un bundle con un compagno conta come quello.",
- pl:"Nie. Epic pozwala odebrać tylko jednego darmowego towarzysza, którego jeszcze nie masz, a zestaw z towarzyszem liczy się jako ten jeden.",
- tr:"Hayır. Epic, sahip olmadığın yalnızca bir yardımcıyı ücretsiz almana izin verir ve yardımcı içeren bir paket bu hakkı kullanır.",
- ja:"いいえ。Epicが無料で入手させてくれるのは、まだ持っていない相棒1体だけです。相棒入りのバンドルもその1体として数えられます。"
-}],
 ["The shop changed. Can I claim again?",{
  es:"La tienda cambió. ¿Puedo reclamar otra vez?",
  pt:"A loja mudou. Posso resgatar de novo?",
@@ -945,6 +879,83 @@ export const EXTRA=[
  tr:"Evet. v2.5.1'den beri yalnızca ana mağaza sayfasındaki parçaları değil, Jam Track'ler “Tümünü gör” sayfasındaki tam listeyi de okuyor.",
  ja:"はい。v2.5.1からは、ショップのメインページに表示されるトラックだけでなく、ジャムトラックの「すべて表示」ページの全リストも読み込みます。"
 }],
+["Every sidekick is free once. You can buy extra copies of a sidekick, but Claim All only takes one of each.",{
+ es:"Cada compañero es gratis una vez. Puedes comprar más copias de un compañero, pero Reclamar todo solo toma uno de cada.",
+ pt:"Cada parceiro é grátis uma vez. Você pode comprar mais cópias de um parceiro, mas o Resgatar tudo só pega um de cada.",
+ ru:"Каждый компаньон бесплатен один раз. Компаньона можно купить повторно, но Claim All берёт только по одному каждого.",
+ fr:"Chaque acolyte est gratuit une fois. Vous pouvez acheter d'autres exemplaires d'un acolyte, mais Claim All n'en prend qu'un de chaque.",
+ de:"Jeder Begleiter ist einmal kostenlos. Du kannst weitere Exemplare eines Begleiters kaufen, aber Claim All holt nur einen von jedem.",
+ it:"Ogni compagno è gratis una volta. Puoi acquistare altre copie di un compagno, ma Claim All ne prende solo uno per tipo.",
+ pl:"Każdy towarzysz jest darmowy raz. Możesz kupić kolejne kopie towarzysza, ale Claim All bierze tylko po jednym z każdego.",
+ tr:"Her yardımcı bir kez ücretsiz. Bir yardımcının ek kopyalarını satın alabilirsin ama Claim All her birinden yalnızca bir tane alır.",
+ ja:"相棒はそれぞれ1回無料です。同じ相棒を追加で購入することもできますが、Claim Allは各相棒を1体ずつだけ受け取ります。"
+}],
+["Press Claim all free next to Buy V-Bucks, then pick your categories.",{
+ es:"Pulsa Reclamar todo gratis junto a Comprar paVos y luego elige tus categorías.",
+ pt:"Clique em Resgatar tudo grátis ao lado de Comprar V-Bucks e escolha suas categorias.",
+ ru:"Нажмите «Забрать всё бесплатно» рядом с «Купить В-баксы» и выберите категории.",
+ fr:"Cliquez sur Tout récupérer gratuitement à côté d’Acheter des V-bucks, puis choisissez vos catégories.",
+ de:"Klicke neben V-Bucks kaufen auf Alles gratis abholen und wähle dann deine Kategorien.",
+ it:"Premi Riscatta tutto gratis accanto ad Acquista V-buck, poi scegli le categorie.",
+ pl:"Kliknij Odbierz wszystko za darmo obok Kup V-dolce, a potem wybierz kategorie.",
+ tr:"V-Papel satın al'ın yanındaki Hepsini ücretsiz al'a bas, sonra kategorilerini seç.",
+ ja:"「V-Bucksを購入」の横にある「無料アイテムをまとめて入手」を押して、カテゴリーを選びます。"
+}],
+["A sidekick showing Owned: 1 and Purchase more",{
+ es:"Un compañero con «Comprados: 1» y «Comprar más»",
+ pt:"Um parceiro com “Adquiridos: 1” e “Comprar mais”",
+ ru:"Компаньон с отметкой «Куплено: 1» и кнопкой «Купить ещё»",
+ fr:"Un acolyte affichant « Possédé : 1 » et « Acheter plus »",
+ de:"Ein Begleiter mit „Im Besitz: 1“ und „Mehr kaufen“",
+ it:"Un compagno con “Posseduti: 1” e “Acquista altro”",
+ pl:"Towarzysz z napisem „Posiadane: 1” i „Kup więcej”",
+ tr:"“Sahip olunan: 1” ve “Daha fazla satın al” gösteren bir yardımcı",
+ ja:"「所持数：1」と「さらに購入」が表示された相棒"
+}],
+["Sidekicks can be bought again. Claim All takes one of each.",{
+ es:"Los compañeros se pueden volver a comprar. Reclamar todo toma uno de cada.",
+ pt:"Parceiros podem ser comprados de novo. O Resgatar tudo pega um de cada.",
+ ru:"Компаньонов можно купить повторно. Claim All берёт по одному каждого.",
+ fr:"Les acolytes peuvent être rachetés. Claim All en prend un de chaque.",
+ de:"Begleiter kann man erneut kaufen. Claim All holt einen von jedem.",
+ it:"I compagni si possono riacquistare. Claim All ne prende uno per tipo.",
+ pl:"Towarzyszy można kupić ponownie. Claim All bierze po jednym z każdego.",
+ tr:"Yardımcılar tekrar satın alınabilir. Claim All her birinden bir tane alır.",
+ ja:"相棒は再購入できます。Claim Allは各相棒を1体ずつ受け取ります。"
+}],
+["One of each sidekick",{
+ es:"Un compañero de cada",
+ pt:"Um parceiro de cada",
+ ru:"По одному каждого компаньона",
+ fr:"Un acolyte de chaque",
+ de:"Einen von jedem Begleiter",
+ it:"Un compagno per tipo",
+ pl:"Po jednym z każdego towarzysza",
+ tr:"Her yardımcıdan bir tane",
+ ja:"相棒を1体ずつ"
+}],
+["Every free sidekick is claimed once. Ones you already have are skipped, so you never get extra copies.",{
+ es:"Cada compañero gratis se reclama una vez. Los que ya tienes se omiten, así nunca recibes copias de más.",
+ pt:"Cada parceiro grátis é resgatado uma vez. Os que você já tem são ignorados, então você nunca recebe cópias extras.",
+ ru:"Каждый бесплатный компаньон забирается один раз. Те, что у вас уже есть, пропускаются, так что лишних копий не будет.",
+ fr:"Chaque acolyte gratuit est récupéré une fois. Ceux que vous avez déjà sont ignorés, donc vous n'aurez jamais d'exemplaires en trop.",
+ de:"Jeder Gratis-Begleiter wird einmal geholt. Begleiter, die du schon hast, werden übersprungen, also bekommst du nie zusätzliche Exemplare.",
+ it:"Ogni compagno gratis viene riscattato una volta. Quelli che hai già vengono saltati, così non ricevi mai copie in più.",
+ pl:"Każdy darmowy towarzysz jest odbierany raz. Ci, których już masz, są pomijani, więc nigdy nie dostaniesz dodatkowych kopii.",
+ tr:"Her ücretsiz yardımcı bir kez alınır. Zaten sahip oldukların atlanır, böylece fazladan kopya almazsın.",
+ ja:"無料の相棒はそれぞれ1回だけ受け取ります。すでに持っている相棒はスキップされるので、余分なコピーが増えることはありません。"
+}],
+["Yes. Each sidekick is free once with the Pirate Shop. Claim All claims one of each and skips any you already have.",{
+ es:"Sí. Cada compañero es gratis una vez con la tienda pirata. Reclamar todo reclama uno de cada y omite los que ya tienes.",
+ pt:"Sim. Cada parceiro é grátis uma vez com a loja pirata. O Resgatar tudo resgata um de cada e ignora os que você já tem.",
+ ru:"Да. С пиратским магазином каждый компаньон бесплатен один раз. Claim All забирает по одному каждого и пропускает тех, что у вас уже есть.",
+ fr:"Oui. Avec la boutique pirate, chaque acolyte est gratuit une fois. Claim All en récupère un de chaque et ignore ceux que vous avez déjà.",
+ de:"Ja. Mit dem Piratenshop ist jeder Begleiter einmal kostenlos. Claim All holt einen von jedem und überspringt die, die du schon hast.",
+ it:"Sì. Con il negozio pirata ogni compagno è gratis una volta. Claim All ne riscatta uno per tipo e salta quelli che hai già.",
+ pl:"Tak. W pirackim sklepie każdy towarzysz jest darmowy raz. Claim All odbiera po jednym z każdego i pomija tych, których już masz.",
+ tr:"Evet. Korsan Mağazası ile her yardımcı bir kez ücretsiz. Claim All her birinden bir tane alır ve zaten sahip olduklarını atlar.",
+ ja:"はい。パイレーツショップでは相棒はそれぞれ1回無料です。Claim Allは各相棒を1体ずつ受け取り、すでに持っている相棒はスキップします。"
+}],
 ["How do I update it?",{
  es:"¿Cómo lo actualizo?",
  pt:"Como atualizo?",
@@ -1021,17 +1032,6 @@ export const EXTRA=[
  pl:"Ekran przeglądu Odbierz wszystko na fortnite.com",
  tr:"fortnite.com'da Hepsini al inceleme ekranı",
  ja:"fortnite.comのまとめて入手の確認画面"
-}],
-["Picking a free sidekick",{
- es:"Eligiendo un compañero gratis",
- pt:"Escolhendo um parceiro grátis",
- ru:"Выбор бесплатного компаньона",
- fr:"Choix d’un acolyte gratuit",
- de:"Auswahl eines Gratis-Begleiters",
- it:"Scelta di un compagno gratis",
- pl:"Wybór darmowego towarzysza",
- tr:"Ücretsiz yardımcı seçimi",
- ja:"無料の相棒を選ぶ画面"
 }],
 ["Claiming in progress",{
  es:"Reclamando",

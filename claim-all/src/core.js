@@ -169,6 +169,32 @@
   const excluded = (o) => o.delilahExcluded === true;   // Epic's own "not in the Pirate Shop" flag
   const grants = (o) => o.ownershipCalculationData?.itemGrantTemplateIds || [];
   const isSidekick = (o) => o.assetType === 'companion' || grants(o).some((g) => /^CosmeticMimosa:/i.test(g));
+  const skIds = (o) => grants(o).filter((g) => /^CosmeticMimosa:/i.test(g)).map((g) => g.toLowerCase());
+  // Sidekicks are customizable, so Epic sells them again ("Purchase more") and the shop can still call them unowned.
+  // Every sidekick is free once with the Pirate Shop: claim each one once and skip any you already have.
+  let bought = { offers: new Set(), items: new Set() };
+  async function loadBought() {
+    if (DEMO) return bought;
+    const read = (fp) => fp?.profile?.stats?.attributes?.mtx_purchase_history?.purchases;
+    let list = null;
+    try {
+      const d = await getData('/item-shop/resources/get-profile.data?_routes=routes%2Fitem-shop.resources.get-profile');
+      list = read(d?.['routes/item-shop.resources.get-profile']?.data?.fortniteProfile);
+    } catch (_) { /* fall back to the page's copy */ }
+    if (!Array.isArray(list)) { try { list = read(window.__reactRouterDataRouter?.state?.loaderData?.root?.fortniteProfile); } catch (_) { list = null; } }
+    if (!Array.isArray(list)) return bought;   // keep what we knew; the in-run guard still stops doubles
+    const offers = new Set(), items = new Set();
+    for (const p of list) {
+      if (p?.offerId) offers.add(p.offerId);
+      for (const l of p?.lootResult || []) if (l?.itemType) items.add(String(l.itemType).toLowerCase());
+    }
+    bought = { offers, items };
+    return bought;
+  }
+  // with the Pirate Shop active every V-Bucks item is free, so a sidekick back at full price is one you already own
+  const fullPriceSk = (o) => o.pricing?.currencyType === 'MtxCurrency' && o.pricing.finalPrice > 0 && !excluded(o);
+  const haveSidekick = (o) => isSidekick(o) && (bought.offers.has(o.offerId) || skIds(o).some((id) => bought.items.has(id)) || fullPriceSk(o));
+  const has = (o) => owned(o) || haveSidekick(o);
   const hasToken = (offers) => {
     const vb = offers.filter((o) => o.pricing?.currencyType === 'MtxCurrency' && !excluded(o));
     return vb.length > 0 && vb.filter(isFree).length > vb.length / 2;
@@ -182,6 +208,7 @@
   };
   const CATS = [
     ['bundles', (o) => isBundle(o)],
+    ['sidekicks', (o) => isSidekick(o)],
     ['outfits', (o) => o.assetType === 'outfit'],
     ['emotes', (o) => o.assetType === 'emote'],
     ['pickaxes', (o) => o.assetType === 'pickaxe'],
@@ -289,7 +316,8 @@
       if (csrf0 instanceof Error) throw csrf0;
       const csrf = { value: csrf0 };
 
-      const unowned = shop.offers.filter((o) => !owned(o));
+      await loadBought();
+      const unowned = shop.offers.filter((o) => !has(o));
       let free = unowned.filter((o) => isFree(o) && !excluded(o));
       if (only) free = free.filter((o) => only.has(o.offerId));
       const notCovered = unowned.filter((o) => !isFree(o) || excluded(o));
@@ -297,8 +325,7 @@
 
       let plan;
       if (only || (settings().quick && !forceReview)) {
-        plan = { picked: free.filter((o) => !isSidekick(o)), sidekick: null, leftOut: free.filter(isSidekick) };
-        if (only) plan = { picked: free.filter((o) => !isSidekick(o) || only.has(o.offerId)), sidekick: null, leftOut: [] };
+        plan = { picked: free, sidekick: null, leftOut: [] };
       } else {
         state.running = false; syncHero();
         plan = await ui.review(free, { balance: startBal, until: tokenUntil() });
@@ -307,7 +334,7 @@
       }
       const t0 = performance.now();
       const stats = { claimed: 0, viaBundle: 0, owned: 0, failed: [], granted: 0, claimedList: [], leftOut: plan.leftOut };
-      const targets = [...(plan.sidekick ? [plan.sidekick] : []), ...plan.picked];
+      const targets = [...plan.picked];
       if (!targets.length) { closeModal(); return; }
       ui.build(targets);
 
@@ -318,9 +345,17 @@
         if (b != null && b < startBal) { state.halt = T('errSafety', { a: startBal, b }); state.haltBal = b; }
       };
       const count = () => ui.progress(stats.claimed + stats.viaBundle + stats.owned + stats.failed.length);
+      // each sidekick only once per account: reserve it before claiming so two offers can't both buy it
+      const takenSk = new Set();
       const work = async (o) => {
+        const ids = skIds(o);
+        if (ids.length && (haveSidekick(o) || ids.some((id) => takenSk.has(id)))) {
+          stats.owned++; ui.tile(o.offerId, 'owned'); count(); return;
+        }
+        ids.forEach((id) => takenSk.add(id));
         ui.tile(o.offerId, 'working');
         const r = await claim(o, csrf);
+        if (r.result === 'failed') ids.forEach((id) => takenSk.delete(id));   // let another offer with it try
         if (r.result === 'claimed') { stats.claimed++; stats.granted += r.granted; stats.claimedList.push(o); ui.toast(o); }
         else if (r.result === 'owned') stats.owned++;
         else stats.failed.push({ o, why: r.why });
@@ -329,31 +364,26 @@
         if (++sinceCheck >= BALANCE_EVERY) { sinceCheck = 0; await checkBalance(); }
       };
 
-      // 1. the sidekick they picked, on its own, so the one free sidekick goes where they want it
-      if (plan.sidekick) {
-        ui.status(T('stSidekick'));
-        await work(plan.sidekick);
-      }
       const bundles = plan.picked.filter(isBundle).sort((a, b) => (b.pricing.basePrice || 0) - (a.pricing.basePrice || 0));
       let singles = plan.picked.filter((o) => !isBundle(o));
-      // 2. bundles first, biggest first, so most items arrive in a few claims
+      // 1. bundles first, biggest first, so most items arrive in a few claims
       if (bundles.length && !state.stopped && !state.halt) {
         ui.status(T('stBundles', { n: bundles.length }));
         await pool(bundles, work);
       }
-      // 3. see what the bundles already covered, then grab the rest one by one
+      // 2. see what the bundles already covered, then grab the rest one by one
       if (singles.length && !state.stopped && !state.halt) {
-        if (bundles.length || plan.sidekick) {
+        if (bundles.length) {
           ui.status(T('stChecking'));
-          const [shop2, midBal] = await Promise.all([loadShop().catch(() => null), getBalance()]);
+          const [shop2, midBal] = await Promise.all([loadShop().catch(() => null), getBalance(), loadBought()]);
           if (startBal != null && midBal != null && midBal < startBal) { state.halt = T('errSafety', { a: startBal, b: midBal }); state.haltBal = midBal; }
           // if Epic won't send the shop right now, claim the singles anyway: ones a bundle covered just come back as owned
           const fresh = new Map((shop2 ? shop2.offers : []).map((o) => [o.offerId, o]));
           const left = [];
           for (const o of singles) {
             const f = fresh.get(o.offerId);
-            if (f && owned(f)) { stats.viaBundle++; ui.tile(o.offerId, 'bundle'); }
-            else if (f && !isFree(f)) { stats.failed.push({ o, why: isSidekick(o) ? T('rSidekickUsed') : T('rNoLongerFree') }); ui.tile(o.offerId, 'failed', T('rNoLongerFree')); }
+            if ((f && owned(f)) || haveSidekick(o) || (isSidekick(o) && f && !isFree(f))) { stats.viaBundle++; ui.tile(o.offerId, 'bundle'); }   // an owned sidekick goes back to full price
+            else if (f && !isFree(f)) { stats.failed.push({ o, why: T('rNoLongerFree') }); ui.tile(o.offerId, 'failed', T('rNoLongerFree')); }
             else left.push(o);
           }
           count();
@@ -466,7 +496,7 @@
     if (liveFetching || (!force && Date.now() - liveAt < 60e3)) return;   // React can drop the header often
     liveFetching = true;
     liveAt = Date.now();
-    try { liveShop = await loadShop(); state.remaining = null; } catch (_) { /* ignore */ }
+    try { [liveShop] = await Promise.all([loadShop(), loadBought()]); state.remaining = null; } catch (_) { /* ignore */ }
     finally { liveFetching = false; if (hero) hero.dataset.key = ''; updateHero(); }
   }
 
@@ -475,7 +505,7 @@
     if (!shop) return { n: state.remaining, block: '' };
     if (!shop.loggedIn) return { n: null, block: 'signin' };
     if (!hasToken(shop.offers)) return { n: null, block: plunderChip() ? 'notactive' : 'notoken' };
-    const free = shop.offers.filter((o) => !owned(o) && isFree(o) && !excluded(o));
+    const free = shop.offers.filter((o) => !has(o) && isFree(o) && !excluded(o));
     const n = state.remaining != null ? Math.min(state.remaining, free.length) : free.length;
     return { n, block: '', value: worth(free) };
   }
@@ -632,15 +662,13 @@
     const ui = {
       status(text) { $('.cc-status').textContent = text; },
 
-      // pick categories and the one free sidekick, resolves with the plan or null
+      // pick categories, resolves with the plan or null
       review(free, info) {
         return new Promise((resolve) => {
           me.classList.add('is-review');
-          const sidekicks = free.filter(isSidekick);
-          const normal = free.filter((o) => !isSidekick(o));
+          const normal = free;
           const groups = CATS.map(([k]) => [k, normal.filter((o) => catOf(o) === k)]).filter(([, l]) => l.length);
           const on = new Set(groups.map(([k]) => k));
-          let pick = sidekicks.length === 1 ? sidekicks[0].offerId : '';
           setTitle(T('reviewTitle', { n: free.length }));
           const meta = [];
           meta.push(T('reviewWorth', { v: worth(free) }));
@@ -648,24 +676,6 @@
           ui.status(meta.join(' · '));
           const body = $('.cc-body');
           body.hidden = false;
-          const sk = sidekicks.length ? `
-            <fieldset class="cc-sk">
-              <legend><span class="cc-ic">${ICON.paw}</span>${esc(T('skTitle'))}</legend>
-              <p>${esc(T('skText'))}</p>
-              <div class="cc-sk-list">
-                ${sidekicks.map((o) => `
-                  <label class="cc-sk-opt" style="--c1:${esc(o.color1 || '#3a2140')};--c2:${esc(o.color2 || '#1b0f20')}">
-                    <input type="radio" name="cc-sk" value="${esc(o.offerId)}"${pick === o.offerId ? ' checked' : ''}>
-                    <span class="cc-sk-img">${tileHTML(o)}</span>
-                    <span class="cc-sk-t"><b>${esc(o.title)}</b><small>${esc(isBundle(o) ? T('skBundle') : T('skSingle'))}</small></span>
-                  </label>`).join('')}
-                <label class="cc-sk-opt cc-sk-none">
-                  <input type="radio" name="cc-sk" value=""${pick ? '' : ' checked'}>
-                  <span class="cc-sk-img">${ICON.clock}</span>
-                  <span class="cc-sk-t"><b>${esc(T('skNone'))}</b><small>${esc(T('skNoneSub'))}</small></span>
-                </label>
-              </div>
-            </fieldset>` : '';
           body.innerHTML = `
             <div class="cc-sec-h"><b>${esc(T('reviewPick'))}</b>
               <span><button type="button" class="cc-link" data-all="1">${esc(T('selectAll'))}</button> · <button type="button" class="cc-link" data-all="0">${esc(T('selectNone'))}</button></span></div>
@@ -674,7 +684,6 @@
                 <span class="cc-cat-imgs">${l.slice(0, 3).map(tileHTML).join('')}</span>
                 <span class="cc-cat-t">${esc(T('cat_' + k))}</span><b>${fmtN(l.length)}</b></button>`).join('')}
             </div>
-            ${sk}
             <p class="cc-safe"><span class="cc-ic">${ICON.shield}</span>${esc(T('safety'))}${info.balance != null ? ` <b>${esc(T('balanceNow', { b: info.balance }))}</b>` : ''}</p>
             <label class="cc-quick"><input type="checkbox"${settings().quick ? ' checked' : ''}> ${esc(T('quickToggle'))}</label>`;
           const foot = $('.cc-m-foot');
@@ -682,19 +691,17 @@
           const go = foot.querySelector('.cc-go');
           const chosen = () => {
             const picked = normal.filter((o) => on.has(catOf(o)));
-            const skOffer = sidekicks.find((o) => o.offerId === pick) || null;
-            return { picked, sidekick: skOffer, leftOut: [...normal.filter((o) => !on.has(catOf(o))), ...sidekicks.filter((o) => o !== skOffer)] };
+            return { picked, sidekick: null, leftOut: normal.filter((o) => !on.has(catOf(o))) };
           };
           const refresh = () => {
             const c = chosen();
-            const n = c.picked.length + (c.sidekick ? 1 : 0);
+            const n = c.picked.length;
             go.textContent = T('start', { n });
             go.disabled = n === 0;
             body.querySelectorAll('.cc-cat').forEach((b) => { const v = on.has(b.dataset.k); b.classList.toggle('is-on', v); b.setAttribute('aria-pressed', String(v)); });
           };
           body.querySelectorAll('.cc-cat').forEach((b) => { b.onclick = () => { on.has(b.dataset.k) ? on.delete(b.dataset.k) : on.add(b.dataset.k); refresh(); }; });
           body.querySelectorAll('[data-all]').forEach((b) => { b.onclick = () => { if (b.dataset.all === '1') groups.forEach(([k]) => on.add(k)); else on.clear(); refresh(); }; });
-          body.querySelectorAll('input[name="cc-sk"]').forEach((r) => { r.onchange = () => { pick = r.value; refresh(); }; });
           body.querySelector('.cc-quick input').onchange = (e) => saveSettings({ quick: e.target.checked });
           let settled = false;
           const finish = (v) => {
@@ -791,7 +798,7 @@
         ].join('');
         const li = (title, why) => `<li><b>${esc(title)}</b><span>${esc(why)}</span></li>`;
         const failed = s.failed?.length ? `<details class="cc-more"><summary>${esc(T('whySkipped'))}</summary><ul>${s.failed.map((f) => li(f.o.title, f.why)).join('')}</ul></details>` : '';
-        const left = s.leftOut?.length ? `<details class="cc-more"><summary>${esc(T('leftOutList'))}</summary><ul>${s.leftOut.map((o) => li(o.title, isSidekick(o) ? T('rSidekick') : T('cat_' + catOf(o)))).join('')}</ul></details>` : '';
+        const left = s.leftOut?.length ? `<details class="cc-more"><summary>${esc(T('leftOutList'))}</summary><ul>${s.leftOut.map((o) => li(o.title, T('cat_' + catOf(o)))).join('')}</ul></details>` : '';
         const nc = s.notCovered?.length ? `<details class="cc-more"><summary>${esc(T('notCovered', { n: s.notCovered.length }))}</summary><ul>${s.notCovered.map((o) =>
           li(o.title, o.pricing?.currencyType === 'RealMoney' ? T('rmPack') : excluded(o) ? T('rExcluded') : T('vbPrice', { v: o.pricing?.finalPrice ?? 0 }))).join('')}</ul></details>` : '';
         $('.cc-summary').innerHTML = `<div class="cc-chips">${chips}</div>${failed}${left}${nc}`;

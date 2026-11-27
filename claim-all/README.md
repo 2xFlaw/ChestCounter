@@ -25,7 +25,7 @@ The Pirate Shop Access Token makes everything sold for V-Bucks in the Fortnite I
 > [!IMPORTANT]
 > You have to **activate** the Pirate Shop in game first. Owning the token isn't enough: if the web shop shows **Plunder the Shop!**, it hasn't been activated yet.
 >
-> Epic's rules: while the Pirate Shop is active, items sold for V-Bucks are free to claim for 14 days from the moment you activate it. Real-money offers, gifting and pass levels or rewards are excluded, and you can only claim **one** free sidekick you don't already own. You can activate it once in 2026 and once in 2027, and it isn't transferable. **The 2026 Pirate Shop must be activated by Dec 16, 12 AM (GMT+00:00).**
+> Epic's rules: while the Pirate Shop is active, items sold for V-Bucks are free to claim for 14 days from the moment you activate it. Real-money offers, gifting and pass levels or rewards are excluded. Every sidekick is free once: sidekicks are customizable, so Epic lets you buy more copies, and Claim All takes one of each and skips any you already have. You can activate it once in 2026 and once in 2027, and it isn't transferable. **The 2026 Pirate Shop must be activated by Dec 16, 12 AM (GMT+00:00).**
 
 ## Install
 
@@ -51,13 +51,13 @@ Use one or the other, not both at once. If both are installed, only the first on
 1. Activate the Pirate Shop in the in-game Item Shop.
 2. Sign in at [fortnite.com/item-shop](https://www.fortnite.com/item-shop) with the same account.
 3. Click **Claim all free** next to Buy V-Bucks (or the toolbar icon, then **Claim all free**).
-4. Pick the categories you want and your one free sidekick, then press **Claim**.
+4. Pick the categories you want (Sidekicks is one of them), then press **Claim**.
 5. Watch the progress. Press **Stop** or **Esc** whenever you like.
 6. When it's done, press **Done**. The page reloads and everything shows as owned.
 
 <p align="center">
   <img src="docs/review.webp" alt="Review screen with categories" width="400">
-  <img src="docs/sidekick.webp" alt="Picking your one free sidekick" width="400">
+  <img src="docs/sidekick-owned.webp" alt="A sidekick showing Owned: 1 and Purchase more" width="400">
 </p>
 <p align="center">
   <img src="docs/progress.webp" alt="Claiming in progress" width="400">
@@ -67,8 +67,8 @@ Use one or the other, not both at once. If both are installed, only the first on
 ## What's new compared to the original
 Claim All is based on [Napzeee's Pirate Token Claim All](https://github.com/Napzeee/fortnite-pirate-token-claim-all-extension) (MIT) and uses the same claim requests. On top of that it adds:
 
-- **Review screen.** See how many items and how many V-Bucks they're worth, then choose categories (Bundles, Outfits, Emotes, Pickaxes, Back Blings, Gliders, Wraps, Contrails, Jam Tracks, Instruments, Car cosmetics, Kicks) before anything is claimed. You can skip it next time if you want one-click claiming.
-- **Sidekick picker.** Epic only gives you one free sidekick, so you pick it yourself (or keep it for later). Everything else that includes a sidekick is left out, so the free one isn't used up by accident.
+- **Review screen.** See how many items and how many V-Bucks they're worth, then choose categories (Bundles, Sidekicks, Outfits, Emotes, Pickaxes, Back Blings, Gliders, Wraps, Contrails, Jam Tracks, Instruments, Car cosmetics, Kicks) before anything is claimed. You can skip it next time if you want one-click claiming.
+- **One of each sidekick.** Sidekicks show "Purchase more" because you can own several copies. Claim All claims every free sidekick once, skips any you already bought (it checks your purchase history) and never takes the same sidekick twice, even when it's in a bundle too.
 - **Safety stop.** Your V-Bucks balance is checked before the run, during it and after it. If it ever drops, claiming stops straight away.
 - **Handles Epic's rate limits.** When Epic says "slow down", it backs off, halves its speed and carries on instead of failing.
 - **Retry and Claim the rest.** Anything that failed or was stopped can be retried with one click.
@@ -102,7 +102,7 @@ No. It's a browser extension or userscript that only runs on fortnite.com. It ne
 Activate it in the in-game Item Shop first. The website shows **Plunder the Shop!** until you do. Activating starts the 14-day clock.
 
 **Can I get every sidekick?**
-No. Epic only lets you claim one free sidekick you don't already own. The picker lets you choose which one. Bundles that contain a sidekick count as your sidekick.
+Yes. Each sidekick is free once with the Pirate Shop. Claim All claims one of each and skips any you already have, so you never end up with extra copies.
 
 **Some items were skipped.**
 Open "Why some were skipped" on the finished screen. Usually they already came with a bundle, Epic asked us to slow down (press Retry in a minute), or an item isn't free under the Pirate Shop.
@@ -123,7 +123,7 @@ node claim-all/build.mjs
 This builds `dist/chrome/` (load it with Load unpacked), `dist/ChestCounter-ClaimAll-Chrome.zip` and `dist/chest-counter-claim-all.user.js` from [`src`](src) and [`extension`](extension). Node 18 or newer, no dependencies.
 
 ## Credits and license
-Chest Counter Claim All was made by [2xFlaw](https://github.com/2xFlaw), who came up with the idea and wrote this version: the review screen, sidekick picker, safety stop, retry, saved list, demo mode, toolbar button, userscript and translations.
+Chest Counter Claim All was made by [2xFlaw](https://github.com/2xFlaw), who came up with the idea and wrote this version: the review screen, one-of-each sidekick claiming, safety stop, retry, saved list, demo mode, toolbar button, userscript and translations.
 
 It builds on [Pirate Token Claim All](https://github.com/Napzeee/fortnite-pirate-token-claim-all-extension) by Napzeee, whose claim requests it uses. Thanks to Napzeee for the original.
 

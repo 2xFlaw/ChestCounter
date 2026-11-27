@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { deflateRawSync } from 'node:zlib';
 
 const ROOT = dirname(fileURLToPath(import.meta.url));
-const VERSION = '2.5.1';
+const VERSION = '2.5.2';
 const REPO_RAW = 'https://raw.githubusercontent.com/2xFlaw/ChestCounter/main/claim-all';
 const ZIP_NAME = 'ChestCounter-ClaimAll-Chrome.zip';
 const USER_NAME = 'chest-counter-claim-all.user.js';
