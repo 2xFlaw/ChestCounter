@@ -114,6 +114,24 @@
     });
   }
 
+  // The "View all" Jam Tracks page lists every track; the main shop only shows some of them
+  const JAM_ROUTE = 'routes/item-shop.jam-tracks._index';
+  async function loadJamTracks() {
+    try {
+      const d = await getData(`/item-shop/jam-tracks.data?_routes=${encodeURIComponent(JAM_ROUTE)}`);
+      const list = d?.[JAM_ROUTE]?.data?.jamTracks;
+      if (!Array.isArray(list)) return [];
+      return list.filter((t) => t?.forSale?.offerId && t.forSale.pricing).map((t) => ({
+        ...t.forSale,
+        assetType: t.assetType,
+        title: t.title,
+        artist: t.artist,
+        ownershipStatus: t.ownershipStatus,
+        image: t.media?.albumArtUrl ? { xs: t.media.albumArtUrl } : undefined,
+      }));
+    } catch (_) { return []; }   // never block the main claim run if this page fails
+  }
+
   async function loadShop({ fallback = false } = {}) {
     let d;
     try { d = await getData(`/item-shop.data?_routes=${encodeURIComponent(ROUTE)}`); }
@@ -121,6 +139,8 @@
     const data = d?.[ROUTE]?.data;
     if (!data) throw new Error(T('errShop'));
     const offers = collectOffers(data);
+    const have = new Set(offers.map((o) => o.offerId));
+    for (const j of await loadJamTracks()) if (!have.has(j.offerId)) offers.push(j);
     if (DEMO) return { loggedIn: true, offers: demoShop(offers) };
     return { loggedIn: data.isLoggedIn !== false, offers };
   }
