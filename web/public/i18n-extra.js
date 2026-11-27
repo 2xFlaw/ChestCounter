@@ -923,6 +923,28 @@ export const EXTRA=[
  tr:"Hayır. Yalnızca fortnite.com'da çalışır, zaten giriş yaptığın oturumu kullanır ve başka hiçbir yere bir şey göndermez. Kod açık kaynaktır, herkes kontrol edebilir.",
  ja:"いいえ。fortnite.com上でだけ動き、すでにサインインしているセッションを使い、ほかの場所には何も送信しません。コードはオープンソースなので、誰でも確認できます。"
 }],
+["Does it claim every Jam Track?",{
+ es:"¿Reclama todos los Jam Tracks?",
+ pt:"Ele resgata todas as Jam Tracks?",
+ ru:"Забирает ли он все джем-треки?",
+ fr:"Récupère-t-il toutes les Jam Tracks ?",
+ de:"Holt es alle Jam-Tracks?",
+ it:"Riscatta tutte le Jam Track?",
+ pl:"Czy odbiera wszystkie Jam Tracki?",
+ tr:"Tüm Jam Track'leri alıyor mu?",
+ ja:"すべてのジャムトラックを受け取れますか？"
+}],
+["Yes. Since v2.5.1 it also reads the full list from the Jam Tracks View all page, not just the tracks shown on the main shop page.",{
+ es:"Sí. Desde la v2.5.1 también lee la lista completa de la página «Ver todo» de Jam Tracks, no solo las pistas que aparecen en la página principal de la tienda.",
+ pt:"Sim. Desde a v2.5.1 ele também lê a lista completa da página “Ver tudo” das Jam Tracks, e não só as faixas mostradas na página principal da loja.",
+ ru:"Да. Начиная с v2.5.1 он также читает полный список со страницы «Показать все» в разделе джем-треков, а не только треки с главной страницы магазина.",
+ fr:"Oui. Depuis la v2.5.1, il lit aussi la liste complète de la page « Tout voir » des Jam Tracks, et pas seulement les pistes affichées sur la page principale de la boutique.",
+ de:"Ja. Seit v2.5.1 liest es auch die vollständige Liste der Jam-Tracks-Seite „Alle anzeigen“, nicht nur die Tracks auf der Hauptseite des Shops.",
+ it:"Sì. Dalla v2.5.1 legge anche l'elenco completo dalla pagina “Mostra tutto” delle Jam Track, non solo i brani mostrati nella pagina principale del negozio.",
+ pl:"Tak. Od wersji 2.5.1 odczytuje też pełną listę ze strony „Zobacz wszystko” w sekcji Jam Tracków, a nie tylko utwory widoczne na głównej stronie sklepu.",
+ tr:"Evet. v2.5.1'den beri yalnızca ana mağaza sayfasındaki parçaları değil, Jam Track'ler “Tümünü gör” sayfasındaki tam listeyi de okuyor.",
+ ja:"はい。v2.5.1からは、ショップのメインページに表示されるトラックだけでなく、ジャムトラックの「すべて表示」ページの全リストも読み込みます。"
+}],
 ["How do I update it?",{
  es:"¿Cómo lo actualizo?",
  pt:"Como atualizo?",
